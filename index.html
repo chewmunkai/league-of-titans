@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LEAGUE OF TITANS — CGC Season 2 Command Centre</title>
+<title>League of Titans</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -422,6 +422,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#8d8375;font-size:11px;l
     <div class="row" style="margin-top:15px">
       <button class="b" onclick="load()">LOAD DATA</button>
       <button class="b g" onclick="copyBookmark()">COPY ONE-CLICK LINK</button>
+      <button class="b g" onclick="useSnapshot('')">SAVED NUMBERS</button>
       <button class="b g" onclick="demo()">DEMO MODE</button>
     </div>
     <div class="status" id="status">Paste a link and hit Load — or try Demo Mode to explore with sample numbers.</div>
@@ -533,6 +534,11 @@ var TRAIN_MONTH = null;        // which month's training counts; null = the shee
    loads this. Point it somewhere else with #s=<sheet id> in the link. */
 var DEFAULT_SHEET = '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg';
 var DEFAULT_TABS = '';         // captured from the form at start-up
+var AUTOLOAD = false;          // true while the page is loading its own default source
+
+/* September 2026, exactly as read from the sheet and audited. Used when the
+   live read cannot happen. Regenerate it whenever the month closes. */
+var SNAPSHOT = {"capturedAt":"1 September 2026","month":"September 2026","trainingMonths":["April 2026","May 2026","June 2026","July 2026","August 2026","September 2026"],"weeks":[{"tab":"Master list 1st week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":12,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Chee","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":2,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":2,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":6,"RRO":1,"V":1,"ONE21":1,"REV":0},{"name":"Qingni Fong","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":3,"RRI":2,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":2,"RRI":0,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Surely Lim","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":2,"RRO":3,"V":1,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":4,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Sheik Yoong Ong","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":2,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":3,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":4,"V":1,"ONE21":0,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":4,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":6,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":1,"ONE21":0,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":3,"RRO":5,"V":1,"ONE21":0,"REV":0}]},{"tab":"Master list 2nd week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":3,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Eric Chee","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":1,"RRO":5,"V":0,"ONE21":1,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":3,"REV":0},{"name":"Sharon Lee","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":1,"V":0,"ONE21":3,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Regene Ng","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":7,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":1,"ONE21":4,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":4,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":3,"RRI":1,"RRO":2,"V":0,"ONE21":0,"REV":0}]},{"tab":"Master list 3rd week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Chee","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":3,"V":0,"ONE21":0,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":4,"RRI":1,"RRO":2,"V":0,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Max Low Yong Wen","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":2,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Raymond Phang","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":5,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":2,"V":0,"ONE21":2,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":2,"V":0,"ONE21":3,"REV":0}]},{"tab":"Master list 4th week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Eric Chee","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Daniel Chew","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":2,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Chiew Jian Jin","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Joanne Kong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":2,"RRO":0,"V":0,"ONE21":4,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":3,"V":0,"ONE21":0,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":1,"RRI":2,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Shane Tan","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":4,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":2,"V":1,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":0,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0}]}],"teams":[{"name":"Grace Tiau","team":"Big Hero"},{"name":"Connie Chye Loy Fong","team":"Big Hero"},{"name":"Eric Choong","team":"Big Hero"},{"name":"Crystal Low Ming Tong","team":"Big Hero"},{"name":"Raymond Phang","team":"Team Pokemon"},{"name":"Chiew Jian Jin","team":"Team Pokemon"},{"name":"Dominic Yeoh Wei Ching","team":"Team Pokemon"},{"name":"Sharon Lee","team":"Team Pokemon"},{"name":"Max Low Yong Wen","team":"Team Pokemon"},{"name":"Patrick Soo Kwok Choy","team":"Team Pokemon"},{"name":"Mogo Cheok Yee Herng","team":"6 Braincells"},{"name":"Michelle Fung","team":"6 Braincells"},{"name":"Alex Ang","team":"6 Braincells"},{"name":"Daniel Chew","team":"6 Braincells"},{"name":"Eric Chee","team":"6 Braincells"},{"name":"Kingsley Yap","team":"6 Braincells"},{"name":"Surely Lim","team":"Heng Ong Huat"},{"name":"Muniyandy S","team":"Heng Ong Huat"},{"name":"Qingni Fong","team":"Heng Ong Huat"},{"name":"Regene Ng","team":"Heng Ong Huat"},{"name":"Shane Tan","team":"Backstreet Boys"},{"name":"Poh Pin Penny Lim","team":"Backstreet Boys"},{"name":"Jimmy Lim Jun Yew","team":"Backstreet Boys"},{"name":"Jason Lai","team":"Backstreet Boys"},{"name":"wyman soh","team":"Backstreet Boys"},{"name":"Joanne Kong","team":"Backstreet Boys"},{"name":"Sheik Yoong Ong","team":"Backstreet Boys"}],"training":[{"name":"Alex Ang","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Chiew Jian Jin","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":2,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Connie Chye Loy Fong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":2,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Crystal Low Ming Tong","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Daniel Chew","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Dominic Yeoh Wei Ching","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":2,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Eric Chee","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Eric Choong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Grace Tiau","sessions":0,"months":{"april 2026":0,"may 2026":4,"june 2026":0,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Jason Lai","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Jimmy Lim Jun Yew","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Kingsley Yap","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Max Low Yong Wen","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Michelle Fung","sessions":0,"months":{"april 2026":0,"may 2026":3,"june 2026":2,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Mogo Cheok Yee Herng","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Muniyandy S","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":2,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Patrick Soo Kwok Choy","sessions":0,"months":{"april 2026":2,"may 2026":3,"june 2026":3,"july 2026":3,"august 2026":2,"september 2026":0}},{"name":"Poh Pin Penny Lim","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Qingni Fong","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Raymond Phang","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Regene Ng","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Shane Tan","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Sharon Lee","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Sheik Yoong Ong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"SHU FANG TAN","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Surely Lim","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"wyman soh","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}}],"gameLog":[]};
 function sheetUrl(id) { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; }
 function execUrl(id) { return 'https://script.google.com/macros/s/' + id + '/exec'; }
 
@@ -761,8 +767,30 @@ function load() {
   setStatus('That is not a link I recognise. Use a Google Sheet link or an Apps Script link ending in /exec.', 'err');
 }
 
+function useSnapshot(why) {
+  if (!SNAPSHOT) return false;
+  busy(0);
+  PARSE_WARN = [why
+    ? 'This page could not reach the spreadsheet, so it is showing the numbers saved on <b>' +
+      esc(SNAPSHOT.capturedAt) + '</b>. ' + why
+    : 'Showing the numbers saved on <b>' + esc(SNAPSHOT.capturedAt) + '</b>.'];
+  LAST = { kind: 'snapshot' };
+  var pay = {}, k;
+  for (k in SNAPSHOT) if (SNAPSHOT.hasOwnProperty(k)) pay[k] = SNAPSHOT[k];
+  pay.ok = true;
+  adopt(pay, 'Saved snapshot', '');
+  return true;
+}
+
 function refresh() {
+  if (LAST && LAST.kind === 'snapshot') {
+    go('data');
+    setStatus('These are saved numbers, so there is nothing to re-read. Load a link above, ' +
+      'or upload a fresh export.', 'err');
+    return;
+  }
   if (!LAST) { go('data'); setStatus('Pick a source first, then Refresh will keep re-reading it.', 'err'); return; }
+  AUTOLOAD = false;
   if (LAST.kind === 'exec') loadExec(LAST.url, true);
   else if (LAST.kind === 'sheet') loadSheet(LAST.id, true);
   else if (LAST.kind === 'demo') { demo(); }
@@ -797,9 +825,10 @@ function loadExec(url, quiet) {
     adopt(normalise(res), 'Apps Script', url);
   }, function (err) {
     busy(0);
-    srcTag('Load failed');
     setStatus('Could not read it — ' + esc(err) + '. Check the deployment is set to ' +
       '<b>Execute as: Me</b> and <b>Who has access: Anyone</b>.', 'err');
+    if (AUTOLOAD && useSnapshot('The Apps Script link did not answer.')) return;
+    srcTag('Load failed');
   });
 }
 
@@ -823,12 +852,16 @@ function loadSheet(id, quiet) {
     var found = [];
     for (var k in got) if (got.hasOwnProperty(k)) found.push(k);
     if (!found.length) {
-      srcTag('Load failed');
       setStatus(hardFail
         ? 'The sheet would not open. Set it to <b>Anyone with the link &mdash; Viewer</b>, ' +
           'or use the Apps Script /exec link instead, which works on a private sheet.'
         : 'Found none of those tab names. Check the spelling against the tabs at the bottom of your sheet.',
         'err');
+      if (AUTOLOAD && useSnapshot(hardFail
+        ? 'Some places this page is hosted are not allowed to fetch from Google at all. ' +
+          'To bring it up to date here, upload the latest export below.'
+        : 'None of the expected tabs came back.')) return;
+      srcTag('Load failed');
       return;
     }
     LAST = { kind: 'sheet', id: id };
@@ -1498,7 +1531,7 @@ function adopt(pay, sourceName, url) {
   if (ROSTER.length) bits.push(ROSTER.length + ' members');
   if (pay.gameLog.length) bits.push(pay.gameLog.length + ' game log rows');
   srcTag('<b>' + esc(sourceName) + '</b> &middot; ' + (bits.join(' &middot; ') || 'nothing found'),
-         sourceName === 'Demo data' ? 'demo' : 'live');
+         (sourceName === 'Demo data' || sourceName === 'Saved snapshot') ? 'demo' : 'live');
   setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
   checkData();
   if (VIEW === 'data') go('overview'); else render();
@@ -2912,8 +2945,18 @@ function boot() {
   var src = p.src || (p.s ? sheetUrl(p.s) : '') || (p.e ? execUrl(p.e) : '');
   if (!src && hash !== 'demo' && DEFAULT_SHEET) src = sheetUrl(DEFAULT_SHEET);
 
-  if (src) { $('url').value = src; go('overview'); load(); return; }
   if (hash === 'demo') { go('overview'); demo(); return; }
+  if (hash === 'saved') { go('overview'); useSnapshot(''); return; }
+  if (src) {
+    $('url').value = src;
+    go('overview');
+    /* Show the saved month straight away so the page is never blank, then
+       quietly replace it if the live read succeeds. */
+    if (SNAPSHOT) useSnapshot('');
+    AUTOLOAD = true;
+    load();
+    return;
+  }
 
   go('data');
   render();

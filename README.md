@@ -11,6 +11,11 @@ every team. It never writes to the sheet — the sheet stays the source of truth
 That plain address is the whole link. The page opens on the chapter's sheet and
 loads the live numbers by itself — nothing to paste, nothing to remember.
 
+It also carries a saved copy of the last audited month inside the file. If it cannot
+reach the sheet — a host that blocks outside requests, a sheet that stopped being
+shared, Google having a bad day — it shows those saved numbers and says so in plain
+words rather than showing a blank page. Regenerate the snapshot when a month closes.
+
 ---
 
 ## Getting it online (one time)
