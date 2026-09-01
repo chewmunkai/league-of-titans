@@ -425,8 +425,9 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#8d8375;font-size:11px;l
       <button class="b g" onclick="demo()">DEMO MODE</button>
     </div>
     <div class="status" id="status">Paste a link and hit Load — or try Demo Mode to explore with sample numbers.</div>
-    <div class="note"><b>Copy One-Click Link</b> gives you a bookmark that opens this page with the live
-      numbers already loaded, so you never have to paste the link again.</div>
+    <div class="note">This page already opens on the chapter's sheet, so the plain address is all you
+      need to bookmark. <b>Copy One-Click Link</b> is for pointing it at a different sheet — it gives
+      you the shortest link that still loads the right one.</div>
     <div id="warnbox"></div>
   </div>
 
@@ -527,6 +528,13 @@ var ROSTER_BASE = [];          // roster exactly as the sheet had it, for Reset
 var MOVES = [];                // roster changes made on this page since load
 var PARSE_WARN = [];           // anything the loader could not understand
 var TRAIN_MONTH = null;        // which month's training counts; null = the sheet's latest
+
+/* The chapter's own sheet. Opening the page with no address bar clutter
+   loads this. Point it somewhere else with #s=<sheet id> in the link. */
+var DEFAULT_SHEET = '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg';
+var DEFAULT_TABS = '';         // captured from the form at start-up
+function sheetUrl(id) { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; }
+function execUrl(id) { return 'https://script.google.com/macros/s/' + id + '/exec'; }
 
 /* ── Point values ───────────────────────────────────────────────────── */
 var RULES = [
@@ -2782,12 +2790,25 @@ function copyGameLogHeader() {
     'Header copied. Paste into cell A1 of your GameLog tab.');
 }
 function copyTeamsHeader() { copyText('Member Name\tTeam', 'Header copied. Paste into cell A1 of your Teams tab.'); }
+/* The shortest link that still loads the right thing. */
 function copyBookmark() {
   var u = $('url').value.trim();
   if (!u) { setStatus('Load a source first, then this makes you a one-click link.', 'err'); return; }
-  var link = location.href.split('#')[0] + '#src=' + encodeURIComponent(u) +
-             '&tabs=' + encodeURIComponent($('tabs').value);
-  copyText(link, 'Link copied. Bookmark it — opening it loads the live numbers straight away.');
+  var base = location.href.split('#')[0], link;
+  var sheet = /\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/.exec(u);
+  var exec = /script\.google\.com\/macros\/s\/([a-zA-Z0-9\-_]+)\/exec/.exec(u);
+
+  if (sheet) link = (sheet[1] === DEFAULT_SHEET) ? base : base + '#s=' + sheet[1];
+  else if (exec) link = base + '#e=' + exec[1];
+  else link = base + '#src=' + encodeURIComponent(u);
+
+  /* Only carry the tab names when they are not the ones already built in. */
+  if (norm($('tabs').value) !== norm(DEFAULT_TABS))
+    link += (link.indexOf('#') === -1 ? '#' : '&') + 'tabs=' + encodeURIComponent($('tabs').value);
+
+  copyText(link, link === base
+    ? 'Link copied — just the plain address. Bookmark it and the board opens with the live numbers.'
+    : 'Link copied. Bookmark it — opening it loads the live numbers straight away.');
 }
 function copyText(txt, okMsg) {
   var ok = function () { setStatus(okMsg, 'ok'); alert(okMsg); };
@@ -2872,16 +2893,26 @@ function demo() {
 function boot() {
   wireFiles();
   buildNav();
+  DEFAULT_TABS = $('tabs').value;
 
-  /* A link like index.html#src=<sheet url> loads itself. Bookmark it and
-     the board is live the moment you open the tab — no storage needed. */
+  /* The address bar chooses the source, shortest form first:
+       (nothing)   the chapter's own sheet
+       #s=<id>     another Google Sheet
+       #e=<id>     an Apps Script deployment
+       #src=<url>  anything else, spelled out in full
+       #demo       sample numbers
+     Nothing is stored anywhere, so the link is what remembers.            */
   var hash = location.hash.replace(/^#/, ''), parts = hash.split('&'), p = {}, i, kv;
   for (i = 0; i < parts.length; i++) {
     kv = parts[i].split('=');
     if (kv[0]) p[kv[0]] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
   }
   if (p.tabs) $('tabs').value = p.tabs;
-  if (p.src) { $('url').value = p.src; go('overview'); load(); return; }
+
+  var src = p.src || (p.s ? sheetUrl(p.s) : '') || (p.e ? execUrl(p.e) : '');
+  if (!src && hash !== 'demo' && DEFAULT_SHEET) src = sheetUrl(DEFAULT_SHEET);
+
+  if (src) { $('url').value = src; go('overview'); load(); return; }
   if (hash === 'demo') { go('overview'); demo(); return; }
 
   go('data');

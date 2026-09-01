@@ -6,7 +6,10 @@ One HTML file. No build step, no install, no database. It reads your Google Shee
 does all the scoring and item maths, and shows you a line-by-line audit trail for
 every team. It never writes to the sheet — the sheet stays the source of truth.
 
-**Open it here:** `https://chewmunkai.github.io/league-of-titans/`
+**Open it here:** https://chewmunkai.github.io/league-of-titans/
+
+That plain address is the whole link. The page opens on the chapter's sheet and
+loads the live numbers by itself — nothing to paste, nothing to remember.
 
 ---
 
@@ -50,12 +53,26 @@ free Guardian Angel is theirs.
 Member of the month is **Dominic Yeoh Wei Ching** on 241, from 2 visitors,
 6 referrals given and 3 one-to-ones.
 
-Two things the sheet is missing, both flagged on the page rather than guessed at:
+These numbers were audited a second time straight from the raw cells, sharing no code
+with the scoring engine: all five teams and all 27 members reconcile exactly. The 1-2-1
+column, which Sheets stores as the date 2 Jan 2001, is corroborated by a second tab that
+labels the same column. Nobody is in the sheet but off a team, nobody is on a team but
+missing from the sheet, and no name is spelled two ways. Sharon Lee missed two meetings
+and Shane Tan one; everyone else has perfect attendance.
+
+Three things worth your judgement, all flagged on the page rather than guessed at:
 
 - **No training is logged for September**, so nobody earned the 20-a-session.
   If the column simply has not been filled in, fill it in and hit Refresh.
 - **There is no GameLog tab**, so no item purchases, visitor conversions, theme
   bonuses or level-ups are counted. September is pure meeting activity.
+- **The carried-forward figures cannot be re-derived.** Applying today's rules to the
+  `past 5 month data` tab gives Big Hero 1,555 / Team Pokemon 2,017 / 6 Braincells 2,100
+  / Heng Ong Huat 1,164 / Backstreet Boys 1,272 — nothing like the 1,496 / 515 / 1,171 /
+  1,403 / 750 carried in. That is expected if the earlier months used different point
+  values, different team line-ups, or had item costs taken off. They are taken on trust
+  from the Groups slide. If they ever need defending, the workings for April–August have
+  to come from wherever that slide was built.
 
 Once the month closes, the season totals above become the new carry-forward on
 the RULES tab.
@@ -78,9 +95,19 @@ Paste **either** of these into the box and hit Load:
   as **Anyone with the link — Viewer**, and you have to list the tab names yourself
   (the box is pre-filled with the usual ones). A plain sheet link cannot list its own tabs.
 
-Then press **Copy One-Click Link** and bookmark what it gives you. That link opens the
-page with the live numbers already loaded, so you never paste anything again. The page
-stores nothing, which is why the source lives in the bookmark.
+The page already opens on the chapter's sheet, so the plain address is all you need to
+bookmark. To point it somewhere else, press **Copy One-Click Link** — it gives you the
+shortest link that still loads the right thing:
+
+| Link | What it opens |
+|---|---|
+| `.../league-of-titans/` | the chapter's sheet — the normal case |
+| `.../#s=<sheet id>` | a different Google Sheet |
+| `.../#e=<deployment id>` | an Apps Script deployment |
+| `.../#demo` | sample numbers, nothing real |
+
+The page stores nothing at all, which is why the source lives in the address rather
+than in the browser.
 
 **REFRESH POINTS** at the top of the page re-reads the sheet at any time.
 
