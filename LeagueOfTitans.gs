@@ -28,15 +28,19 @@ var CONFIG = {
   // Leave as null to auto-detect every PALMS-shaped tab (safer to start).
   WEEK_TABS: null,
 
-  // Tabs to NEVER treat as a week (the 5-month master, archives, etc.)
-  EXCLUDE_TABS: ['Apr 2026 - Aug 2026', 'Master', '5 Month', 'Archive', 'Leaderboard'],
+  // Substrings of tab names to NEVER treat as a meeting week. Keep these
+  // narrow: the real weekly tabs are called "Master list 1st week", so a
+  // blanket 'Master' here would throw away the entire month.
+  EXCLUDE_TABS: ['past 5 month', 'past ', 'cumulative', 'archive', 'leaderboard',
+                 'rolling', 'dashboard', 'mtl ', 'formula', 'settings', 'mentor'],
 
   TEAMS_TAB: 'Teams',
   GAMELOG_TAB: 'GameLog',
   TRAINING_TAB: 'Training',
 
   // Which column of the Training tab is the current month.
-  // Leave as null and it takes the rightmost month column that has numbers.
+  // Leave as null and it takes the rightmost month column in the sheet.
+  // The dashboard can switch months without touching this.
   CURRENT_MONTH: null
 };
 
@@ -72,6 +76,7 @@ function buildPayload() {
     ok: true,
     generatedAt: new Date().toISOString(),
     month: training.month,
+    trainingMonths: training.months,
     tabs: getTabNames(),
     weeks: readWeeks(),
     teams: readTeams(),
@@ -320,38 +325,40 @@ function readTraining() {
   }
   if (nameCol === -1) return { rows: [], month: '' };
 
-  var monthCol = pickMonthColumn(grid, hr, header);
-  if (monthCol === -1) return { rows: [], month: '' };
+  // Every month column, so the dashboard can switch months on its own.
+  var cols = [], labels = [];
+  for (var c = 0; c < header.length; c++) {
+    if (!header[c] || !MONTH_RE.test(header[c]) || header[c].indexOf('total') !== -1) continue;
+    cols.push(c);
+    labels.push(String(grid[hr][c] || '').trim());
+  }
+  if (!cols.length) return { rows: [], month: '', months: [] };
+
+  var monthCol = pickMonthColumn(cols, labels);
+  var current = String(grid[hr][monthCol] || '').trim();
 
   var out = [];
   for (var r = hr + 1; r < grid.length; r++) {
     var nm = String(grid[r][nameCol] || '').trim();
     if (!nm || nm.toLowerCase() === 'total') continue;
-    out.push({ name: nm, sessions: num(grid[r][monthCol]) });
+    var months = {};
+    for (var i = 0; i < cols.length; i++) months[labels[i].toLowerCase()] = num(grid[r][cols[i]]);
+    out.push({ name: nm, sessions: months[current.toLowerCase()] || 0, months: months });
   }
-  return { rows: out, month: String(grid[hr][monthCol] || '').trim() };
+  return { rows: out, month: current, months: labels };
 }
 
 var MONTH_RE = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
 
-function pickMonthColumn(grid, hr, header) {
+// The month being run now is the rightmost month column in the sheet, whether
+// or not anyone has filled it in yet. Picking "the last column with numbers"
+// silently reads LAST month whenever this month is still blank.
+function pickMonthColumn(cols, labels) {
   if (CONFIG.CURRENT_MONTH) {
     var want = String(CONFIG.CURRENT_MONTH).trim().toLowerCase();
-    var exact = header.indexOf(want);
-    if (exact !== -1) return exact;
+    for (var i = 0; i < labels.length; i++) if (labels[i].toLowerCase() === want) return cols[i];
   }
-  // Rightmost month column with any numbers under it.
-  for (var c = header.length - 1; c >= 0; c--) {
-    if (!header[c] || !MONTH_RE.test(header[c])) continue;
-    for (var r = hr + 1; r < grid.length; r++) {
-      if (num(grid[r][c]) > 0) return c;
-    }
-  }
-  // Nothing filled in yet — fall back to the rightmost month heading.
-  for (var c2 = header.length - 1; c2 >= 0; c2--) {
-    if (header[c2] && MONTH_RE.test(header[c2])) return c2;
-  }
-  return -1;
+  return cols[cols.length - 1];
 }
 
 function findTrainingHeader(grid) {

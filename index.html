@@ -409,10 +409,15 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#8d8375;font-size:11px;l
 
     <div class="row" style="margin-top:14px">
       <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
-        <input id="tabs" value="Teams, GameLog, Training, Week 1, Week 2, Week 3, Week 4, Week 5"></div>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, GameLog"></div>
     </div>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
+
+    <div class="row" style="margin-top:14px">
+      <div style="width:240px"><label>Which month's training counts</label>
+        <select id="trainMonth" onchange="TRAIN_MONTH=this.value;render()"></select></div>
+    </div>
 
     <div class="row" style="margin-top:15px">
       <button class="b" onclick="load()">LOAD DATA</button>
@@ -521,6 +526,7 @@ var ROSTER = [];               // [{name, team}] — live, editable, drives all 
 var ROSTER_BASE = [];          // roster exactly as the sheet had it, for Reset
 var MOVES = [];                // roster changes made on this page since load
 var PARSE_WARN = [];           // anything the loader could not understand
+var TRAIN_MONTH = null;        // which month's training counts; null = the sheet's latest
 
 /* ── Point values ───────────────────────────────────────────────────── */
 var RULES = [
@@ -539,8 +545,23 @@ var TEAMS = ['Big Hero', 'Team Pokemon', '6 Braincells', 'Heng Ong Huat', 'Backs
 var PALETTE = ['#e01b24', '#ffd029', '#3aa0ff', '#21c25c', '#b06cff', '#ff8c37', '#00d5c8', '#ff6ab0'];
 var COLORS = { 'Big Hero': '#e01b24', 'Team Pokemon': '#ffd029', '6 Braincells': '#3aa0ff',
                'Heng Ong Huat': '#21c25c', 'Backstreet Boys': '#b06cff' };
-var CARRY = {};
-var i0; for (i0 = 0; i0 < TEAMS.length; i0++) CARRY[TEAMS[i0]] = 0;
+/* The line-up from the Groups slide, used only when the sheet has no Teams
+   tab of its own. Add one and it takes over. */
+var DEFAULT_ROSTER = {
+  'Big Hero':        ['Grace Tiau', 'Connie Chye Loy Fong', 'Eric Choong', 'Crystal Low Ming Tong'],
+  'Team Pokemon':    ['Raymond Phang', 'Chiew Jian Jin', 'Dominic Yeoh Wei Ching', 'Sharon Lee',
+                      'Max Low Yong Wen', 'Patrick Soo Kwok Choy'],
+  '6 Braincells':    ['Mogo Cheok Yee Herng', 'Michelle Fung', 'Alex Ang', 'Daniel Chew',
+                      'Eric Chee', 'Kingsley Yap'],
+  'Heng Ong Huat':   ['Surely Lim', 'Muniyandy S', 'Qingni Fong', 'Regene Ng'],
+  'Backstreet Boys': ['Shane Tan', 'Poh Pin Penny Lim', 'Jimmy Lim Jun Yew', 'Jason Lai',
+                      'wyman soh', 'Joanne Kong', 'Sheik Yoong Ong']
+};
+
+/* Points banked before September 2026. */
+var CARRY = { 'Big Hero': 1496, 'Team Pokemon': 515, '6 Braincells': 1171,
+              'Heng Ong Huat': 1403, 'Backstreet Boys': 750 };
+var i0; for (i0 = 0; i0 < TEAMS.length; i0++) if (CARRY[TEAMS[i0]] === undefined) CARRY[TEAMS[i0]] = 0;
 
 /* ── The scoring categories an item can point at ─────────────────────── */
 var CATS = [
@@ -810,22 +831,43 @@ function loadSheet(id, quiet) {
 
   for (i = 0; i < want.length; i++) {
     (function (tab) {
-      var u = 'https://docs.google.com/spreadsheets/d/' + id +
-              '/gviz/tq?tqx=out:json;responseHandler:__CB__&headers=0&sheet=' + encodeURIComponent(tab);
-      jsonp(u, function (res) {
-        if (res && res.status === 'error') { misses.push(tab); tick(); return; }
-        var grid = gvizGrid(res);
-        if (grid && grid.length) got[tab] = grid; else misses.push(tab);
-        tick();
-      }, function () { hardFail = 1; misses.push(tab); tick(); }, 25000);
+      /* One header row covers most tabs. A tab with a title line above the
+         header needs two, so try that before giving up on it. */
+      fetchTab(id, tab, 1, function (grid) {
+        if (grid && classify(tab, grid) !== 'skip') { got[tab] = grid; tick(); return; }
+        fetchTab(id, tab, 2, function (grid2) {
+          if (grid2 && classify(tab, grid2) !== 'skip') got[tab] = grid2;
+          else if (grid) got[tab] = grid;
+          else misses.push(tab);
+          tick();
+        }, function () { if (grid) got[tab] = grid; else misses.push(tab); tick(); });
+      }, function (fatal) { if (fatal) hardFail = 1; misses.push(tab); tick(); });
     })(want[i]);
   }
 }
 
-/* gviz hands back columns and rows; flatten to a plain 2D array. */
+function fetchTab(id, tab, headerRows, ok, fail) {
+  var u = 'https://docs.google.com/spreadsheets/d/' + id +
+          '/gviz/tq?tqx=out:json;responseHandler:__CB__&headers=' + headerRows +
+          '&sheet=' + encodeURIComponent(tab);
+  jsonp(u, function (res) {
+    if (res && res.status === 'error') { fail(false); return; }
+    var grid = gvizGrid(res);
+    if (grid && grid.length) ok(grid); else fail(false);
+  }, function () { fail(true); }, 25000);
+}
+
+/* gviz hands back the header separately from the data. Put it back on top,
+   because the header cells themselves come through as null wherever the
+   column is numeric. */
 function gvizGrid(res) {
   if (!res || !res.table || !res.table.rows) return null;
-  var rows = res.table.rows, out = [], r, c, cell, v;
+  var cols = res.table.cols || [], rows = res.table.rows, out = [], r, c, cell, v;
+  var head = [];
+  for (c = 0; c < cols.length; c++) head.push(cols[c].label == null ? '' : String(cols[c].label).trim());
+  var anyHead = 0;
+  for (c = 0; c < head.length; c++) if (head[c]) anyHead = 1;
+  if (anyHead) out.push(head);
   for (r = 0; r < rows.length; r++) {
     var line = [], cs = rows[r].c || [];
     for (c = 0; c < cs.length; c++) {
@@ -1113,7 +1155,7 @@ function zipRead(buf, e) {
 
 function build(grids) {
   RAWTABS = grids;
-  var pay = { ok: true, month: '', weeks: [], teams: [], training: [], gameLog: [] };
+  var pay = { ok: true, month: '', weeks: [], teams: [], training: [], gameLog: [], trainingMonths: [] };
   var k, grid, kind, unread = [];
 
   for (k in grids) {
@@ -1123,7 +1165,12 @@ function build(grids) {
     kind = classify(k, grid);
     if (kind === 'week') { var rows = readWeekGrid(grid); if (rows.length) pay.weeks.push({ tab: k, rows: rows }); }
     else if (kind === 'teams')    pay.teams = pay.teams.concat(readTeamsGrid(grid));
-    else if (kind === 'training') { var tr = readTrainingGrid(grid); pay.training = pay.training.concat(tr.rows); pay.month = pay.month || tr.month; }
+    else if (kind === 'training') {
+      var tr = readTrainingGrid(grid);
+      pay.training = pay.training.concat(tr.rows);
+      pay.month = pay.month || tr.month;
+      pay.trainingMonths = (pay.trainingMonths || []).concat(tr.months || []);
+    }
     else if (kind === 'gamelog')  pay.gameLog = pay.gameLog.concat(readGameLogGrid(grid));
     else unread.push(k);
   }
@@ -1139,15 +1186,36 @@ function classify(name, grid) {
   if (nm === 'teams' || nm === 'team') return 'teams';
   if (nm === 'gamelog' || nm === 'game log' || nm === 'log') return 'gamelog';
   if (nm === 'training') return 'training';
-  if (/^(apr|may|jun|jul|aug|sep|oct|nov|dec|jan|feb|mar)[a-z]* ?\d{4} ?[-–—] ?/i.test(String(name))) return 'skip';
-  if (nm.indexOf('master') !== -1 || nm.indexOf('archive') !== -1 || nm.indexOf('leaderboard') !== -1) return 'skip';
+  if (isAggregate(name, grid)) return 'skip';
 
+  /* Shape beats name. A tab with First Name and RGI is a meeting week even
+     when it is called "Master list 1st week". */
   if (findWeekHeader(grid) !== -1) return 'week';
   if (findGameLogHeader(grid) !== -1) return 'gamelog';
   if (findTeamsHeader(grid) !== -1) return 'teams';
   if (findTrainingHeader(grid).row !== -1) return 'training';
   return 'skip';
 }
+
+/* A tab holding several months at once — a 5-month roll-up, an archive, a
+   leaderboard. Counting one of these as a week would multiply the month. */
+function isAggregate(name, grid) {
+  var nm = norm(name), i;
+  var words = ['archive', 'leaderboard', 'cumulative', 'rolling', 'ytd', 'year to date',
+               'past', 'history', 'summary', 'dashboard'];
+  for (i = 0; i < words.length; i++) if (nm.indexOf(words[i]) !== -1) return true;
+  if (/\d+\s*month/.test(nm)) return true;
+  if (isMonthRange(name)) return true;
+  /* Or a title row above the data that spans a range of months. */
+  for (i = 0; i < Math.min(grid.length, 4); i++) {
+    var row = grid[i] || [];
+    for (var c = 0; c < Math.min(row.length, 4); c++) if (isMonthRange(row[c])) return true;
+  }
+  return false;
+}
+var MONTHWORD = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*';
+var RANGE_RE = new RegExp('^' + MONTHWORD + '\\s*\\d{4}\\s*[-–—]\\s*' + MONTHWORD + '\\s*\\d{4}', 'i');
+function isMonthRange(v) { return RANGE_RE.test(String(v == null ? '' : v).trim()); }
 
 function headerCells(grid, r) {
   var out = [], i, row = grid[r] || [];
@@ -1205,6 +1273,12 @@ function isOneToOne(raw, h) {
   if (h.replace(/[^0-9]/g, '') === '121') return true;
   if (h.indexOf('1-2-1') !== -1) return true;
   if (h.indexOf('1/2/2001') !== -1 || h.indexOf('1-2-2001') !== -1) return true;
+  /* An .xlsx export hands it over as the raw date serial, 36893 for 2 Jan 2001. */
+  var v = Number(raw);
+  if (!isNaN(v) && v > 30000 && v < 60000) {
+    var d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+    if (d.getUTCFullYear() === 2001 && d.getUTCMonth() <= 1 && d.getUTCDate() <= 2) return true;
+  }
   return false;
 }
 function readMemberRow(row, map) {
@@ -1241,7 +1315,11 @@ function readTeamsGrid(grid) {
     var row = grid[r] || [];
     var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
     var tm = String(row[teamCol] == null ? '' : row[teamCol]).trim();
-    if (nm && tm) out.push({ name: nm, team: tm });
+    /* A person's name is not a number, and neither is a team's. Without this
+       a sheet of figures can pass itself off as a roster. */
+    if (!nm || !tm) continue;
+    if (nm === String(Number(nm)) || tm === String(Number(tm))) continue;
+    out.push({ name: nm, team: tm });
   }
   return out;
 }
@@ -1249,39 +1327,64 @@ function readTeamsGrid(grid) {
 /* ── Training tab ───────────────────────────────────────────────────── */
 var MONTHRE = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
 function findTrainingHeader(grid) {
-  var limit = Math.min(grid.length, 12), r, c, i;
+  var limit = Math.min(grid.length, 12), r, c, i, nc;
   for (r = 0; r < limit; r++) {
     c = headerCells(grid, r);
-    if (eq(c, 'name') === -1 && !has(c, 'member')) continue;
-    for (i = 0; i < c.length; i++) if (c[i] && MONTHRE.test(c[i])) return { row: r, month: i };
+    nc = nameColumn(c);
+    if (nc === -1) continue;
+    for (i = 0; i < c.length; i++) if (i !== nc && c[i] && MONTHRE.test(c[i])) return { row: r, month: i };
   }
   return { row: -1, month: -1 };
 }
+
+/* The column holding people's names. Exact "name" first, then anything ending
+   in "name" — a title row glued on top turns it into "September 2026 Name". */
+function nameColumn(cells) {
+  var i = eq(cells, 'name');
+  if (i !== -1) return i;
+  for (i = 0; i < cells.length; i++) if (/(^| )name$/.test(cells[i])) return i;
+  for (i = 0; i < cells.length; i++) if (cells[i].indexOf('member') !== -1) return i;
+  return -1;
+}
+
+/* Trim a header down to just the month, so the picker reads "April 2026"
+   rather than whatever title row got stuck to the front of it. */
+function monthLabel(raw) {
+  var t = String(raw == null ? '' : raw).trim();
+  var m = /((jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*'?\d{2,4})/i.exec(t);
+  return m ? m[1].replace(/\s+/g, ' ') : t;
+}
 function readTrainingGrid(grid) {
   var f = findTrainingHeader(grid);
-  if (f.row === -1) return { rows: [], month: '' };
-  var cells = headerCells(grid, f.row), i, nameCol = eq(cells, 'name');
-  if (nameCol === -1) for (i = 0; i < cells.length; i++) if (cells[i].indexOf('member') !== -1) { nameCol = i; break; }
+  if (f.row === -1) return { rows: [], month: '', months: [] };
+  var cells = headerCells(grid, f.row), i, r, nameCol = nameColumn(cells);
   if (nameCol === -1) nameCol = 0;
 
-  /* Rightmost month column that actually has numbers in it — that is
-     almost always the month you are currently running. */
-  var best = f.month, r;
-  for (i = cells.length - 1; i >= 0; i--) {
-    if (!cells[i] || !MONTHRE.test(cells[i])) continue;
-    for (r = f.row + 1; r < grid.length; r++) {
-      if (num((grid[r] || [])[i]) > 0) { best = i; i = -1; break; }
-    }
-    if (i === -1) break;
+  /* Every month column, left to right. Anything called "total" is a sum of
+     the others, not a month, and the name column is not a month either. */
+  var cols = [], labels = [];
+  for (i = 0; i < cells.length; i++) {
+    if (i === nameCol || !cells[i] || !MONTHRE.test(cells[i]) || cells[i].indexOf('total') !== -1) continue;
+    cols.push(i);
+    labels.push(monthLabel((grid[f.row] || [])[i]));
   }
+  if (!cols.length) { cols = [f.month]; labels = [String((grid[f.row] || [])[f.month] || '').trim()]; }
+
+  /* The rightmost month is the one being run right now — whether or not
+     anybody has filled it in yet. Guessing by "which column has numbers"
+     silently reads last month when this month is still empty. */
+  var current = labels[labels.length - 1];
+
   var rows = [];
   for (r = f.row + 1; r < grid.length; r++) {
     var row = grid[r] || [];
     var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
     if (!nm || norm(nm) === 'total') continue;
-    rows.push({ name: nm, sessions: num(row[best]) });
+    var months = {};
+    for (i = 0; i < cols.length; i++) months[norm(labels[i])] = num(row[cols[i]]);
+    rows.push({ name: nm, sessions: months[norm(current)] || 0, months: months });
   }
-  return { rows: rows, month: String((grid[f.row] || [])[best] || '').trim() };
+  return { rows: rows, month: current, months: labels };
 }
 
 /* ── GameLog tab — read by heading, so column order does not matter ─── */
@@ -1345,7 +1448,7 @@ function readGameLogGrid(grid) {
 /* ── Apps Script payload ────────────────────────────────────────────── */
 function normalise(res) {
   var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
-              training: res.training || [], gameLog: [] };
+              training: res.training || [], trainingMonths: res.trainingMonths || [], gameLog: [] };
   if (res.gameLogRaw && res.gameLogRaw.headers) {
     var grid = [res.gameLogRaw.headers].concat(res.gameLogRaw.rows || []);
     pay.gameLog = readGameLogGrid(grid);
@@ -1366,10 +1469,20 @@ function normalise(res) {
 function adopt(pay, sourceName, url) {
   DATA = pay;
   ROSTER = [];
-  var i;
+  var i, t;
   for (i = 0; i < (pay.teams || []).length; i++) ROSTER.push({ name: pay.teams[i].name, team: pay.teams[i].team });
+  if (!ROSTER.length) {
+    for (t in DEFAULT_ROSTER) {
+      if (!DEFAULT_ROSTER.hasOwnProperty(t)) continue;
+      for (i = 0; i < DEFAULT_ROSTER[t].length; i++) ROSTER.push({ name: DEFAULT_ROSTER[t][i], team: t });
+    }
+    PARSE_WARN.push('No <b>Teams</b> tab in that sheet, so the line-up from the Groups slide is being ' +
+      'used instead. Add a Teams tab and it takes over — the Roster board has a <b>Copy For Sheet</b> ' +
+      'button that gives you exactly what to paste.');
+  }
   ROSTER_BASE = ROSTER.slice();
   MOVES = [];
+  TRAIN_MONTH = null;
   syncTeams();
 
   var bits = [];
@@ -1415,7 +1528,17 @@ function compute() {
   /* ── Step 1: every member's own points ───────────────────────────── */
   var teamOf = {}, trainOf = {}, members = {};
   for (i = 0; i < ROSTER.length; i++) teamOf[norm(ROSTER[i].name)] = ROSTER[i].team;
-  for (i = 0; i < (DATA.training || []).length; i++) trainOf[norm(DATA.training[i].name)] = DATA.training[i].sessions;
+  var tKey = norm(trainMonth()), tAny = 0;
+  for (i = 0; i < (DATA.training || []).length; i++) {
+    var tr = DATA.training[i];
+    var got = (tr.months && tr.months[tKey] !== undefined) ? tr.months[tKey] : tr.sessions;
+    trainOf[norm(tr.name)] = num(got);
+    if (num(got) > 0) tAny = 1;
+  }
+  if ((DATA.training || []).length && !tAny)
+    warn('Nobody has any training logged for <b>' + esc(trainMonth()) + '</b>, so no team is getting ' +
+         'training points. If that column just has not been filled in yet, fill it in and hit Refresh — ' +
+         'or pick a different month on the Data tab.');
 
   function slot(name) {
     var key = norm(name);
@@ -1721,6 +1844,12 @@ function compute() {
   return { teams: teamList, members: members, weekNames: weekNames, plays: plays, warnings: W, bottomPre: bottomPre };
 }
 
+/* The month whose training counts: whatever was picked, else the sheet's latest. */
+function trainMonth() {
+  if (TRAIN_MONTH) return TRAIN_MONTH;
+  return (DATA && DATA.month) || '';
+}
+
 function catTF(key) { var i; for (i = 0; i < CATS.length; i++) if (CATS[i].key === key) return CATS[i].key !== 'manual'; return false; }
 
 /* Mejai's: which weeks did this team clear the bar? */
@@ -1758,7 +1887,8 @@ function buildNav() {
 function toShop() { go('broadcast'); $('tpl').value = 'shop'; render(); }
 
 function render() {
-  buildRules(); buildCosts(); buildSettings(); buildCarry(); buildTeamNames(); buildOOO(); buildSchema(); fillSelects();
+  buildRules(); buildCosts(); buildSettings(); buildCarry(); buildTeamNames(); buildOOO(); buildSchema();
+  fillSelects(); fillTrainMonths();
   if (!DATA) { $('globalWarn').innerHTML = ''; return; }
   var R = compute();
   showWarnings(R);
@@ -1775,6 +1905,15 @@ function showWarnings(R) {
   $('globalWarn').innerHTML = all.length
     ? '<div class="warn"><b>' + all.length + ' thing' + (all.length === 1 ? '' : 's') +
       ' to look at</b><br><br>' + all.join('<br><br>') + '</div>' : '';
+}
+
+function fillTrainMonths() {
+  var sel = $('trainMonth'); if (!sel) return;
+  var list = (DATA && DATA.trainingMonths) || [], i, h = '';
+  if (!list.length) { sel.innerHTML = '<option>' + esc(trainMonth() || 'no Training tab loaded') + '</option>'; return; }
+  for (i = 0; i < list.length; i++)
+    h += '<option' + (norm(list[i]) === norm(trainMonth()) ? ' selected' : '') + '>' + esc(list[i]) + '</option>';
+  if (sel.innerHTML !== h) sel.innerHTML = h;
 }
 
 function fillSelects() {

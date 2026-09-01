@@ -31,6 +31,37 @@ git add -A && git commit -m "what changed" && git push
 
 ---
 
+## Where the season stands
+
+Read from the sheet on 1 September 2026 — four meeting weeks, no items bought yet.
+
+| # | Team | Visitors | Referrals | 1-2-1s | Training | Attendance | September | Carried in | **Season** |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Heng Ong Huat | 300 | 80 | 32 | 0 | 20 | 432 | 1,403 | **1,835** |
+| 2 | Big Hero | 200 | 50 | 34 | 0 | 20 | 304 | 1,496 | **1,800** |
+| 3 | 6 Braincells | 100 | 150 | 22 | 0 | 30 | 302 | 1,171 | **1,473** |
+| 4 | Team Pokemon | 400 | 90 | 38 | 0 | 25 | 553 | 515 | **1,068** |
+| 5 | Backstreet Boys | 0 | 125 | 60 | 0 | 30 | 215 | 750 | **965** |
+
+Heng Ong Huat take top spot from Big Hero. Team Pokemon had the best month by a
+distance (+553) and climb off the bottom, which Backstreet Boys inherit — so the
+free Guardian Angel is theirs.
+
+Member of the month is **Dominic Yeoh Wei Ching** on 241, from 2 visitors,
+6 referrals given and 3 one-to-ones.
+
+Two things the sheet is missing, both flagged on the page rather than guessed at:
+
+- **No training is logged for September**, so nobody earned the 20-a-session.
+  If the column simply has not been filled in, fill it in and hit Refresh.
+- **There is no GameLog tab**, so no item purchases, visitor conversions, theme
+  bonuses or level-ups are counted. September is pure meeting activity.
+
+Once the month closes, the season totals above become the new carry-forward on
+the RULES tab.
+
+---
+
 ## Connecting your data
 
 Open the page, go to the **DATA** tab. There are two routes in.
@@ -74,7 +105,7 @@ will tell you to upload the newer export instead.
 |---|---|
 | Weekly PALMS tabs | A header row containing `First Name` and `RGI`. One tab per meeting week. The header can sit on any row. |
 | `Teams` | Column A member name, column B team name. |
-| `Training` | A `Name` column plus one column per month. It takes the rightmost month that has numbers in it. |
+| `Training` | A `Name` column plus one column per month. It reads every month and uses the rightmost one, whether or not it is filled in yet. Change it with the month picker on the DATA tab. |
 | `GameLog` | See below. |
 
 `templates/Teams.csv` and `templates/GameLog.csv` are ready to paste into cell A1.
