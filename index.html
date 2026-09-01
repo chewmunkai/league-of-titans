@@ -1,0 +1,2754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEAGUE OF TITANS — CGC Season 2 Command Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0a09; --panel:#16130f; --panel2:#1e1a14; --panel3:#272118; --line:#3a3227;
+  --gold:#ffd029; --gold-dim:#a8891a; --red:#e01b24; --green:#21c25c;
+  --blue:#3aa0ff; --purple:#b06cff; --orange:#ff8c37;
+  --text:#f2ece0; --muted:#8d8375;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink);color:var(--text);font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;padding-bottom:70px;
+  background-image:radial-gradient(ellipse 90% 45% at 50% -8%,rgba(255,208,41,.13),transparent 70%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px);}
+.wrap{max-width:1240px;margin:0 auto;padding:0 18px}
+
+header{padding:34px 0 18px;text-align:center}
+.badge{display:inline-block;background:var(--gold);color:#2a2109;font-family:'Press Start 2P',monospace;
+  font-size:8px;letter-spacing:1px;padding:8px 13px;border-radius:5px;transform:rotate(-1.5deg);
+  box-shadow:0 5px 0 var(--gold-dim),0 5px 22px rgba(255,208,41,.28);margin-bottom:18px}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(17px,3.9vw,34px);line-height:1.45;color:var(--gold);
+  text-shadow:3px 3px 0 var(--red),6px 6px 0 rgba(0,0,0,.55)}
+.sub{color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:14px;
+  letter-spacing:2.6px;text-transform:uppercase;margin-top:13px}
+
+.topbar{display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.src{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 13px}
+.src b{color:var(--text);font-weight:600}
+.src.live b{color:var(--green)}
+.src.demo b{color:var(--orange)}
+
+nav{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:24px 0 20px}
+nav button{background:transparent;border:1px solid var(--line);color:var(--muted);
+  font-family:'Press Start 2P',monospace;font-size:8.5px;padding:11px 13px;border-radius:6px;
+  cursor:pointer;transition:.14s;letter-spacing:.5px}
+nav button:hover{color:var(--text);border-color:var(--gold-dim)}
+nav button.on{background:var(--gold);color:#2a2109;border-color:var(--gold);box-shadow:0 3px 0 var(--gold-dim)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:22px;margin-bottom:18px}
+.panel h2{font-family:'Press Start 2P',monospace;font-size:10.5px;color:var(--gold);margin-bottom:16px;
+  display:flex;align-items:center;gap:9px;letter-spacing:.4px;line-height:1.5}
+.panel h2::before{content:'';width:5px;height:15px;background:var(--red);border-radius:1px;flex:none}
+.panel h3{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);margin:20px 0 11px}
+
+label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:11.5px;letter-spacing:1.6px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);
+  padding:10px 12px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+select{cursor:pointer}
+input[type=checkbox]{width:auto;margin-right:8px;vertical-align:-1px;accent-color:var(--gold)}
+button.b{background:var(--gold);color:#2a2109;border:none;border-radius:6px;cursor:pointer;
+  font-family:'Press Start 2P',monospace;font-size:8.5px;padding:13px 15px;
+  box-shadow:0 3px 0 var(--gold-dim);transition:.1s;white-space:nowrap}
+button.b:hover{transform:translateY(1px);box-shadow:0 2px 0 var(--gold-dim)}
+button.b:active{transform:translateY(3px);box-shadow:none}
+button.b:disabled{opacity:.4;cursor:not-allowed;transform:none}
+button.g{background:transparent;color:var(--gold);border:1px solid var(--line);box-shadow:none}
+button.g:hover{border-color:var(--gold);transform:none}
+button.sm{font-size:7.5px;padding:9px 11px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:end}
+.grid{display:grid;gap:12px}
+.status{margin-top:12px;font-size:13px;color:var(--muted);min-height:18px;line-height:1.6}
+.status.err{color:#ff8a8f}
+.status.ok{color:var(--green)}
+.status.busy{color:var(--gold)}
+.warn{background:rgba(224,27,36,.1);border:1px solid rgba(224,27,36,.35);border-radius:6px;
+  padding:12px 14px;font-size:13px;color:#ffb3b7;margin-top:12px;line-height:1.65}
+.warn.soft{background:rgba(255,208,41,.08);border-color:rgba(255,208,41,.3);color:#ffe28a}
+.note{font-size:13px;color:var(--muted);line-height:1.65;margin-top:12px}
+.note b{color:var(--text)}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px}
+
+.rank{display:grid;grid-template-columns:48px 1fr 140px;gap:15px;align-items:center;background:var(--panel2);
+  border:1px solid var(--line);border-left:5px solid var(--line);border-radius:9px;padding:15px 17px;
+  margin-bottom:9px;cursor:pointer;transition:.14s;animation:pop .45s cubic-bezier(.2,.9,.3,1.3) backwards}
+.rank:hover{border-color:var(--gold-dim);transform:translateX(3px)}
+@keyframes pop{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.pos{font-family:'Press Start 2P',monospace;font-size:16px;text-align:center;color:var(--gold-dim)}
+.rank.p1 .pos{color:var(--gold)}
+.tname{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.7px;text-transform:uppercase}
+.tmeta{font-size:12px;color:var(--muted);margin-top:3px}
+.tpts{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold);text-align:right}
+.tdelta{font-size:12px;color:var(--green);text-align:right;margin-top:5px}
+.tdelta.neg{color:#ff8a8f}
+.bar{height:4px;background:#241f18;border-radius:2px;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:2px;animation:grow .8s ease-out}
+@keyframes grow{from{width:0}}
+.pill{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;
+  text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-left:6px;vertical-align:1px;
+  background:rgba(255,140,55,.16);color:var(--orange)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:16px}
+.card .k{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1.6px;
+  text-transform:uppercase;color:var(--muted)}
+.card .v{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold);margin:9px 0 5px;line-height:1.4}
+.card .d{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:'Barlow Condensed',sans-serif;font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;
+  color:var(--muted);text-align:right;padding:9px;border-bottom:1px solid var(--line);white-space:nowrap;
+  cursor:pointer;user-select:none}
+th:hover{color:var(--gold)}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px;border-bottom:1px solid rgba(58,50,39,.5);text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:rgba(255,208,41,.05)}
+td.nm{font-weight:600}
+td.sub2{color:var(--muted);font-size:13px;text-align:left}
+.tot{color:var(--gold);font-weight:700}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.neg{color:#ff8a8f}
+
+.chip{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.2px;
+  padding:3px 7px;border-radius:3px;text-transform:uppercase;margin-left:6px}
+.chip.a{background:rgba(33,194,92,.16);color:var(--green)}
+.chip.m{background:rgba(58,160,255,.16);color:var(--blue)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:middle;flex:none}
+
+.mvp{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.mvpHero{background:linear-gradient(150deg,rgba(255,208,41,.13),rgba(255,208,41,.02) 55%,transparent);
+  border:1px solid var(--gold-dim);border-radius:11px;padding:22px;position:relative;overflow:hidden}
+.mvpHero::after{content:"\1F451";position:absolute;right:-6px;top:-10px;font-size:96px;opacity:.09;line-height:1}
+.mvpCrown{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:1.4px;color:var(--gold-dim)}
+.mvpName{font-family:'Press Start 2P',monospace;font-size:clamp(13px,2.6vw,20px);color:var(--gold);
+  margin:13px 0 9px;line-height:1.5;text-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.mvpTeam{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text)}
+.mvpPts{font-family:'Press Start 2P',monospace;font-size:24px;color:var(--text);margin:16px 0 4px}
+.mvpLine{font-size:13.5px;color:var(--muted);line-height:1.75;margin-top:12px}
+.podium{display:flex;flex-direction:column;gap:9px}
+.pod{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.pod .n{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--gold-dim);text-align:center}
+.pod .who{font-weight:600;font-size:15px}
+.pod .whoTeam{font-size:12px;color:var(--muted);margin-top:2px}
+.pod .p{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--gold)}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.catbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:13px}
+.catbox .ck{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--muted)}
+.catbox .cv{font-weight:700;font-size:15px;margin:6px 0 3px}
+.catbox .cd{font-size:12px;color:var(--gold)}
+
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px;margin-top:6px}
+.col{background:var(--panel2);border:1px solid var(--line);border-top:4px solid var(--line);
+  border-radius:9px;padding:13px;min-height:150px;transition:.13s}
+.col.over{border-color:var(--gold);background:rgba(255,208,41,.07);transform:translateY(-2px)}
+.colHead{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.colName{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.6px;
+  text-transform:uppercase;line-height:1.2}
+.colMeta{font-size:11.5px;color:var(--muted);margin-bottom:11px}
+.pchip{background:var(--panel3);border:1px solid var(--line);border-radius:7px;padding:10px;
+  margin-bottom:7px;cursor:grab;transition:.12s}
+.pchip:hover{border-color:var(--gold-dim);background:#2f2819}
+.pchip.drag{opacity:.35}
+.pchip .pn{display:block;font-weight:600;font-size:13.5px;line-height:1.35;margin-bottom:7px}
+.pchip .r2{display:flex;align-items:center;gap:8px}
+.pchip .pp{font-size:11.5px;color:var(--gold);font-variant-numeric:tabular-nums;flex:none;
+  background:rgba(255,208,41,.1);border-radius:4px;padding:2px 7px}
+.pchip .mv{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:5px;
+  padding:4px 6px;font-size:11.5px;flex:1;min-width:0;cursor:pointer}
+.col.free{border-top-color:var(--red)}
+.grabhint{font-size:11.5px;color:var(--muted);font-style:italic;padding:6px 2px}
+
+.shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:13px}
+.item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:17px;
+  display:flex;flex-direction:column;border-top:4px solid var(--line)}
+.item.held{border-color:var(--gold-dim);box-shadow:0 0 0 1px rgba(255,208,41,.16)}
+.itemTop{display:flex;justify-content:space-between;align-items:start;gap:9px;margin-bottom:9px}
+.itemName{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.5px;
+  text-transform:uppercase;line-height:1.2}
+.itemType{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--muted);margin-top:3px}
+.itemCost{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--gold);white-space:nowrap;flex:none}
+.itemPlain{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:11px}
+.itemHold{margin-top:auto;border-top:1px solid var(--line);padding-top:11px;font-size:12.5px;color:var(--muted);line-height:1.7}
+.itemHold b{color:var(--text)}
+.holder{display:flex;align-items:center;gap:6px;margin-top:5px}
+
+.aud{border-left:2px solid var(--line);margin-left:8px;padding-left:16px}
+.aud .step{position:relative;padding:11px 0;border-bottom:1px solid rgba(58,50,39,.5)}
+.aud .step::before{content:'';position:absolute;left:-21px;top:17px;width:9px;height:9px;border-radius:50%;
+  background:var(--panel);border:2px solid var(--line)}
+.aud .step.hit::before{background:var(--gold);border-color:var(--gold)}
+.aud .step.cut::before{background:var(--red);border-color:var(--red)}
+.aud .sTop{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.aud .sName{font-weight:600;font-size:14.5px}
+.aud .sDelta{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);white-space:nowrap}
+.aud .sDelta.z{color:var(--muted)}
+.aud .sDelta.n{color:#ff8a8f}
+.aud .sWhy{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.6}
+.aud .sRun{font-size:12px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+.aud .sRun b{color:var(--text)}
+
+.wk{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-top:9px}
+.wkbox{background:var(--panel3);border:1px solid var(--line);border-radius:7px;padding:10px;text-align:center}
+.wkbox.hit{border-color:var(--green);background:rgba(33,194,92,.1)}
+.wkbox .wl{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--muted)}
+.wkbox .wv{font-family:'Press Start 2P',monospace;font-size:11px;margin:7px 0 4px;color:var(--muted)}
+.wkbox.hit .wv{color:var(--green)}
+.wkbox .ws{font-size:11px;color:var(--muted)}
+
+.drop{border:2px dashed var(--line);border-radius:9px;padding:26px 18px;text-align:center;
+  color:var(--muted);font-size:13.5px;line-height:1.7;transition:.14s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--gold);color:var(--text);background:rgba(255,208,41,.05)}
+.drop b{color:var(--text)}
+.steps{font-size:13.5px;color:var(--muted);line-height:1.75}
+.steps li{margin:0 0 9px 20px;padding-left:4px}
+.steps li b{color:var(--text)}
+code{background:var(--panel3);border:1px solid var(--line);border-radius:4px;padding:1px 6px;
+  font-size:12.5px;color:var(--gold);word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+textarea#msg{min-height:330px;line-height:1.7;font-size:14.5px}
+textarea#paste{min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.hide{display:none}
+svg text{font-family:'Barlow Condensed',sans-serif;fill:#8d8375;font-size:11px;letter-spacing:1px}
+.legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted);align-items:center}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+@media(max-width:760px){
+  .rank{grid-template-columns:36px 1fr;gap:10px}
+  .tpts,.tdelta{grid-column:2;text-align:left}
+  .mvp{grid-template-columns:1fr}
+  .panel{padding:17px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="badge">LEVEL UP</div>
+  <h1>LEAGUE OF TITANS</h1>
+  <div class="sub">BNI Titan &middot; CGC Season 2 &middot; Command Centre</div>
+  <div class="topbar">
+    <button class="b" onclick="refresh()" id="refreshBtn">&#8635; REFRESH POINTS</button>
+    <button class="b g" onclick="go('data')">CHANGE SOURCE</button>
+    <span class="src" id="srcTag">No data loaded yet</span>
+  </div>
+</header>
+
+<nav id="nav"></nav>
+<div id="globalWarn"></div>
+
+<!-- ══ OVERVIEW ══ -->
+<section id="v-overview" class="hide">
+  <div class="panel"><h2>Season Standings</h2><div id="standings"></div>
+    <div class="note">Tap any team to open its full breakdown.</div></div>
+
+  <div class="panel"><h2>Most Valuable Player</h2>
+    <div class="mvp">
+      <div class="mvpHero" id="mvpHero"></div>
+      <div class="podium" id="mvpPodium"></div>
+    </div>
+    <h3>Best in each category</h3>
+    <div class="catgrid" id="mvpCats"></div>
+    <div class="note">Ranked on points earned this month from meeting activity. Manual bonuses in the
+      game log go to the team, not to one person, so they are not counted here.</div></div>
+
+  <div class="panel"><h2>At A Glance</h2><div class="cards" id="glance"></div></div>
+  <div class="panel"><h2>Momentum — Points Per Week</h2><div id="chart"></div><div class="legend" id="legend"></div></div>
+  <div class="panel"><h2>Where The Points Came From</h2><div class="scroll"><table id="breakdown"></table></div>
+    <div class="note">Every column here is traceable. Open a team and scroll to <b>Audit Trail</b> to see
+      each step from raw activity to the final number.</div></div>
+</section>
+
+<!-- ══ TEAMS ══ -->
+<section id="v-team" class="hide">
+  <div class="panel"><h2>Team Dossier</h2>
+    <label>Choose team</label><select id="teamPick" onchange="render()"></select></div>
+  <div id="dossier"></div>
+</section>
+
+<!-- ══ MEMBERS ══ -->
+<section id="v-members" class="hide">
+  <div class="panel"><h2>Member Leaderboard</h2>
+    <div class="row">
+      <div style="flex:1;min-width:180px"><label>Search</label>
+        <input id="search" placeholder="Type a name…" oninput="render()"></div>
+      <div style="width:200px"><label>Team</label>
+        <select id="memFilter" onchange="render()"></select></div>
+    </div>
+    <div class="note">Click any column heading to sort by it.</div>
+    <div class="scroll" style="margin-top:14px"><table id="members"></table></div></div>
+</section>
+
+<!-- ══ ROSTER ══ -->
+<section id="v-roster" class="hide">
+  <div class="panel"><h2>Roster Board</h2>
+    <div class="note" style="margin:0 0 14px">
+      <b>Drag a name onto another team</b> to move them — the whole board recalculates straight away.
+      On a phone, use the small arrow on each name instead. This is how you action a
+      <b>Bloodthirster</b>: move the stolen member across, then log the steal so the 300 cost is charged.
+      Nothing is written back to your sheet until you hit <b>Copy for Sheet</b>.
+    </div>
+    <div class="row" style="margin-bottom:16px">
+      <button class="b" onclick="copyRoster()">COPY FOR SHEET</button>
+      <button class="b g" onclick="undoMove()" id="undoBtn">UNDO LAST MOVE</button>
+      <button class="b g" onclick="resetRoster()">RESET TO SHEET</button>
+      <button class="b g" onclick="go('items')">LOG A STEAL</button>
+    </div>
+    <div id="moveLog"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="panel"><h2>Add / Rename</h2>
+    <div class="row" style="margin-bottom:18px">
+      <div style="flex:1;min-width:170px"><label>Add a member</label>
+        <input id="newName" placeholder="Full name, exactly as in the sheet"></div>
+      <div style="width:190px"><label>Team</label><select id="newTeam"></select></div>
+      <button class="b" onclick="addMember()">ADD</button>
+    </div>
+    <h3>Team names</h3>
+    <div class="grid" id="teamNames" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+    <div class="note">Rename a team here and every member moves with it.</div></div>
+</section>
+
+<!-- ══ ITEMS ══ -->
+<section id="v-items" class="hide">
+  <div class="panel"><h2>Item Shop — This Month</h2>
+    <div class="shop" id="shop"></div>
+    <div class="note"><b>Joker Wildcard</b> copies any item above. It only unlocks on 100% chapter
+      attendance at PowerTeam Training. Log it in the sheet as the item it copies and add
+      <b>Joker</b> in the notes.</div></div>
+
+  <div class="panel"><h2>Pick Order</h2>
+    <div class="row" style="margin-bottom:16px">
+      <div style="width:250px"><label>Order rule</label>
+        <select id="pickRule" onchange="render()">
+          <option value="lead">Leader picks first</option>
+          <option value="reverse">Last place picks first</option></select></div>
+      <button class="b g" onclick="toShop()">DRAFT THE ANNOUNCEMENT</button>
+    </div>
+    <div id="pickOrder"></div></div>
+
+  <div class="panel"><h2>Steal Resolver — Bloodthirster</h2>
+    <div class="note" style="margin:0 0 15px">Work out the swing <b>before</b> you commit. Pick who is
+      attacking, draw a name, and this shows you exactly what changes and whether a shield stopped it.</div>
+    <div class="row">
+      <div style="flex:1;min-width:150px"><label>Attacking team</label>
+        <select id="stealFrom" onchange="stealPreview()"></select></div>
+      <div style="flex:1;min-width:150px"><label>Target team</label>
+        <select id="stealTo" onchange="stealPreview()"></select></div>
+      <div style="flex:1;min-width:150px"><label>Member drawn</label>
+        <select id="stealWho" onchange="stealPreview()"></select></div>
+      <button class="b g" onclick="drawRandom()">DRAW AT RANDOM</button>
+    </div>
+    <div id="stealBox"></div>
+    <div class="row" style="margin-top:15px">
+      <button class="b" onclick="applySteal()" id="applyStealBtn">APPLY THE MOVE</button>
+      <button class="b g" onclick="copyStealRow()">COPY GAME LOG ROW</button>
+    </div>
+    <div class="note">Apply the move updates the board here so you can see the new standings.
+      Copy Game Log Row gives you the line to paste into your sheet so it survives a refresh.</div></div>
+
+  <div class="panel"><h2>Mejai's Tracker — Weekly Pace</h2><div id="mejai"></div></div>
+
+  <div class="panel"><h2>Game Log</h2><div class="scroll"><table id="log"></table></div>
+    <div class="note">Every row comes from the <b>GameLog</b> tab in your sheet. Anything the engine
+      could not understand is flagged in red above rather than silently ignored.</div></div>
+</section>
+
+<!-- ══ BROADCAST ══ -->
+<section id="v-broadcast" class="hide">
+  <div class="panel"><h2>Announcement Generator</h2>
+    <div class="row" style="margin-bottom:16px">
+      <div style="flex:1;min-width:190px"><label>Message type</label>
+        <select id="tpl" onchange="render()">
+          <option value="standings">Live standings update</option>
+          <option value="shop">Item shop open + pick order</option>
+          <option value="midmonth">Mid-month push</option>
+          <option value="mvp">MVP shoutout</option>
+          <option value="close">Month close</option>
+          <option value="callout">Private team nudge</option></select></div>
+      <div style="width:150px"><label>Length</label>
+        <select id="len" onchange="render()">
+          <option value="full">Full drama</option>
+          <option value="short">Short blast</option></select></div>
+      <div style="width:190px" id="calloutWrap" class="hide"><label>Which team</label>
+        <select id="calloutTeam" onchange="render()"></select></div>
+    </div>
+    <textarea id="msg"></textarea>
+    <div class="row" style="margin-top:14px">
+      <button class="b" onclick="copyMsg()">COPY TO CLIPBOARD</button>
+      <button class="b g" onclick="render()">REGENERATE</button>
+    </div>
+    <div class="note">Edit freely before copying — nothing here touches your sheet.</div></div>
+</section>
+
+<!-- ══ DATA ══ -->
+<section id="v-data" class="hide">
+  <div class="panel"><h2>Option 1 — Read Straight From The Spreadsheet</h2>
+    <div class="note" style="margin:0 0 15px">The normal way. Paste a link, hit Load, and
+      <b>Refresh Points</b> at the top of the page re-reads it any time.</div>
+
+    <label>Google Sheet link, or Apps Script web app link ending in /exec</label>
+    <input id="url" placeholder="https://docs.google.com/spreadsheets/d/…  or  https://script.google.com/…/exec">
+    <div class="hint">A plain Google Sheet link works if the sheet is shared as
+      <b>Anyone with the link — Viewer</b>. The /exec link works no matter how the sheet is shared,
+      and finds your tabs by itself.</div>
+
+    <div class="row" style="margin-top:14px">
+      <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
+        <input id="tabs" value="Teams, GameLog, Training, Week 1, Week 2, Week 3, Week 4, Week 5"></div>
+    </div>
+    <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
+      cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
+
+    <div class="row" style="margin-top:15px">
+      <button class="b" onclick="load()">LOAD DATA</button>
+      <button class="b g" onclick="copyBookmark()">COPY ONE-CLICK LINK</button>
+      <button class="b g" onclick="demo()">DEMO MODE</button>
+    </div>
+    <div class="status" id="status">Paste a link and hit Load — or try Demo Mode to explore with sample numbers.</div>
+    <div class="note"><b>Copy One-Click Link</b> gives you a bookmark that opens this page with the live
+      numbers already loaded, so you never have to paste the link again.</div>
+    <div id="warnbox"></div>
+  </div>
+
+  <div class="panel"><h2>Option 2 — Upload The File Yourself</h2>
+    <div class="note" style="margin:0 0 15px">The last resort, for when the sheet is locked down or you
+      are offline. In Google Sheets choose <b>File &rarr; Download &rarr; Microsoft Excel (.xlsx)</b>
+      and drop that file here. CSV files work too, one tab at a time.</div>
+    <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+      <b>Drop your .xlsx or .csv here</b><br>or click to choose a file
+    </div>
+    <input type="file" id="file" class="hide" accept=".xlsx,.csv,.tsv,.txt" multiple>
+    <div class="status" id="fileStatus"></div>
+
+    <h3>Or paste it in</h3>
+    <div class="note" style="margin:0 0 10px">Select the cells in your sheet, copy, and paste below.
+      Works with one tab at a time. Tell it which tab this is.</div>
+    <div class="row" style="margin-bottom:10px">
+      <div style="width:220px"><label>This paste is the…</label>
+        <select id="pasteAs">
+          <option value="auto">Work it out for me</option>
+          <option value="Teams">Teams tab</option>
+          <option value="GameLog">GameLog tab</option>
+          <option value="Training">Training tab</option>
+          <option value="week">A weekly PALMS tab</option></select></div>
+      <div style="flex:1;min-width:150px"><label>Name it (weekly tabs only)</label>
+        <input id="pasteName" placeholder="Week 1"></div>
+      <button class="b" onclick="loadPaste()">ADD THIS TAB</button>
+    </div>
+    <textarea id="paste" placeholder="Paste here…"></textarea>
+  </div>
+
+  <div class="panel"><h2>What This Page Expects To Find</h2>
+    <ol class="steps">
+      <li><b>Weekly PALMS tabs</b> — any tab with a header row containing <code>First Name</code> and
+        <code>RGI</code>. One tab per meeting week.</li>
+      <li><b>Teams</b> — column A member name, column B team name.</li>
+      <li><b>Training</b> — a <code>Name</code> column plus one column per month.</li>
+      <li><b>GameLog</b> — see the columns below. Old five-column logs still work.</li>
+    </ol>
+    <h3>GameLog columns</h3>
+    <div class="scroll"><table id="schema"></table></div>
+    <div class="note">Column order does not matter — the engine reads the headings, not the positions.
+      Any heading it does not recognise is ignored.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="b g" onclick="copyGameLogHeader()">COPY GAMELOG HEADER ROW</button>
+      <button class="b g" onclick="copyTeamsHeader()">COPY TEAMS HEADER ROW</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══ RULES ══ -->
+<section id="v-rules" class="hide">
+  <div class="panel"><h2>Point Values</h2>
+    <div class="grid" id="rules" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
+    <div class="note"><span class="chip a">auto</span> counted from the weekly tabs &nbsp;
+      <span class="chip m">man</span> comes from your GameLog tab. Change any number here and the whole
+      board recalculates instantly. Nothing needs redeploying.</div></div>
+
+  <div class="panel"><h2>Item Costs</h2>
+    <div class="grid" id="itemCosts" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div></div>
+
+  <div class="panel"><h2>Item Rules</h2>
+    <div class="note" style="margin:0 0 16px">These are the questions the shop cards never answered.
+      The defaults below are what this board uses right now. Change one and every score updates —
+      but tell the chapter before you do, mid-month.</div>
+    <div id="settings"></div></div>
+
+  <div class="panel"><h2>Order Of Operations</h2>
+    <div class="note" style="margin:0 0 12px">Every team is scored in exactly this sequence, every month.
+      This is the order the audit trail follows.</div>
+    <ol class="steps" id="ooo"></ol></div>
+
+  <div class="panel"><h2>Season Carry-Forward</h2>
+    <div class="grid" id="carry" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
+    <div class="note">Points banked <b>before</b> this month. The weekly tabs only hold the current
+      month, so this is what keeps the season total honest.</div></div>
+</section>
+
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   LEAGUE OF TITANS — Command Centre
+   Single file. Vanilla ES5. No build step, no storage, read-only.
+
+   The Google Sheet is the source of truth. This page never writes to it —
+   it reads, scores, and hands you paste-ready text to put back.
+
+   All scoring maths lives here so point values and item rules can change
+   without redeploying anything.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var DATA = null;               // normalised payload: weeks / teams / training / gameLog
+var VIEW = 'overview';
+var SORT = { k: 'total', dir: -1 };
+var LAST = null;               // how we loaded last time, so Refresh can repeat it
+var ROSTER = [];               // [{name, team}] — live, editable, drives all scoring
+var ROSTER_BASE = [];          // roster exactly as the sheet had it, for Reset
+var MOVES = [];                // roster changes made on this page since load
+var PARSE_WARN = [];           // anything the loader could not understand
+
+/* ── Point values ───────────────────────────────────────────────────── */
+var RULES = [
+  { key: 'visitor',    label: 'Visitor brought',    pts: 100, auto: 1 },
+  { key: 'convert',    label: 'Visitor to member',  pts: 100, auto: 0 },
+  { key: 'theme',      label: 'Invite theme bonus', pts: 100, auto: 0 },
+  { key: 'mtl',        label: 'Member MTL level up', pts: 30, auto: 0 },
+  { key: 'training',   label: 'Attend training',    pts: 20,  auto: 1 },
+  { key: 'referral',   label: 'Referral given',     pts: 5,   auto: 1 },
+  { key: 'attendance', label: 'Perfect attendance', pts: 5,   auto: 1 },
+  { key: 'one21',      label: '1-2-1 completed',    pts: 2,   auto: 1 }
+];
+
+/* ── Teams ──────────────────────────────────────────────────────────── */
+var TEAMS = ['Big Hero', 'Team Pokemon', '6 Braincells', 'Heng Ong Huat', 'Backstreet Boys'];
+var PALETTE = ['#e01b24', '#ffd029', '#3aa0ff', '#21c25c', '#b06cff', '#ff8c37', '#00d5c8', '#ff6ab0'];
+var COLORS = { 'Big Hero': '#e01b24', 'Team Pokemon': '#ffd029', '6 Braincells': '#3aa0ff',
+               'Heng Ong Huat': '#21c25c', 'Backstreet Boys': '#b06cff' };
+var CARRY = {};
+var i0; for (i0 = 0; i0 < TEAMS.length; i0++) CARRY[TEAMS[i0]] = 0;
+
+/* ── The scoring categories an item can point at ─────────────────────── */
+var CATS = [
+  { key: 'visitor',    label: 'Visitors' },
+  { key: 'referral',   label: 'Referrals' },
+  { key: 'one21',      label: '1-2-1s' },
+  { key: 'training',   label: 'Training' },
+  { key: 'attendance', label: 'Perfect attendance' },
+  { key: 'manual',     label: 'Manual bonuses' }
+];
+
+/* ── Item rule settings ─────────────────────────────────────────────────
+   Every one of these was an open question on the shop card. They are
+   settings, not hardcoded assumptions, so the chapter can rule on them
+   at a meeting and you change it here in ten seconds.                     */
+var SET = {
+  bloodOnlyAbove:      true,   // may only steal from a team ranked above you
+  veilBlocksAll:       false,  // false = blocks one steal, true = blocks every steal that month
+  veilChargesAttacker: true,   // a blocked attacker still pays the 300
+  tfBeforeGA:          true,   // the +20% is taken on a total that includes the doubling
+  mejaiThreshold:      100,    // team points needed in a week for that week to count
+  mejaiWeeksNeeded:    3,      // how many weeks must be hit
+  mejaiWeeksOf:        4,      // out of how many
+  mejaiReward:         100,
+  gaPercent:           20,     // Guardian Angel bonus
+  gaEligible:          'preItems', // who counts as last place
+  allowNegative:       true,   // costs may push a team below zero
+  oneItemPerTeam:      false   // warn if a team buys more than one in a month
+};
+
+/* ── The shop, declared as data ─────────────────────────────────────────
+   Each item owns its own resolve(). Adding an item next season means
+   adding an object here, not editing the scoring loop.                    */
+var ITEMS = [
+  {
+    key: 'trinity', name: 'Trinity Force', type: 'Boost', cost: 250, colour: '#ffd029',
+    plain: 'Doubles everything you earned in one chosen area for the month.',
+    needs: 'Say which area you are doubling in the Area column.',
+    stage: 'category'
+  },
+  {
+    key: 'blood', name: 'Bloodthirster', type: 'Attack', cost: 300, colour: '#e01b24',
+    plain: 'Take one player at random from another team. They join you, and their points come with them.',
+    needs: 'Fill in Target Team and Target Member, and move them on the Roster Board.',
+    stage: 'roster'
+  },
+  {
+    key: 'veil', name: "Banshee's Veil", type: 'Shield', cost: 50, colour: '#3aa0ff',
+    plain: 'Stops the next attempt to take one of your players.',
+    needs: 'Nothing else. Just log that you bought it.',
+    stage: 'defence'
+  },
+  {
+    key: 'mejai', name: "Mejai's Soulstealer", type: 'Gamble', cost: 100, colour: '#b06cff',
+    plain: 'Hit your weekly target in 3 of the 4 weeks and win 100 points. Miss and you get nothing.',
+    needs: 'Nothing else. The weekly tabs decide it.',
+    stage: 'gamble'
+  },
+  {
+    key: 'angel', name: 'Guardian Angel', type: 'Support', cost: 0, colour: '#21c25c',
+    plain: 'Bottom team only, and free. Adds 20% to your month, or lets you join forces with another team.',
+    needs: 'Leave Outcome blank for the 20%, or put "merge" and the team name to join forces.',
+    stage: 'support'
+  }
+];
+
+/* ── Order of operations, shown to the user and used by compute() ────── */
+var OOO = [
+  'Add up every member’s points from the weekly tabs, training and attendance.',
+  'Apply any player who has been taken by a Bloodthirster — their points move with them.',
+  'Roll members up into team totals, category by category.',
+  'Trinity Force doubles the chosen area.',
+  'Mejai’s Soulstealer checks the weekly target and pays out, or does not.',
+  'Add the manual bonuses from the game log — conversions, level-ups, theme bonus.',
+  'Guardian Angel adds its percentage to the month so far.',
+  'Take off what every item cost.',
+  'Add the points carried in from earlier months to get the season total.'
+];
+
+/* ── Small helpers ──────────────────────────────────────────────────── */
+function $(id) { return document.getElementById(id); }
+function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function rule(k) { var i; for (i = 0; i < RULES.length; i++) if (RULES[i].key === k) return RULES[i].pts; return 0; }
+function item(k) { var i; for (i = 0; i < ITEMS.length; i++) if (ITEMS[i].key === k) return ITEMS[i]; return null; }
+function n(x) { return Math.round(x || 0).toLocaleString(); }
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function q(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+function color(t) { return COLORS[t] || '#8d8375'; }
+function num(v) {
+  if (v === '' || v === null || v === undefined) return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  var x = Number(String(v).replace(/[, ]/g, ''));
+  return isNaN(x) ? 0 : x;
+}
+function catLabel(k) { var i; for (i = 0; i < CATS.length; i++) if (CATS[i].key === k) return CATS[i].label; return k; }
+
+/* Map loose free text onto a scoring category, so "visitors" and
+   "Visitor" and "VISITORS BROUGHT" all land on the same place. */
+function matchCat(txt) {
+  var s = norm(txt);
+  if (!s) return null;
+  var i;
+  for (i = 0; i < CATS.length; i++) {
+    if (s === norm(CATS[i].label) || s === CATS[i].key) return CATS[i].key;
+  }
+  if (s.indexOf('visit') !== -1) return 'visitor';
+  if (s.indexOf('refer') !== -1) return 'referral';
+  if (s.indexOf('121') !== -1 || s.indexOf('1-2-1') !== -1 || s.indexOf('one to one') !== -1) return 'one21';
+  if (s.indexOf('train') !== -1) return 'training';
+  if (s.indexOf('attend') !== -1) return 'attendance';
+  if (s.indexOf('manual') !== -1 || s.indexOf('bonus') !== -1) return 'manual';
+  return null;
+}
+
+/* Map loose free text onto an item. Handles "Bloodthirster",
+   "blood thirster", "BT", and a Joker copying something. */
+function matchItem(txt) {
+  var s = norm(txt);
+  if (!s) return null;
+  var i;
+  for (i = 0; i < ITEMS.length; i++) {
+    if (s === norm(ITEMS[i].name) || s === ITEMS[i].key) return ITEMS[i].key;
+  }
+  if (s.indexOf('trinity') !== -1) return 'trinity';
+  if (s.indexOf('blood') !== -1 || s === 'bt') return 'blood';
+  if (s.indexOf('banshee') !== -1 || s.indexOf('veil') !== -1) return 'veil';
+  if (s.indexOf('mejai') !== -1 || s.indexOf('soulsteal') !== -1) return 'mejai';
+  if (s.indexOf('guardian') !== -1 || s.indexOf('angel') !== -1) return 'angel';
+  return null;
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   1. GETTING THE DATA IN
+
+   Three ways in, all landing on the same normalised shape:
+     a) Apps Script /exec link   — JSONP, finds every tab by itself
+     b) Plain Google Sheet link  — gviz JSONP, one named tab at a time
+     c) A file you upload        — .xlsx unzipped in the browser, or .csv
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function setStatus(m, c, id) {
+  var e = $(id || 'status');
+  if (!e) return;
+  e.innerHTML = m;
+  e.className = 'status' + (c ? ' ' + c : '');
+}
+function srcTag(text, cls) {
+  var e = $('srcTag');
+  e.innerHTML = text;
+  e.className = 'src' + (cls ? ' ' + cls : '');
+}
+
+/* ── JSONP, the only way to read Google without CORS trouble ────────── */
+var JSONP_SEQ = 0;
+function jsonp(url, onOk, onErr, ms) {
+  var cb = 'lot_' + (++JSONP_SEQ) + '_' + (new Date()).getTime();
+  var s = document.createElement('script');
+  var done = false;
+  var timer = setTimeout(function () { finish(null, 'timed out'); }, ms || 25000);
+  function finish(res, err) {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+    if (s.parentNode) s.parentNode.removeChild(s);
+    if (err) { onErr(err); } else { onOk(res); }
+  }
+  window[cb] = function (res) { finish(res, null); };
+  s.src = url.replace(/__CB__/g, cb);
+  s.onerror = function () { finish(null, 'could not reach that link'); };
+  document.body.appendChild(s);
+  return cb;
+}
+
+/* ── Entry point for the Load button ────────────────────────────────── */
+function load() {
+  var url = $('url').value.trim();
+  if (!url) { setStatus('Paste a link first.', 'err'); return; }
+
+  if (url.indexOf('/exec') !== -1) { loadExec(url); return; }
+
+  var m = /\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/.exec(url);
+  if (m) { loadSheet(m[1]); return; }
+
+  if (url.indexOf('script.google.com') !== -1) {
+    setStatus('That looks like an Apps Script link but it does not end in <code>/exec</code>. ' +
+      'Open Deploy &rarr; Manage deployments and copy the Web app URL.', 'err');
+    return;
+  }
+  setStatus('That is not a link I recognise. Use a Google Sheet link or an Apps Script link ending in /exec.', 'err');
+}
+
+function refresh() {
+  if (!LAST) { go('data'); setStatus('Pick a source first, then Refresh will keep re-reading it.', 'err'); return; }
+  if (LAST.kind === 'exec') loadExec(LAST.url, true);
+  else if (LAST.kind === 'sheet') loadSheet(LAST.id, true);
+  else if (LAST.kind === 'demo') { demo(); }
+  else {
+    go('data');
+    setStatus('This data came from a file you uploaded, so there is nothing to re-read. ' +
+      'Upload the newer file, or switch to a spreadsheet link so Refresh works.', 'err', 'fileStatus');
+  }
+}
+function busy(on) {
+  var b = $('refreshBtn');
+  b.disabled = !!on;
+  b.innerHTML = on ? 'READING…' : '&#8635; REFRESH POINTS';
+}
+
+/* ── (a) Apps Script web app ────────────────────────────────────────── */
+function loadExec(url, quiet) {
+  PARSE_WARN = [];
+  busy(1);
+  if (!quiet) setStatus('Reading your sheet through Apps Script…', 'busy');
+  srcTag('Reading…');
+  var full = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=__CB__';
+  jsonp(full, function (res) {
+    busy(0);
+    if (!res || res.ok === false) {
+      setStatus('The script answered with an error: ' + esc(res && res.error ? res.error : 'unknown') + '.', 'err');
+      if (res && res.tabs) $('warnbox').innerHTML = '<div class="warn">Tabs it can see: ' + esc(res.tabs.join(' / ')) + '</div>';
+      srcTag('Load failed');
+      return;
+    }
+    LAST = { kind: 'exec', url: url };
+    adopt(normalise(res), 'Apps Script', url);
+  }, function (err) {
+    busy(0);
+    srcTag('Load failed');
+    setStatus('Could not read it — ' + esc(err) + '. Check the deployment is set to ' +
+      '<b>Execute as: Me</b> and <b>Who has access: Anyone</b>.', 'err');
+  });
+}
+
+/* ── (b) Plain Google Sheet link, one named tab at a time ───────────── */
+function loadSheet(id, quiet) {
+  var names = $('tabs').value.split(',');
+  var want = [], i;
+  for (i = 0; i < names.length; i++) { var t = names[i].trim(); if (t) want.push(t); }
+  if (!want.length) { setStatus('Type at least one tab name to look for.', 'err'); return; }
+
+  PARSE_WARN = [];
+  busy(1);
+  srcTag('Reading…');
+  if (!quiet) setStatus('Looking for ' + want.length + ' tab(s) in that sheet…', 'busy');
+
+  var got = {}, misses = [], left = want.length, hardFail = 0;
+  function tick() {
+    left--;
+    if (left > 0) return;
+    busy(0);
+    var found = [];
+    for (var k in got) if (got.hasOwnProperty(k)) found.push(k);
+    if (!found.length) {
+      srcTag('Load failed');
+      setStatus(hardFail
+        ? 'The sheet would not open. Set it to <b>Anyone with the link &mdash; Viewer</b>, ' +
+          'or use the Apps Script /exec link instead, which works on a private sheet.'
+        : 'Found none of those tab names. Check the spelling against the tabs at the bottom of your sheet.',
+        'err');
+      return;
+    }
+    LAST = { kind: 'sheet', id: id };
+    var pay = build(got);
+    if (misses.length) PARSE_WARN.push('No tab called ' + misses.join(', ') + ' — skipped.');
+    adopt(pay, 'Google Sheet', 'https://docs.google.com/spreadsheets/d/' + id);
+  }
+
+  for (i = 0; i < want.length; i++) {
+    (function (tab) {
+      var u = 'https://docs.google.com/spreadsheets/d/' + id +
+              '/gviz/tq?tqx=out:json;responseHandler:__CB__&headers=0&sheet=' + encodeURIComponent(tab);
+      jsonp(u, function (res) {
+        if (res && res.status === 'error') { misses.push(tab); tick(); return; }
+        var grid = gvizGrid(res);
+        if (grid && grid.length) got[tab] = grid; else misses.push(tab);
+        tick();
+      }, function () { hardFail = 1; misses.push(tab); tick(); }, 25000);
+    })(want[i]);
+  }
+}
+
+/* gviz hands back columns and rows; flatten to a plain 2D array. */
+function gvizGrid(res) {
+  if (!res || !res.table || !res.table.rows) return null;
+  var rows = res.table.rows, out = [], r, c, cell, v;
+  for (r = 0; r < rows.length; r++) {
+    var line = [], cs = rows[r].c || [];
+    for (c = 0; c < cs.length; c++) {
+      cell = cs[c];
+      if (!cell) { line.push(''); continue; }
+      v = cell.v;
+      if (typeof v === 'string' && v.indexOf('Date(') === 0) v = cell.f || v;
+      line.push(v === null || v === undefined ? '' : v);
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/* ── (c) Files you upload ───────────────────────────────────────────── */
+function wireFiles() {
+  var d = $('drop'), f = $('file');
+  f.onchange = function () { takeFiles(f.files); f.value = ''; };
+  d.addEventListener('dragover', function (e) { e.preventDefault(); d.className = 'drop over'; });
+  d.addEventListener('dragleave', function () { d.className = 'drop'; });
+  d.addEventListener('drop', function (e) {
+    e.preventDefault(); d.className = 'drop';
+    takeFiles(e.dataTransfer.files);
+  });
+}
+
+function takeFiles(files) {
+  if (!files || !files.length) return;
+  PARSE_WARN = [];
+  var grids = {}, left = files.length, i;
+  setStatus('Reading ' + files.length + ' file(s)…', 'busy', 'fileStatus');
+
+  function tick() {
+    left--;
+    if (left > 0) return;
+    var any = 0, k;
+    for (k in grids) if (grids.hasOwnProperty(k)) any = 1;
+    if (!any) { setStatus('Nothing readable in there. Try a .xlsx or .csv export.', 'err', 'fileStatus'); return; }
+    LAST = { kind: 'file' };
+    adopt(build(grids), 'Uploaded file', '');
+    setStatus('Loaded. Because this came from a file, the Refresh button has nothing to re-read — ' +
+      'upload the next export when the numbers change.', 'ok', 'fileStatus');
+  }
+
+  for (i = 0; i < files.length; i++) {
+    (function (file) {
+      var nm = file.name.toLowerCase();
+      if (nm.indexOf('.xlsx') === nm.length - 5 && nm.length > 5) {
+        readArrayBuffer(file, function (buf) {
+          xlsxSheets(buf, function (sheets) {
+            var s; for (s in sheets) if (sheets.hasOwnProperty(s)) grids[s] = sheets[s];
+            tick();
+          }, function (msg) { PARSE_WARN.push(file.name + ': ' + msg); tick(); });
+        });
+      } else {
+        readText(file, function (txt) {
+          var base = file.name.replace(/\.[^.]+$/, '');
+          grids[base] = splitDelimited(txt);
+          tick();
+        });
+      }
+    })(files[i]);
+  }
+}
+function readText(file, done) { var r = new FileReader(); r.onload = function () { done(String(r.result)); }; r.readAsText(file); }
+function readArrayBuffer(file, done) { var r = new FileReader(); r.onload = function () { done(r.result); }; r.readAsArrayBuffer(file); }
+
+/* Paste-a-tab, the true last resort. */
+function loadPaste() {
+  var txt = $('paste').value;
+  if (!txt.trim()) { setStatus('Paste something in the box first.', 'err', 'fileStatus'); return; }
+  PARSE_WARN = [];
+  var as = $('pasteAs').value;
+  var name = as === 'week' ? ($('pasteName').value.trim() || 'Week ' + ((DATA && DATA.weeks ? DATA.weeks.length : 0) + 1))
+           : as === 'auto' ? ($('pasteName').value.trim() || 'Pasted') : as;
+  var grids = {};
+  grids[name] = splitDelimited(txt);
+
+  /* Keep whatever is already loaded and add this tab on top. */
+  if (DATA) {
+    var keep = rawTabs();
+    var k; for (k in grids) if (grids.hasOwnProperty(k)) keep[k] = grids[k];
+    grids = keep;
+  }
+  LAST = { kind: 'file' };
+  adopt(build(grids), 'Pasted data', '');
+  $('paste').value = '';
+  setStatus('Added <b>' + esc(name) + '</b>.', 'ok', 'fileStatus');
+}
+var RAWTABS = {};
+function rawTabs() { var o = {}, k; for (k in RAWTABS) if (RAWTABS.hasOwnProperty(k)) o[k] = RAWTABS[k]; return o; }
+
+/* ── Delimited text ─────────────────────────────────────────────────── */
+function splitDelimited(txt) {
+  txt = String(txt).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  var head = txt.split('\n')[0] || '';
+  var tabs = head.split('\t').length, commas = head.split(',').length;
+  return parseDelim(txt, tabs > commas ? '\t' : ',');
+}
+function parseDelim(txt, d) {
+  var rows = [], row = [], cur = '', i = 0, inQ = false, ch;
+  while (i < txt.length) {
+    ch = txt.charAt(i);
+    if (inQ) {
+      if (ch === '"') {
+        if (txt.charAt(i + 1) === '"') { cur += '"'; i += 2; continue; }
+        inQ = false; i++; continue;
+      }
+      cur += ch; i++; continue;
+    }
+    if (ch === '"') { inQ = true; i++; continue; }
+    if (ch === d) { row.push(cur); cur = ''; i++; continue; }
+    if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; i++; continue; }
+    cur += ch; i++;
+  }
+  row.push(cur);
+  if (row.length > 1 || row[0] !== '') rows.push(row);
+  return rows;
+}
+
+/* ── .xlsx, unzipped and parsed in the browser ──────────────────────────
+   An .xlsx is a zip of XML. Modern browsers can inflate a raw deflate
+   stream natively, so this needs no library and no build step.          */
+function xlsxSheets(buf, done, fail) {
+  if (typeof DecompressionStream === 'undefined') {
+    fail('this browser is too old to open .xlsx here — export the tabs as CSV instead');
+    return;
+  }
+  var entries;
+  try { entries = zipList(buf); } catch (e) { fail('the file is not a readable .xlsx'); return; }
+  if (!entries) { fail('the file is not a readable .xlsx'); return; }
+
+  var want = {}, i, e;
+  for (i = 0; i < entries.length; i++) {
+    e = entries[i];
+    if (e.name === 'xl/workbook.xml' || e.name === 'xl/_rels/workbook.xml.rels' ||
+        e.name === 'xl/sharedStrings.xml' || e.name.indexOf('xl/worksheets/') === 0) want[e.name] = e;
+  }
+  if (!want['xl/workbook.xml']) { fail('no workbook inside that .xlsx'); return; }
+
+  var names = [], k;
+  for (k in want) if (want.hasOwnProperty(k)) names.push(k);
+
+  var texts = {}, left = names.length;
+  function after() {
+    if (--left > 0) return;
+    try { done(buildSheets(texts)); }
+    catch (err) { fail('could not read the sheets inside it'); }
+  }
+  for (i = 0; i < names.length; i++) {
+    (function (nm) {
+      zipRead(buf, want[nm]).then(function (u8) {
+        texts[nm] = new TextDecoder('utf-8').decode(u8);
+        after();
+      }, function () { after(); });
+    })(names[i]);
+  }
+}
+
+function buildSheets(texts) {
+  var P = new DOMParser();
+  var wb = P.parseFromString(texts['xl/workbook.xml'], 'application/xml');
+  var rels = texts['xl/_rels/workbook.xml.rels']
+    ? P.parseFromString(texts['xl/_rels/workbook.xml.rels'], 'application/xml') : null;
+
+  var relMap = {}, i, r, rs;
+  if (rels) {
+    rs = rels.getElementsByTagName('Relationship');
+    for (i = 0; i < rs.length; i++) {
+      var tgt = rs[i].getAttribute('Target') || '';
+      relMap[rs[i].getAttribute('Id')] = tgt.replace(/^\/?xl\//, '').replace(/^\.\//, '');
+    }
+  }
+
+  var shared = [];
+  if (texts['xl/sharedStrings.xml']) {
+    var sd = P.parseFromString(texts['xl/sharedStrings.xml'], 'application/xml');
+    var sis = sd.getElementsByTagName('si');
+    for (i = 0; i < sis.length; i++) shared.push(siText(sis[i]));
+  }
+
+  var out = {}, sheets = wb.getElementsByTagName('sheet');
+  for (i = 0; i < sheets.length; i++) {
+    var name = sheets[i].getAttribute('name');
+    var rid = sheets[i].getAttribute('r:id') ||
+              sheets[i].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    var path = relMap[rid] ? 'xl/' + relMap[rid] : 'xl/worksheets/sheet' + (i + 1) + '.xml';
+    if (!texts[path]) path = 'xl/worksheets/sheet' + (i + 1) + '.xml';
+    if (!texts[path]) continue;
+    out[name] = sheetGrid(P.parseFromString(texts[path], 'application/xml'), shared);
+  }
+  return out;
+}
+
+function siText(si) {
+  var ts = si.getElementsByTagName('t'), s = '', i;
+  for (i = 0; i < ts.length; i++) {
+    if (ts[i].parentNode && ts[i].parentNode.nodeName === 'rPh') continue;
+    s += ts[i].textContent;
+  }
+  return s;
+}
+
+function sheetGrid(doc, shared) {
+  var rows = doc.getElementsByTagName('row'), grid = [], i, j;
+  for (i = 0; i < rows.length; i++) {
+    var rIdx = parseInt(rows[i].getAttribute('r'), 10);
+    if (isNaN(rIdx)) rIdx = grid.length + 1;
+    var line = [];
+    var cs = rows[i].getElementsByTagName('c');
+    for (j = 0; j < cs.length; j++) {
+      var c = cs[j], ref = c.getAttribute('r') || '', t = c.getAttribute('t');
+      var idx = ref ? colIdx(ref) : line.length;
+      var val = '';
+      if (t === 's') {
+        var vEl = c.getElementsByTagName('v')[0];
+        var si = vEl ? parseInt(vEl.textContent, 10) : -1;
+        val = (si >= 0 && shared[si] !== undefined) ? shared[si] : '';
+      } else if (t === 'inlineStr') {
+        var is = c.getElementsByTagName('is')[0];
+        val = is ? siText(is) : '';
+      } else {
+        var v2 = c.getElementsByTagName('v')[0];
+        var raw = v2 ? v2.textContent : '';
+        if (t === 'str' || t === 'e') val = raw;
+        else if (t === 'b') val = raw === '1' ? 'TRUE' : 'FALSE';
+        else val = raw === '' ? '' : Number(raw);
+      }
+      while (line.length < idx) line.push('');
+      line[idx] = val;
+    }
+    while (grid.length < rIdx - 1) grid.push([]);
+    grid[rIdx - 1] = line;
+  }
+  return grid;
+}
+function colIdx(ref) {
+  var m = /^([A-Za-z]+)/.exec(ref);
+  if (!m) return 0;
+  var s = m[1].toUpperCase(), k = 0, i;
+  for (i = 0; i < s.length; i++) k = k * 26 + (s.charCodeAt(i) - 64);
+  return k - 1;
+}
+
+/* Minimal zip reader — central directory then per-entry inflate. */
+function zipList(buf) {
+  var dv = new DataView(buf), len = buf.byteLength, i, eocd = -1;
+  var floor = Math.max(0, len - 66000);
+  for (i = len - 22; i >= floor; i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+  if (eocd < 0) return null;
+  var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), out = [];
+  var u8 = new Uint8Array(buf), dec = new TextDecoder('utf-8');
+  for (i = 0; i < count; i++) {
+    if (p + 46 > len || dv.getUint32(p, true) !== 0x02014b50) break;
+    var method = dv.getUint16(p + 10, true);
+    var csize  = dv.getUint32(p + 20, true);
+    var nlen   = dv.getUint16(p + 28, true);
+    var elen   = dv.getUint16(p + 30, true);
+    var clen   = dv.getUint16(p + 32, true);
+    var lho    = dv.getUint32(p + 42, true);
+    out.push({ name: dec.decode(u8.subarray(p + 46, p + 46 + nlen)), method: method, csize: csize, lho: lho });
+    p += 46 + nlen + elen + clen;
+  }
+  return out;
+}
+function zipRead(buf, e) {
+  var dv = new DataView(buf), u8 = new Uint8Array(buf);
+  var nlen = dv.getUint16(e.lho + 26, true), elen = dv.getUint16(e.lho + 28, true);
+  var start = e.lho + 30 + nlen + elen;
+  var raw = u8.subarray(start, start + e.csize);
+  if (e.method === 0) return Promise.resolve(raw);
+  var ds = new DecompressionStream('deflate-raw');
+  return new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer()
+    .then(function (ab) { return new Uint8Array(ab); });
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   2. MAKING SENSE OF THE TABS
+
+   Whatever route the data came in by, it ends up as the same shape:
+     weeks    [{tab, rows:[{name,P,A,V,RGI,RGO,ONE21,…}]}]
+     teams    [{name, team}]
+     training [{name, sessions}]
+     gameLog  [{month,team,type,item,targetTeam,targetMember,area,outcome,points,notes}]
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function build(grids) {
+  RAWTABS = grids;
+  var pay = { ok: true, month: '', weeks: [], teams: [], training: [], gameLog: [] };
+  var k, grid, kind, unread = [];
+
+  for (k in grids) {
+    if (!grids.hasOwnProperty(k)) continue;
+    grid = grids[k];
+    if (!grid || !grid.length) continue;
+    kind = classify(k, grid);
+    if (kind === 'week') { var rows = readWeekGrid(grid); if (rows.length) pay.weeks.push({ tab: k, rows: rows }); }
+    else if (kind === 'teams')    pay.teams = pay.teams.concat(readTeamsGrid(grid));
+    else if (kind === 'training') { var tr = readTrainingGrid(grid); pay.training = pay.training.concat(tr.rows); pay.month = pay.month || tr.month; }
+    else if (kind === 'gamelog')  pay.gameLog = pay.gameLog.concat(readGameLogGrid(grid));
+    else unread.push(k);
+  }
+  if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
+    esc(unread.join(', ')) + '</b>.');
+  pay.weeks.sort(function (a, b) { return String(a.tab).localeCompare(String(b.tab), undefined, { numeric: true }); });
+  return pay;
+}
+
+/* Name first, shape second. */
+function classify(name, grid) {
+  var nm = norm(name);
+  if (nm === 'teams' || nm === 'team') return 'teams';
+  if (nm === 'gamelog' || nm === 'game log' || nm === 'log') return 'gamelog';
+  if (nm === 'training') return 'training';
+  if (/^(apr|may|jun|jul|aug|sep|oct|nov|dec|jan|feb|mar)[a-z]* ?\d{4} ?[-–—] ?/i.test(String(name))) return 'skip';
+  if (nm.indexOf('master') !== -1 || nm.indexOf('archive') !== -1 || nm.indexOf('leaderboard') !== -1) return 'skip';
+
+  if (findWeekHeader(grid) !== -1) return 'week';
+  if (findGameLogHeader(grid) !== -1) return 'gamelog';
+  if (findTeamsHeader(grid) !== -1) return 'teams';
+  if (findTrainingHeader(grid).row !== -1) return 'training';
+  return 'skip';
+}
+
+function headerCells(grid, r) {
+  var out = [], i, row = grid[r] || [];
+  for (i = 0; i < row.length; i++) out.push(norm(row[i]));
+  return out;
+}
+function has(cells, txt) { var i; for (i = 0; i < cells.length; i++) if (cells[i].indexOf(txt) !== -1) return true; return false; }
+function eq(cells, txt) { var i; for (i = 0; i < cells.length; i++) if (cells[i] === txt) return i; return -1; }
+
+/* ── Weekly PALMS tabs ──────────────────────────────────────────────── */
+function findWeekHeader(grid) {
+  var limit = Math.min(grid.length, 14), r, c;
+  for (r = 0; r < limit; r++) { c = headerCells(grid, r); if (has(c, 'first name') && eq(c, 'rgi') !== -1) return r; }
+  return -1;
+}
+function readWeekGrid(grid) {
+  var hr = findWeekHeader(grid);
+  if (hr === -1) return [];
+  var map = mapColumns(grid[hr]), out = [], r, rec;
+  if (map.RGI == null || map.FIRST == null) return [];
+  for (r = hr + 1; r < grid.length; r++) {
+    rec = readMemberRow(grid[r] || [], map);
+    if (rec) out.push(rec);
+  }
+  return out;
+}
+function mapColumns(header) {
+  var map = {}, c, raw, h;
+  for (c = 0; c < header.length; c++) {
+    raw = header[c];
+    h = norm(raw);
+    if (!h) continue;
+    if (h === 'first name' && map.FIRST == null) map.FIRST = c;
+    else if (h === 'last name' && map.LAST == null) map.LAST = c;
+    else if (h === 'p' && map.P == null) map.P = c;
+    else if (h === 'a' && map.A == null) map.A = c;
+    else if (h === 'l' && map.L == null) map.L = c;
+    else if (h === 'm' && map.M == null) map.M = c;
+    else if (h === 's' && map.S == null) map.S = c;
+    else if (h === 'rgi' && map.RGI == null) map.RGI = c;
+    else if (h === 'rgo' && map.RGO == null) map.RGO = c;
+    else if (h === 'rri' && map.RRI == null) map.RRI = c;
+    else if (h === 'rro' && map.RRO == null) map.RRO = c;
+    else if (h === 'v' && map.V == null) map.V = c;
+    else if (h.indexOf('rev given') !== -1 && map.REV == null) map.REV = c;
+    else if (h === 'ceu' && map.CEU == null) map.CEU = c;
+    else if (map.ONE21 == null && isOneToOne(raw, h)) map.ONE21 = c;
+  }
+  return map;
+}
+/* Sheets loves turning the "1-2-1" heading into a date. Catch every form. */
+function isOneToOne(raw, h) {
+  if (raw instanceof Date) return true;
+  if (String(raw).indexOf('Date(') === 0) return true;
+  if (h.replace(/[^0-9]/g, '') === '121') return true;
+  if (h.indexOf('1-2-1') !== -1) return true;
+  if (h.indexOf('1/2/2001') !== -1 || h.indexOf('1-2-2001') !== -1) return true;
+  return false;
+}
+function readMemberRow(row, map) {
+  var first = String(row[map.FIRST] == null ? '' : row[map.FIRST]).trim();
+  var last = map.LAST != null ? String(row[map.LAST] == null ? '' : row[map.LAST]).trim() : '';
+  var full = (first + ' ' + last).replace(/\s+/g, ' ').trim();
+  if (!full) return null;
+  if (norm(full) === 'first name' || norm(full) === 'total' || norm(full) === 'totals') return null;
+  function g(k) { return map[k] == null ? 0 : num(row[map[k]]); }
+  return { name: full, P: g('P'), A: g('A'), L: g('L'), M: g('M'), S: g('S'),
+           RGI: g('RGI'), RGO: g('RGO'), RRI: g('RRI'), RRO: g('RRO'),
+           V: g('V'), ONE21: g('ONE21'), REV: g('REV') };
+}
+
+/* ── Teams tab ──────────────────────────────────────────────────────── */
+function findTeamsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (has(c, 'team') && (has(c, 'name') || has(c, 'member'))) return r;
+  }
+  return -1;
+}
+function readTeamsGrid(grid) {
+  var hr = findTeamsHeader(grid), out = [], r, nameCol = 0, teamCol = 1, c, i;
+  if (hr !== -1) {
+    c = headerCells(grid, hr);
+    for (i = 0; i < c.length; i++) {
+      if ((c[i].indexOf('name') !== -1 || c[i].indexOf('member') !== -1) && c[i].indexOf('team') === -1) nameCol = i;
+      if (c[i].indexOf('team') !== -1) teamCol = i;
+    }
+  }
+  for (r = (hr === -1 ? 1 : hr + 1); r < grid.length; r++) {
+    var row = grid[r] || [];
+    var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
+    var tm = String(row[teamCol] == null ? '' : row[teamCol]).trim();
+    if (nm && tm) out.push({ name: nm, team: tm });
+  }
+  return out;
+}
+
+/* ── Training tab ───────────────────────────────────────────────────── */
+var MONTHRE = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+function findTrainingHeader(grid) {
+  var limit = Math.min(grid.length, 12), r, c, i;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (eq(c, 'name') === -1 && !has(c, 'member')) continue;
+    for (i = 0; i < c.length; i++) if (c[i] && MONTHRE.test(c[i])) return { row: r, month: i };
+  }
+  return { row: -1, month: -1 };
+}
+function readTrainingGrid(grid) {
+  var f = findTrainingHeader(grid);
+  if (f.row === -1) return { rows: [], month: '' };
+  var cells = headerCells(grid, f.row), i, nameCol = eq(cells, 'name');
+  if (nameCol === -1) for (i = 0; i < cells.length; i++) if (cells[i].indexOf('member') !== -1) { nameCol = i; break; }
+  if (nameCol === -1) nameCol = 0;
+
+  /* Rightmost month column that actually has numbers in it — that is
+     almost always the month you are currently running. */
+  var best = f.month, r;
+  for (i = cells.length - 1; i >= 0; i--) {
+    if (!cells[i] || !MONTHRE.test(cells[i])) continue;
+    for (r = f.row + 1; r < grid.length; r++) {
+      if (num((grid[r] || [])[i]) > 0) { best = i; i = -1; break; }
+    }
+    if (i === -1) break;
+  }
+  var rows = [];
+  for (r = f.row + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
+    if (!nm || norm(nm) === 'total') continue;
+    rows.push({ name: nm, sessions: num(row[best]) });
+  }
+  return { rows: rows, month: String((grid[f.row] || [])[best] || '').trim() };
+}
+
+/* ── GameLog tab — read by heading, so column order does not matter ─── */
+var GL_FIELDS = [
+  { key: 'month',        heads: ['month'] },
+  { key: 'team',         heads: ['team'], not: ['target'] },
+  { key: 'type',         heads: ['type'] },
+  { key: 'item',         heads: ['item'] },
+  { key: 'targetTeam',   heads: ['target team', 'victim team', 'against team'] },
+  { key: 'targetMember', heads: ['target member', 'target player', 'member taken', 'victim'] },
+  { key: 'area',         heads: ['area', 'chosen area', 'category'] },
+  { key: 'outcome',      heads: ['outcome', 'result'] },
+  { key: 'points',       heads: ['points', 'pts'] },
+  { key: 'notes',        heads: ['notes', 'note', 'detail', 'details'] }
+];
+function findGameLogHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (!has(c, 'team')) continue;
+    if (has(c, 'item') || has(c, 'type') || has(c, 'points') || has(c, 'outcome')) return r;
+  }
+  return -1;
+}
+function readGameLogGrid(grid) {
+  var hr = findGameLogHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), map = {}, i, f, j, hh;
+
+  for (i = 0; i < GL_FIELDS.length; i++) {
+    f = GL_FIELDS[i];
+    for (j = 0; j < cells.length; j++) {
+      if (!cells[j] || map[f.key] != null) continue;
+      var skip = 0;
+      if (f.not) { for (hh = 0; hh < f.not.length; hh++) if (cells[j].indexOf(f.not[hh]) !== -1) skip = 1; }
+      if (skip) continue;
+      for (hh = 0; hh < f.heads.length; hh++) {
+        if (cells[j] === f.heads[hh] || cells[j].indexOf(f.heads[hh]) !== -1) { map[f.key] = j; break; }
+      }
+    }
+  }
+  if (map.team == null) return [];
+
+  var out = [], r;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var team = g('team');
+    if (!team) continue;
+    out.push({
+      month: g('month'), team: team, type: g('type'), item: g('item'),
+      targetTeam: g('targetTeam'), targetMember: g('targetMember'),
+      area: g('area'), outcome: g('outcome'),
+      points: map.points == null ? null : (g('points') === '' ? null : num(row[map.points])),
+      notes: g('notes')
+    });
+  }
+  return out;
+}
+
+/* ── Apps Script payload ────────────────────────────────────────────── */
+function normalise(res) {
+  var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
+              training: res.training || [], gameLog: [] };
+  if (res.gameLogRaw && res.gameLogRaw.headers) {
+    var grid = [res.gameLogRaw.headers].concat(res.gameLogRaw.rows || []);
+    pay.gameLog = readGameLogGrid(grid);
+  } else {
+    var i, g;
+    for (i = 0; i < (res.gameLog || []).length; i++) {
+      g = res.gameLog[i];
+      pay.gameLog.push({ month: g.month || '', team: g.team || '', type: g.type || '', item: g.item || '',
+        targetTeam: g.targetTeam || '', targetMember: g.targetMember || '', area: g.area || '',
+        outcome: g.outcome || '', points: (g.points === 0 || g.points) ? g.points : null,
+        notes: g.notes || g.detail || '' });
+    }
+  }
+  return pay;
+}
+
+/* ── Take a payload live ────────────────────────────────────────────── */
+function adopt(pay, sourceName, url) {
+  DATA = pay;
+  ROSTER = [];
+  var i;
+  for (i = 0; i < (pay.teams || []).length; i++) ROSTER.push({ name: pay.teams[i].name, team: pay.teams[i].team });
+  ROSTER_BASE = ROSTER.slice();
+  MOVES = [];
+  syncTeams();
+
+  var bits = [];
+  if (pay.weeks.length) bits.push(pay.weeks.length + ' weekly tab' + (pay.weeks.length === 1 ? '' : 's'));
+  if (ROSTER.length) bits.push(ROSTER.length + ' members');
+  if (pay.gameLog.length) bits.push(pay.gameLog.length + ' game log rows');
+  srcTag('<b>' + esc(sourceName) + '</b> &middot; ' + (bits.join(' &middot; ') || 'nothing found'),
+         sourceName === 'Demo data' ? 'demo' : 'live');
+  setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
+  checkData();
+  if (VIEW === 'data') go('overview'); else render();
+}
+
+function syncTeams() {
+  var i, t;
+  for (i = 0; i < ROSTER.length; i++) if (TEAMS.indexOf(ROSTER[i].team) === -1) TEAMS.push(ROSTER[i].team);
+  for (i = 0; i < (DATA && DATA.gameLog ? DATA.gameLog.length : 0); i++) {
+    t = DATA.gameLog[i].team;
+    if (t && TEAMS.indexOf(t) === -1) TEAMS.push(t);
+  }
+  for (i = 0; i < TEAMS.length; i++) {
+    if (CARRY[TEAMS[i]] === undefined) CARRY[TEAMS[i]] = 0;
+    if (!COLORS[TEAMS[i]]) COLORS[TEAMS[i]] = PALETTE[i % PALETTE.length];
+  }
+  rebuild('carry'); rebuild('teamNames');
+}
+function rebuild(id) { var e = $(id); if (e) e.dataset.built = ''; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. THE SCORING ENGINE
+
+   One canonical sequence, applied identically every month, with every
+   step written into an audit trail you can point at in a dispute.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function compute() {
+  var W = [], i, k;                      // warnings raised while scoring
+  function warn(m) { W.push(m); }
+
+  var weekNames = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++) weekNames.push(DATA.weeks[i].tab);
+
+  /* ── Step 1: every member's own points ───────────────────────────── */
+  var teamOf = {}, trainOf = {}, members = {};
+  for (i = 0; i < ROSTER.length; i++) teamOf[norm(ROSTER[i].name)] = ROSTER[i].team;
+  for (i = 0; i < (DATA.training || []).length; i++) trainOf[norm(DATA.training[i].name)] = DATA.training[i].sessions;
+
+  function slot(name) {
+    var key = norm(name);
+    if (!members[key]) members[key] = { name: name, key: key, team: teamOf[key] || null,
+      visitor: 0, referral: 0, one21: 0, absent: 0, weeks: 0, training: trainOf[key] || 0, byWeek: {} };
+    return members[key];
+  }
+  for (i = 0; i < ROSTER.length; i++) slot(ROSTER[i].name);
+
+  for (i = 0; i < (DATA.weeks || []).length; i++) {
+    var w = DATA.weeks[i], j;
+    for (j = 0; j < w.rows.length; j++) {
+      var r = w.rows[j], m = slot(r.name);
+      m.visitor += r.V; m.referral += r.RGI + r.RGO; m.one21 += r.ONE21; m.absent += r.A; m.weeks++;
+      m.byWeek[w.tab] = (m.byWeek[w.tab] || 0) +
+        r.V * rule('visitor') + (r.RGI + r.RGO) * rule('referral') + r.ONE21 * rule('one21');
+    }
+  }
+  for (k in trainOf) if (trainOf.hasOwnProperty(k) && !members[k]) slot(k);
+
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    var m2 = members[k];
+    m2.perfect = (m2.weeks > 0 && m2.absent === 0) ? 1 : 0;
+    m2.pVisitor = m2.visitor * rule('visitor');
+    m2.pRef = m2.referral * rule('referral');
+    m2.p121 = m2.one21 * rule('one21');
+    m2.pTrain = m2.training * rule('training');
+    m2.pAttend = m2.perfect * rule('attendance');
+    m2.total = m2.pVisitor + m2.pRef + m2.p121 + m2.pTrain + m2.pAttend;
+  }
+
+  /* ── Step 2 & 3: roll members into their team ────────────────────── */
+  var teams = {};
+  function ts(name) {
+    if (!teams[name]) teams[name] = { name: name, visitor: 0, referral: 0, one21: 0, training: 0,
+      attendance: 0, manual: 0, boost: 0, gamble: 0, angelBonus: 0, cost: 0,
+      monthTotal: 0, carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {},
+      plays: [], audit: [], stolenIn: [], stolenOut: [], flags: [] };
+    return teams[name];
+  }
+  for (i = 0; i < TEAMS.length; i++) ts(TEAMS[i]);
+
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    var m3 = members[k];
+    if (!m3.team) continue;
+    var t = ts(m3.team);
+    t.visitor += m3.pVisitor; t.referral += m3.pRef; t.one21 += m3.p121;
+    t.training += m3.pTrain; t.attendance += m3.pAttend;
+    t.members.push(m3);
+    for (var wn in m3.byWeek) if (m3.byWeek.hasOwnProperty(wn)) t.byWeek[wn] = (t.byWeek[wn] || 0) + m3.byWeek[wn];
+  }
+
+  /* ── Read the game log into item plays and plain bonuses ─────────── */
+  var plays = [], manuals = [];
+  for (i = 0; i < (DATA.gameLog || []).length; i++) {
+    var g = DATA.gameLog[i];
+    if (!g.team) continue;
+    if (TEAMS.indexOf(g.team) === -1) { warn('Game log row for <b>' + esc(g.team) + '</b>, which is not a team on the board.'); continue; }
+    var ik = matchItem(g.item) || matchItem(g.type) || matchItem(g.notes);
+    if (ik) {
+      var def = item(ik);
+      var explicit = (g.points !== null && g.points !== undefined && num(g.points) < 0) ? Math.abs(num(g.points)) : null;
+      if (explicit !== null && explicit !== def.cost)
+        warn('<b>' + esc(g.team) + '</b> paid ' + n(explicit) + ' for ' + esc(def.name) +
+             ' but the shop price is ' + n(def.cost) + '. Charging what the log says.');
+      plays.push({ key: ik, def: def, team: g.team, targetTeam: g.targetTeam, targetMember: g.targetMember,
+                   area: g.area, outcome: g.outcome, notes: g.notes, cost: explicit === null ? def.cost : explicit,
+                   blocked: false, row: g });
+    } else {
+      var pts = (g.points === null || g.points === undefined || g.points === '') ? null : num(g.points);
+      var ty = norm(g.type) + ' ' + norm(g.notes);
+      if (pts === null) {
+        if (ty.indexOf('convert') !== -1) pts = rule('convert');
+        else if (ty.indexOf('theme') !== -1) pts = rule('theme');
+        else if (ty.indexOf('mtl') !== -1 || ty.indexOf('level up') !== -1) pts = rule('mtl');
+      }
+      if (pts === null) {
+        warn('Game log row for <b>' + esc(g.team) + '</b> (' + esc(g.type || g.notes || 'no type') +
+             ') has no points and is not a known item, so it was ignored.');
+        continue;
+      }
+      manuals.push({ team: g.team, points: pts, label: g.type || g.notes || 'Manual entry', row: g });
+    }
+  }
+  for (i = 0; i < plays.length; i++) ts(plays[i].team).plays.push(plays[i]);
+
+  /* Standings as they stood before this month's items did anything.
+     Guardian Angel eligibility and the "only attack upwards" rule both
+     read this, and both were settled at the meeting — before any player
+     changed hands — so stolen players are put back where they started. */
+  var preTeamOf = {};
+  for (k in members) if (members.hasOwnProperty(k)) preTeamOf[k] = members[k].team;
+  for (i = 0; i < plays.length; i++) {
+    if (plays[i].key !== 'blood') continue;
+    if (plays[i].targetTeam && plays[i].targetMember) preTeamOf[norm(plays[i].targetMember)] = plays[i].targetTeam;
+  }
+  var preSum = {};
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    if (preTeamOf[k]) preSum[preTeamOf[k]] = (preSum[preTeamOf[k]] || 0) + members[k].total;
+  }
+  var pre = [];
+  for (k in teams) {
+    if (!teams.hasOwnProperty(k)) continue;
+    var tp = teams[k];
+    tp.activity = tp.visitor + tp.referral + tp.one21 + tp.training + tp.attendance;
+    tp.preTotal = tp.carry + (preSum[tp.name] || 0);
+    pre.push(tp);
+  }
+  pre.sort(function (a, b) { return b.preTotal - a.preTotal; });
+  for (i = 0; i < pre.length; i++) pre[i].preRank = i + 1;
+  var bottomPre = pre.length ? pre[pre.length - 1].name : null;
+
+  /* ── Resolve Bloodthirster against Banshee's Veil ─────────────────── */
+  var veilLeft = {}, seenTarget = {};
+  for (i = 0; i < plays.length; i++) if (plays[i].key === 'veil') veilLeft[plays[i].team] = SET.veilBlocksAll ? 99 : 1;
+
+  for (i = 0; i < plays.length; i++) {
+    var p = plays[i];
+    if (p.key !== 'blood') continue;
+    var victim = p.targetTeam, who = p.targetMember;
+
+    if (!victim || !who) {
+      warn('<b>' + esc(p.team) + '</b> bought a Bloodthirster but the log does not say who was taken. ' +
+           'Fill in Target Team and Target Member.');
+      p.flag = 'incomplete';
+      continue;
+    }
+    if (veilLeft[victim] > 0) {
+      veilLeft[victim]--;
+      p.blocked = true;
+      if (norm(teamOf[norm(who)] || '') === norm(p.team))
+        warn('<b>' + esc(victim) + '</b> blocked that steal with a shield, but <b>' + esc(who) +
+             '</b> is sitting on ' + esc(p.team) + ' on the roster board. Move them back.');
+      continue;
+    }
+    if (SET.bloodOnlyAbove) {
+      var av = teams[p.team], vv = teams[victim];
+      if (av && vv && vv.preRank > av.preRank)
+        warn('<b>' + esc(p.team) + '</b> attacked <b>' + esc(victim) + '</b>, who is ranked below them. ' +
+             'The house rule is you may only attack upwards.');
+    }
+    var mk = norm(who);
+    if (seenTarget[mk]) warn('Two teams both logged a steal of <b>' + esc(who) + '</b>. Only one can stand — check the log.');
+    seenTarget[mk] = 1;
+
+    if (!members[mk]) warn('<b>' + esc(who) + '</b> was logged as stolen but is not in the sheet at all.');
+    else {
+      if (norm(members[mk].team || '') !== norm(p.team))
+        warn('<b>' + esc(p.team) + '</b> logged taking <b>' + esc(who) + '</b>, but the roster board still has them on <b>' +
+             esc(members[mk].team || 'no team') + '</b>. Drag them across on the Roster tab so the points follow.');
+      else {
+        ts(p.team).stolenIn.push({ name: members[mk].name, pts: members[mk].total, other: victim });
+        ts(victim).stolenOut.push({ name: members[mk].name, pts: members[mk].total, other: p.team });
+        if (members[mk].total === 0)
+          warn('<b>' + esc(p.team) + '</b> spent ' + n(p.cost) + ' to take <b>' + esc(who) +
+               '</b>, who has no points this month. The move stands, the swing is nil.');
+      }
+    }
+  }
+
+  /* ── Steps 4 to 9, in order, writing the audit as we go ──────────── */
+  var teamList = [];
+  for (k in teams) if (teams.hasOwnProperty(k)) teamList.push(teams[k]);
+
+  for (i = 0; i < teamList.length; i++) {
+    var T = teamList[i], run = 0, j, pl;
+    var log = function (name, why, delta, cls) {
+      if (delta !== null) run += delta;
+      T.audit.push({ name: name, why: why, delta: delta, running: run, cls: cls || '' });
+    };
+
+    /* 4. Activity */
+    log('Activity this month', T.members.length + ' member(s): ' +
+        n(T.visitor) + ' from visitors, ' + n(T.referral) + ' from referrals, ' + n(T.one21) +
+        ' from 1-2-1s, ' + n(T.training) + ' from training, ' + n(T.attendance) + ' from attendance.',
+        T.activity, 'hit');
+
+    /* Who changed hands, so the figure above can be argued with line by line. */
+    for (j = 0; j < T.stolenIn.length; j++)
+      log('Took ' + T.stolenIn[j].name + ' from ' + T.stolenIn[j].other,
+          'They brought ' + n(T.stolenIn[j].pts) + ' points with them, already counted in the figure above.',
+          null, 'hit');
+    for (j = 0; j < T.stolenOut.length; j++)
+      log('Lost ' + T.stolenOut[j].name + ' to ' + T.stolenOut[j].other,
+          'Their ' + n(T.stolenOut[j].pts) + ' points went with them, so they are not in the figure above.',
+          null, 'cut');
+
+    /* 5. Trinity Force */
+    for (j = 0; j < T.plays.length; j++) {
+      pl = T.plays[j];
+      if (pl.key !== 'trinity') continue;
+      var area = matchCat(pl.area);
+      if (!area) {
+        warn('<b>' + esc(T.name) + '</b> bought a Trinity Force but did not say which area to double. Nothing was doubled.');
+        log('Trinity Force', 'No area was chosen in the log, so nothing was doubled.', 0, 'cut');
+        continue;
+      }
+      if (!catTF(area)) {
+        warn('<b>' + esc(T.name) + '</b> pointed a Trinity Force at ' + esc(catLabel(area)) +
+             ', which is not an activity area. Only Visitors, Referrals, 1-2-1s, Training and Perfect attendance can be doubled.');
+        log('Trinity Force', catLabel(area) + ' cannot be doubled — activity areas only.', 0, 'cut');
+        continue;
+      }
+      var add = T[area] || 0;
+      T.boost += add;
+      log('Trinity Force doubles ' + catLabel(area),
+          add === 0 ? 'That area was worth nothing this month, so doubling it changes nothing.'
+                    : catLabel(area) + ' was worth ' + n(add) + ', so it counts twice.',
+          add, add === 0 ? 'cut' : 'hit');
+    }
+
+    /* 6. Mejai's Soulstealer */
+    for (j = 0; j < T.plays.length; j++) {
+      pl = T.plays[j];
+      if (pl.key !== 'mejai') continue;
+      var mj = mejaiState(T, weekNames);
+      pl.mejai = mj;
+      if (mj.hits >= SET.mejaiWeeksNeeded) {
+        T.gamble += SET.mejaiReward;
+        log("Mejai's Soulstealer pays out",
+            'Hit ' + SET.mejaiThreshold + '+ points in ' + mj.hits + ' of ' + mj.weeks.length + ' weeks.',
+            SET.mejaiReward, 'hit');
+      } else {
+        log("Mejai's Soulstealer misses",
+            'Needed ' + SET.mejaiWeeksNeeded + ' weeks at ' + SET.mejaiThreshold + '+ points, managed ' + mj.hits + '.',
+            0, 'cut');
+      }
+      if (weekNames.length && weekNames.length !== SET.mejaiWeeksOf)
+        warn('Mejai’s is written as ' + SET.mejaiWeeksNeeded + ' of ' + SET.mejaiWeeksOf +
+             ' weeks, but this month has ' + weekNames.length + ' weekly tabs. It is being judged on ' +
+             SET.mejaiWeeksNeeded + ' of ' + weekNames.length + '.');
+    }
+
+    /* 7. Manual bonuses from the game log */
+    var manSum = 0, manBits = [];
+    for (j = 0; j < manuals.length; j++) {
+      if (manuals[j].team !== T.name) continue;
+      manSum += manuals[j].points;
+      manBits.push(manuals[j].label + ' ' + (manuals[j].points >= 0 ? '+' : '') + n(manuals[j].points));
+    }
+    T.manual = manSum;
+    if (manBits.length) log('Bonuses from the game log', manBits.join(', ') + '.', manSum, manSum >= 0 ? 'hit' : 'cut');
+
+    /* 8. Guardian Angel */
+    for (j = 0; j < T.plays.length; j++) {
+      pl = T.plays[j];
+      if (pl.key !== 'angel') continue;
+      var eligible = (SET.gaEligible === 'preItems') ? (T.name === bottomPre) : true;
+      if (!eligible) {
+        warn('<b>' + esc(T.name) + '</b> took a Guardian Angel but they are not bottom of the table. It was not applied.');
+        log('Guardian Angel', 'Only the bottom team may take this. Not applied.', 0, 'cut');
+        continue;
+      }
+      if (norm(pl.outcome).indexOf('merge') !== -1) {
+        warn('<b>' + esc(T.name) + '</b> chose to merge rather than take the ' + SET.gaPercent +
+             '%. Merging changes how many teams the chapter has, so it is not scored automatically — ' +
+             'settle it in the room and log the result as a plain points row.');
+        log('Guardian Angel — merge', 'Merging is a decision for the room, not for this board. No points added.', 0, 'cut');
+        continue;
+      }
+      var base = run - (SET.tfBeforeGA ? 0 : T.boost);
+      var bonus = Math.round(base * SET.gaPercent / 100);
+      T.angelBonus += bonus;
+      log('Guardian Angel adds ' + SET.gaPercent + '%',
+          SET.gaPercent + '% of the ' + n(base) + ' earned so far this month, before item costs' +
+          (SET.tfBeforeGA ? '.' : ', with the Trinity Force doubling left out.'), bonus, 'hit');
+    }
+
+    /* 9. What the items cost */
+    var costSum = 0, costBits = [];
+    for (j = 0; j < T.plays.length; j++) {
+      pl = T.plays[j];
+      if (!pl.cost) continue;
+      costSum += pl.cost;
+      costBits.push(pl.def.name + ' ' + n(pl.cost) +
+        (pl.blocked ? (SET.veilChargesAttacker ? ' (blocked, still charged)' : ' (blocked, refunded)') : ''));
+      if (pl.blocked && !SET.veilChargesAttacker) costSum -= pl.cost;
+    }
+    T.cost = costSum;
+    if (costSum) log('What the items cost', costBits.join(', ') + '.', -costSum, 'cut');
+
+    if (T.plays.length > 1 && SET.oneItemPerTeam)
+      warn('<b>' + esc(T.name) + '</b> has ' + T.plays.length + ' items this month, but the rules are set to one per team.');
+
+    T.monthTotal = run;
+    if (!SET.allowNegative && T.monthTotal < 0) {
+      log('Floor at zero', 'The rules do not let a month go negative, so it stops at nought.', -T.monthTotal, 'cut');
+      T.monthTotal = 0;
+    }
+
+    /* 10. Carry-forward */
+    log('Points carried in', 'Banked before this month started.', T.carry, T.carry ? 'hit' : '');
+    T.grand = T.monthTotal + T.carry;
+    T.members.sort(function (a, b) { return b.total - a.total; });
+  }
+
+  teamList.sort(function (a, b) { return b.grand - a.grand; });
+  for (i = 0; i < teamList.length; i++) teamList[i].rank = i + 1;
+
+  return { teams: teamList, members: members, weekNames: weekNames, plays: plays, warnings: W, bottomPre: bottomPre };
+}
+
+function catTF(key) { var i; for (i = 0; i < CATS.length; i++) if (CATS[i].key === key) return CATS[i].key !== 'manual'; return false; }
+
+/* Mejai's: which weeks did this team clear the bar? */
+function mejaiState(T, weekNames) {
+  var out = { weeks: [], hits: 0 }, i, v;
+  for (i = 0; i < weekNames.length; i++) {
+    v = T.byWeek[weekNames[i]] || 0;
+    var hit = v >= SET.mejaiThreshold;
+    if (hit) out.hits++;
+    out.weeks.push({ name: weekNames[i], pts: v, hit: hit });
+  }
+  return out;
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   4. DRAWING THE BOARD
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var VIEWS = [['overview', 'OVERVIEW'], ['team', 'TEAMS'], ['members', 'MEMBERS'],
+             ['roster', 'ROSTER'], ['items', 'ITEMS'], ['broadcast', 'BROADCAST'],
+             ['data', 'DATA'], ['rules', 'RULES']];
+
+function go(v) {
+  VIEW = v;
+  var i;
+  for (i = 0; i < VIEWS.length; i++) $('v-' + VIEWS[i][0]).className = (VIEWS[i][0] === v ? '' : 'hide');
+  buildNav(); render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function buildNav() {
+  var h = '', i;
+  for (i = 0; i < VIEWS.length; i++)
+    h += '<button class="' + (VIEWS[i][0] === VIEW ? 'on' : '') + '" onclick="go(\'' + VIEWS[i][0] + '\')">' + VIEWS[i][1] + '</button>';
+  $('nav').innerHTML = h;
+}
+function toShop() { go('broadcast'); $('tpl').value = 'shop'; render(); }
+
+function render() {
+  buildRules(); buildCosts(); buildSettings(); buildCarry(); buildTeamNames(); buildOOO(); buildSchema(); fillSelects();
+  if (!DATA) { $('globalWarn').innerHTML = ''; return; }
+  var R = compute();
+  showWarnings(R);
+  if (VIEW === 'overview') { standings(R); mvp(R); glance(R); chart(R); breakdown(R); }
+  if (VIEW === 'team') dossier(R);
+  if (VIEW === 'members') memberTable(R);
+  if (VIEW === 'roster') { board(R); moveLog(); }
+  if (VIEW === 'items') { shop(R); pickOrder(R); stealPreview(R); mejaiPanel(R); logTable(); }
+  if (VIEW === 'broadcast') broadcast(R);
+}
+
+function showWarnings(R) {
+  var all = PARSE_WARN.concat(R.warnings);
+  $('globalWarn').innerHTML = all.length
+    ? '<div class="warn"><b>' + all.length + ' thing' + (all.length === 1 ? '' : 's') +
+      ' to look at</b><br><br>' + all.join('<br><br>') + '</div>' : '';
+}
+
+function fillSelects() {
+  var opts = '', i;
+  for (i = 0; i < TEAMS.length; i++) opts += '<option>' + esc(TEAMS[i]) + '</option>';
+  var pairs = [['teamPick', ''], ['memFilter', '<option value="">All teams</option>'],
+               ['newTeam', ''], ['calloutTeam', ''], ['stealFrom', ''],
+               ['stealTo', '<option value="">Pick a team…</option>']];
+  for (i = 0; i < pairs.length; i++) {
+    var s = $(pairs[i][0]); if (!s) continue;
+    var want = pairs[i][1] + opts, cur = s.value;
+    if (s.innerHTML !== want) { s.innerHTML = want; if (cur) s.value = cur; }
+  }
+  $('calloutWrap').className = ($('tpl').value === 'callout') ? '' : 'hide';
+}
+
+/* ── Standings ──────────────────────────────────────────────────────── */
+function standings(R) {
+  var max = 1, i, h = '';
+  for (i = 0; i < R.teams.length; i++) max = Math.max(max, R.teams[i].grand);
+  for (i = 0; i < R.teams.length; i++) {
+    var t = R.teams[i], badges = '';
+    for (var j = 0; j < t.plays.length; j++) badges += '<span class="pill">' + esc(t.plays[j].def.name) + '</span>';
+    h += '<div class="rank p' + (i + 1) + '" style="animation-delay:' + (i * 0.07) + 's;border-left-color:' +
+      color(t.name) + '" onclick="openTeam(\'' + q(t.name) + '\')">' +
+      '<div class="pos">' + (i + 1) + '</div><div>' +
+      '<div class="tname">' + esc(t.name) + badges + '</div>' +
+      '<div class="tmeta">' + t.members.length + ' member' + (t.members.length === 1 ? '' : 's') + ' &middot; ' +
+      n(t.carry) + ' carried in &middot; ' + n(t.monthTotal) + ' this month</div>' +
+      '<div class="bar"><i style="width:' + Math.max(0, t.grand / max * 100) + '%;background:linear-gradient(90deg,' +
+      color(t.name) + ',var(--gold))"></i></div></div>' +
+      '<div><div class="tpts">' + n(t.grand) + '</div><div class="tdelta' + (t.monthTotal < 0 ? ' neg' : '') + '">' +
+      (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + '</div></div></div>';
+  }
+  $('standings').innerHTML = h || '<div class="note">No teams yet.</div>';
+}
+function openTeam(name) { go('team'); $('teamPick').value = name; render(); }
+
+/* ── MVP ────────────────────────────────────────────────────────────── */
+function rostered(R) {
+  var out = [], k;
+  for (k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team) out.push(R.members[k]);
+  out.sort(function (a, b) { return b.total - a.total; });
+  return out;
+}
+function mvp(R) {
+  var all = rostered(R);
+  if (!all.length) {
+    $('mvpHero').innerHTML = '<div class="mvpCrown">NOBODY ON A TEAM YET</div>' +
+      '<div class="mvpLine">Load a Teams tab, or drag people onto a team on the Roster board.</div>';
+    $('mvpPodium').innerHTML = ''; $('mvpCats').innerHTML = '';
+    return;
+  }
+  var top = all[0], bits = [];
+  if (top.visitor) bits.push(top.visitor + ' visitor' + (top.visitor === 1 ? '' : 's'));
+  if (top.one21) bits.push(top.one21 + ' 1-2-1' + (top.one21 === 1 ? '' : 's'));
+  if (top.referral) bits.push(top.referral + ' referral' + (top.referral === 1 ? '' : 's') + ' given');
+  if (top.training) bits.push(top.training + ' training session' + (top.training === 1 ? '' : 's'));
+  if (top.perfect) bits.push('perfect attendance');
+  var second = all[1];
+  var lead = second ? top.total - second.total : 0;
+
+  $('mvpHero').innerHTML =
+    '<div class="mvpCrown">MVP THIS MONTH</div>' +
+    '<div class="mvpName">' + esc(top.name) + '</div>' +
+    '<div class="mvpTeam"><span class="dot" style="background:' + color(top.team) + '"></span>' + esc(top.team) + '</div>' +
+    '<div class="mvpPts">' + n(top.total) + '</div>' +
+    '<div class="mvpCrown">POINTS EARNED</div>' +
+    '<div class="mvpLine">' + (bits.length ? esc(bits.join(' · ')) : 'No activity logged yet') +
+    (second ? '<br>' + n(lead) + ' point' + (lead === 1 ? '' : 's') + ' clear of ' + esc(second.name) + '.' : '') + '</div>';
+
+  var h = '', i;
+  for (i = 1; i < Math.min(all.length, 5); i++) {
+    h += '<div class="pod"><div class="n">' + (i + 1) + '</div><div>' +
+      '<div class="who">' + esc(all[i].name) + '</div>' +
+      '<div class="whoTeam"><span class="dot" style="background:' + color(all[i].team) + '"></span>' + esc(all[i].team) + '</div>' +
+      '</div><div class="p">' + n(all[i].total) + '</div></div>';
+  }
+  $('mvpPodium').innerHTML = h || '<div class="note">Nobody else on the board yet.</div>';
+
+  var cats = [['visitor', 'Most visitors', ''], ['one21', 'Most 1-2-1s', ''],
+              ['referral', 'Most referrals given', ''], ['training', 'Most training', ' session(s)']];
+  var ch = '', c;
+  for (c = 0; c < cats.length; c++) {
+    var key = cats[c][0], best = null;
+    for (i = 0; i < all.length; i++) if (!best || all[i][key] > best[key]) best = all[i];
+    var tie = 0;
+    for (i = 0; i < all.length; i++) if (best && all[i][key] === best[key] && best[key] > 0) tie++;
+    ch += '<div class="catbox"><div class="ck">' + cats[c][1] + '</div>' +
+      '<div class="cv">' + (best && best[key] ? esc(best.name) + (tie > 1 ? ' +' + (tie - 1) + ' more' : '') : '—') + '</div>' +
+      '<div class="cd">' + (best && best[key] ? best[key] + cats[c][2] : 'nothing yet') + '</div></div>';
+  }
+  var perf = 0;
+  for (i = 0; i < all.length; i++) if (all[i].perfect) perf++;
+  ch += '<div class="catbox"><div class="ck">Perfect attendance</div>' +
+    '<div class="cv">' + perf + ' of ' + all.length + '</div>' +
+    '<div class="cd">no absences all month</div></div>';
+  $('mvpCats').innerHTML = ch;
+}
+
+/* ── At a glance ────────────────────────────────────────────────────── */
+function glance(R) {
+  var T = R.teams, all = rostered(R), i;
+  if (!T.length) { $('glance').innerHTML = ''; return; }
+  var lead = T[0], last = T[T.length - 1];
+  var gap = T.length > 1 ? lead.grand - T[1].grand : 0;
+  var mover = T.slice().sort(function (a, b) { return b.monthTotal - a.monthTotal; })[0];
+  var vis = 0, o21 = 0, refs = 0;
+  for (i = 0; i < all.length; i++) { vis += all[i].visitor; o21 += all[i].one21; refs += all[i].referral; }
+  var itemCount = R.plays.length;
+
+  var c = [
+    ['Leader', lead.name, n(lead.grand) + ' points, ' + n(gap) + ' clear'],
+    ['Best month so far', mover ? mover.name : '—', mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' this month' : ''],
+    ['Visitors', String(vis), 'worth ' + n(vis * rule('visitor')) + ' points'],
+    ['1-2-1s', String(o21), 'worth ' + n(o21 * rule('one21')) + ' points'],
+    ['Referrals given', String(refs), 'worth ' + n(refs * rule('referral')) + ' points'],
+    ['Items in play', String(itemCount), itemCount ? 'see the Items tab' : 'shop is quiet'],
+    ['Bottom team', last.name, n(last.grand) + ' points' + (R.bottomPre === last.name ? ', Guardian Angel eligible' : '')]
+  ];
+  var h = '';
+  for (i = 0; i < c.length; i++)
+    h += '<div class="card"><div class="k">' + c[i][0] + '</div><div class="v">' + esc(c[i][1]) +
+      '</div><div class="d">' + esc(c[i][2]) + '</div></div>';
+  $('glance').innerHTML = h;
+}
+
+/* ── Momentum chart ─────────────────────────────────────────────────── */
+function chart(R) {
+  var weeks = R.weekNames, i;
+  if (!weeks.length) {
+    $('chart').innerHTML = '<div class="note">No weekly tabs loaded, so there is nothing to chart yet.</div>';
+    $('legend').innerHTML = ''; return;
+  }
+  var W = 760, H = 250, PL = 46, PR = 14, PT = 16, PB = 32, max = 10, t, w;
+  for (i = 0; i < R.teams.length; i++)
+    for (w = 0; w < weeks.length; w++) max = Math.max(max, R.teams[i].byWeek[weeks[w]] || 0);
+  function xs(k) { return PL + (weeks.length < 2 ? (W - PL - PR) / 2 : k * (W - PL - PR) / (weeks.length - 1)); }
+  function ys(v) { return PT + (H - PT - PB) * (1 - v / max); }
+  var g = '';
+  for (i = 0; i <= 4; i++) {
+    var y = PT + (H - PT - PB) * i / 4, val = Math.round(max * (1 - i / 4));
+    g += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W - PR) + '" y2="' + y + '" stroke="#2a241c"/>' +
+         '<text x="' + (PL - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + val + '</text>';
+  }
+  if (SET.mejaiThreshold > 0 && SET.mejaiThreshold <= max) {
+    g += '<line x1="' + PL + '" y1="' + ys(SET.mejaiThreshold) + '" x2="' + (W - PR) + '" y2="' + ys(SET.mejaiThreshold) +
+         '" stroke="#b06cff" stroke-dasharray="4 4" stroke-width="1.5"/>' +
+         '<text x="' + (W - PR) + '" y="' + (ys(SET.mejaiThreshold) - 6) + '" text-anchor="end" fill="#b06cff">MEJAI TARGET</text>';
+  }
+  for (i = 0; i < weeks.length; i++)
+    g += '<text x="' + xs(i) + '" y="' + (H - 10) + '" text-anchor="middle">' + esc(String(weeks[i]).toUpperCase()) + '</text>';
+  for (i = 0; i < R.teams.length; i++) {
+    t = R.teams[i];
+    var pts = [];
+    for (w = 0; w < weeks.length; w++) pts.push(xs(w) + ',' + ys(t.byWeek[weeks[w]] || 0));
+    g += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color(t.name) +
+         '" stroke-width="2.5" stroke-linejoin="round" opacity="0.9"/>';
+    for (w = 0; w < weeks.length; w++)
+      g += '<circle cx="' + xs(w) + '" cy="' + ys(t.byWeek[weeks[w]] || 0) + '" r="3.5" fill="' + color(t.name) + '"/>';
+  }
+  $('chart').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + g + '</svg>';
+  var lh = '';
+  for (i = 0; i < R.teams.length; i++)
+    lh += '<span><span class="dot" style="background:' + color(R.teams[i].name) + '"></span>' + esc(R.teams[i].name) + '</span>';
+  lh += '<span style="color:#b06cff">— — Mejai target (' + SET.mejaiThreshold + ')</span>';
+  $('legend').innerHTML = lh;
+}
+
+/* ── Breakdown table ────────────────────────────────────────────────── */
+function breakdown(R) {
+  var cols = [['visitor', 'Visitors'], ['referral', 'Referrals'], ['one21', '1-2-1s'], ['training', 'Training'],
+              ['attendance', 'Attend.'], ['manual', 'Bonuses']];
+  var h = '<thead><tr><th>Team</th>', i, c;
+  for (c = 0; c < cols.length; c++) h += '<th>' + cols[c][1] + '</th>';
+  h += '<th>Item gains</th><th>Item cost</th><th>Month</th><th>Season</th></tr></thead><tbody>';
+  for (i = 0; i < R.teams.length; i++) {
+    var t = R.teams[i], gains = t.boost + t.gamble + t.angelBonus;
+    h += '<tr><td class="nm"><span class="dot" style="background:' + color(t.name) + '"></span>' + esc(t.name) + '</td>';
+    for (c = 0; c < cols.length; c++) {
+      var v = t[cols[c][0]] || 0;
+      h += '<td' + (v < 0 ? ' class="neg"' : '') + '>' + n(v) + '</td>';
+    }
+    h += '<td>' + (gains ? '+' + n(gains) : '0') + '</td>' +
+         '<td' + (t.cost ? ' class="neg"' : '') + '>' + (t.cost ? '-' + n(t.cost) : '0') + '</td>' +
+         '<td' + (t.monthTotal < 0 ? ' class="neg"' : '') + '>' + n(t.monthTotal) + '</td>' +
+         '<td class="tot">' + n(t.grand) + '</td></tr>';
+  }
+  $('breakdown').innerHTML = h + '</tbody>';
+}
+
+/* ── Team dossier + audit trail ─────────────────────────────────────── */
+function card(k, v, d) { return '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>'; }
+
+function dossier(R) {
+  var name = $('teamPick').value || TEAMS[0], t = null, i;
+  for (i = 0; i < R.teams.length; i++) if (R.teams[i].name === name) t = R.teams[i];
+  if (!t) { $('dossier').innerHTML = ''; return; }
+  var above = R.teams[t.rank - 2], below = R.teams[t.rank];
+  var cats = [['visitor', 'Visitors'], ['referral', 'Referrals'], ['one21', '1-2-1s'], ['training', 'Training'],
+              ['attendance', 'Attendance'], ['manual', 'Bonuses'], ['boost', 'Trinity Force'],
+              ['gamble', "Mejai's"], ['angelBonus', 'Guardian Angel']];
+  var maxc = 1;
+  for (i = 0; i < cats.length; i++) maxc = Math.max(maxc, Math.abs(t[cats[i][0]] || 0));
+
+  var h = '<div class="panel" style="border-left:5px solid ' + color(t.name) + '"><h2>' + esc(t.name) + '</h2>';
+  h += '<div class="cards">' +
+    card('Season rank', '#' + t.rank + ' of ' + R.teams.length, t.rank === 1 ? 'Holding the crown' : 'Chasing ' + esc(R.teams[0].name)) +
+    card('Season points', n(t.grand), n(t.carry) + ' carried in, ' + n(t.monthTotal) + ' this month') +
+    card('Gap above', above ? n(above.grand - t.grand) : '—', above ? 'to ' + esc(above.name) : 'Nobody above') +
+    card('Gap below', below ? n(t.grand - below.grand) : '—', below ? 'over ' + esc(below.name) : 'Nobody below') + '</div>';
+
+  h += '<h3>Where the points came from</h3>';
+  for (i = 0; i < cats.length; i++) {
+    var v = t[cats[i][0]] || 0;
+    if (!v && i > 5) continue;
+    h += '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13.5px">' +
+      '<span>' + cats[i][1] + '</span><span class="' + (v < 0 ? 'neg' : 'tot') + '">' + n(v) + '</span></div>' +
+      '<div class="bar"><i style="width:' + (Math.abs(v) / maxc * 100) + '%;background:' +
+      (v < 0 ? 'var(--red)' : color(t.name)) + '"></i></div></div>';
+  }
+
+  /* ── The audit trail — the line-by-line a captain can argue with ─── */
+  h += '<h3>Audit trail — every step, in order</h3><div class="aud">';
+  for (i = 0; i < t.audit.length; i++) {
+    var a = t.audit[i];
+    var cls = (a.delta === null || a.delta === 0) ? 'z' : (a.delta < 0 ? 'n' : '');
+    var shown = a.delta === null ? 'no change' : (a.delta > 0 ? '+' : '') + n(a.delta);
+    h += '<div class="step ' + a.cls + '"><div class="sTop"><span class="sName">' + esc(a.name) + '</span>' +
+      '<span class="sDelta ' + cls + '">' + shown + '</span></div>' +
+      '<div class="sWhy">' + a.why + '</div>' +
+      '<div class="sRun">Running total: <b>' + n(a.running) + '</b></div></div>';
+  }
+  h += '</div><div class="note">Season total: <b>' + n(t.grand) + '</b>. ' +
+    'Every number above comes straight from the sheet — change a point value on the Rules tab and this rewrites itself.</div>';
+
+  h += '<h3>What would move the needle</h3><div class="cards">';
+  if (below) h += card('Stay ahead', '+' + n(t.grand - below.grand + 1), 'to keep ' + esc(below.name) + ' behind');
+  if (above) h += card('Overtake', '+' + n(above.grand - t.grand + 1), 'to pass ' + esc(above.name) + ', about ' +
+    Math.ceil((above.grand - t.grand + 1) / Math.max(1, rule('visitor'))) + ' visitor(s)');
+  h += card('One more visitor', '+' + n(rule('visitor')), 'the single biggest lever available') + '</div>';
+
+  h += '<h3>Roster — ' + t.members.length + ' member' + (t.members.length === 1 ? '' : 's') + '</h3><div class="scroll"><table>' +
+    '<thead><tr><th>Member</th><th>Vis</th><th>Ref</th><th>1-2-1</th><th>Trn</th><th>Perfect</th><th>Points</th></tr></thead><tbody>';
+  for (i = 0; i < t.members.length; i++) {
+    var m = t.members[i];
+    h += '<tr><td class="nm">' + esc(m.name) + '</td><td>' + m.visitor + '</td><td>' + m.referral + '</td><td>' + m.one21 +
+      '</td><td>' + m.training + '</td><td>' + (m.perfect ? 'Yes' : '—') + '</td><td class="tot">' + n(m.total) + '</td></tr>';
+  }
+  if (!t.members.length) h += '<tr><td colspan="7" class="sub2">Nobody on this team yet.</td></tr>';
+  h += '</tbody></table></div>';
+
+  if (t.plays.length) {
+    h += '<h3>Items this month</h3><div class="scroll"><table><thead><tr><th>Item</th><th>Detail</th><th>Cost</th></tr></thead><tbody>';
+    for (i = 0; i < t.plays.length; i++) {
+      var p = t.plays[i], det = [];
+      if (p.targetMember) det.push('took ' + p.targetMember + (p.targetTeam ? ' from ' + p.targetTeam : ''));
+      if (p.area) det.push('doubling ' + p.area);
+      if (p.blocked) det.push('BLOCKED by a shield');
+      if (p.notes) det.push(p.notes);
+      h += '<tr><td class="nm">' + esc(p.def.name) + '</td><td class="sub2">' + esc(det.join(' · ') || '—') +
+        '</td><td class="neg">-' + n(p.cost) + '</td></tr>';
+    }
+    h += '</tbody></table></div>';
+  }
+  $('dossier').innerHTML = h + '</div>';
+}
+
+/* ── Member leaderboard ─────────────────────────────────────────────── */
+function sortBy(k) { SORT.dir = (SORT.k === k) ? -SORT.dir : -1; SORT.k = k; render(); }
+function memberTable(R) {
+  var qs = norm($('search').value), f = $('memFilter').value, i;
+  var list = rostered(R).filter(function (m) {
+    return (!f || m.team === f) && (!qs || norm(m.name).indexOf(qs) !== -1);
+  });
+  list.sort(function (a, b) {
+    var x = a[SORT.k], y = b[SORT.k];
+    if (typeof x === 'string') return SORT.dir * String(y).localeCompare(String(x));
+    return SORT.dir * ((y || 0) - (x || 0));
+  });
+  var cols = [['name', 'Member'], ['team', 'Team'], ['visitor', 'Vis'], ['referral', 'Ref'],
+              ['one21', '1-2-1'], ['training', 'Trn'], ['perfect', 'Perfect'], ['total', 'Points']];
+  var h = '<thead><tr>';
+  for (i = 0; i < cols.length; i++)
+    h += '<th onclick="sortBy(\'' + cols[i][0] + '\')">' + cols[i][1] +
+      (SORT.k === cols[i][0] ? (SORT.dir < 0 ? ' ▾' : ' ▴') : '') + '</th>';
+  h += '</tr></thead><tbody>';
+  for (i = 0; i < list.length; i++) {
+    var m = list[i];
+    var medal = (SORT.k === 'total' && SORT.dir < 0 && i < 3) ? ['1. ', '2. ', '3. '][i] : '';
+    h += '<tr><td class="nm">' + medal + esc(m.name) + '</td>' +
+      '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' + esc(m.team) + '</td>' +
+      '<td>' + m.visitor + '</td><td>' + m.referral + '</td><td>' + m.one21 + '</td><td>' + m.training + '</td>' +
+      '<td>' + (m.perfect ? 'Yes' : '—') + '</td><td class="tot">' + n(m.total) + '</td></tr>';
+  }
+  if (!list.length) h += '<tr><td colspan="8" class="sub2">Nobody matches that.</td></tr>';
+  $('members').innerHTML = h + '</tbody>';
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   5. THE ROSTER BOARD — drag a name, the whole board recalculates
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var BOARDITEMS = [];
+
+function board(R) {
+  BOARDITEMS = [];
+  var byTeam = {}, i, k, free = [];
+  for (i = 0; i < TEAMS.length; i++) byTeam[TEAMS[i]] = [];
+
+  for (k in R.members) {
+    if (!R.members.hasOwnProperty(k)) continue;
+    var m = R.members[k];
+    var rec = { name: m.name, key: k, team: m.team, pts: m.total, idx: BOARDITEMS.length };
+    BOARDITEMS.push(rec);
+    if (m.team && byTeam[m.team]) byTeam[m.team].push(rec); else free.push(rec);
+  }
+  function bypts(a, b) { return b.pts - a.pts; }
+
+  var h = '', ti;
+  for (ti = 0; ti < TEAMS.length; ti++) {
+    var tn = TEAMS[ti], arr = byTeam[tn] || [], tot = 0;
+    arr.sort(bypts);
+    for (i = 0; i < arr.length; i++) tot += arr[i].pts;
+    h += '<div class="col" style="border-top-color:' + color(tn) + '" ' +
+      'ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ondrop="dropOn(event,this,' + ti + ')">' +
+      '<div class="colHead"><span class="dot" style="background:' + color(tn) + '"></span>' +
+      '<span class="colName">' + esc(tn) + '</span></div>' +
+      '<div class="colMeta">' + arr.length + ' member' + (arr.length === 1 ? '' : 's') + ' &middot; ' + n(tot) + ' points</div>';
+    for (i = 0; i < arr.length; i++) h += chipHTML(arr[i], ti);
+    if (!arr.length) h += '<div class="grabhint">Empty — drop someone here.</div>';
+    h += '</div>';
+  }
+  if (free.length) {
+    free.sort(bypts);
+    h += '<div class="col free" ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ondrop="dropOn(event,this,-1)">' +
+      '<div class="colHead"><span class="dot" style="background:var(--red)"></span>' +
+      '<span class="colName">No team yet</span></div>' +
+      '<div class="colMeta">' + free.length + ' active in the sheet, points not counting for anyone</div>';
+    for (i = 0; i < free.length; i++) h += chipHTML(free[i], -1);
+    h += '</div>';
+  }
+  $('board').innerHTML = h;
+}
+
+function chipHTML(rec, ti) {
+  var s = '<select class="mv" draggable="false" onchange="moveTo(' + rec.idx + ',this.value)" ' +
+          'onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">' +
+          '<option value="">Move to…</option>', i;
+  for (i = 0; i < TEAMS.length; i++) if (i !== ti) s += '<option value="' + i + '">' + esc(TEAMS[i]) + '</option>';
+  s += '</select>';
+  return '<div class="pchip" draggable="true" ondragstart="dragStart(event,' + rec.idx + ')" ondragend="dragEnd(this)">' +
+    '<span class="pn">' + esc(rec.name) + '</span>' +
+    '<span class="r2"><span class="pp">' + n(rec.pts) + '</span>' + s + '</span></div>';
+}
+
+var DRAGGING = -1;
+function dragStart(e, idx) {
+  DRAGGING = idx;
+  try { e.dataTransfer.setData('text/plain', String(idx)); e.dataTransfer.effectAllowed = 'move'; } catch (x) {}
+  if (e.target && e.target.className) e.target.className = 'pchip drag';
+}
+function dragEnd(el) { el.className = 'pchip'; DRAGGING = -1; }
+function dragOver(e, col) { e.preventDefault(); col.className = col.className.indexOf('free') !== -1 ? 'col free over' : 'col over'; }
+function dragOff(col) { col.className = col.className.indexOf('free') !== -1 ? 'col free' : 'col'; }
+function dropOn(e, col, ti) {
+  e.preventDefault();
+  dragOff(col);
+  var idx = DRAGGING;
+  try { var d = e.dataTransfer.getData('text/plain'); if (d !== '') idx = parseInt(d, 10); } catch (x) {}
+  if (idx >= 0) moveTo(idx, ti);
+}
+
+function moveTo(idx, ti) {
+  ti = parseInt(ti, 10);
+  var rec = BOARDITEMS[idx];
+  if (!rec || isNaN(ti)) return;
+  if (ti < 0) { render(); return; }          /* dropping back into "no team" is a no-op */
+  var to = TEAMS[ti];
+  if (rec.team === to) { render(); return; }
+  var found = -1, i;
+  for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === rec.key) { found = i; break; }
+  if (found >= 0) ROSTER[found].team = to; else ROSTER.push({ name: rec.name, team: to });
+  MOVES.push({ name: rec.name, from: rec.team, to: to });
+  render();
+}
+function undoMove() {
+  if (!MOVES.length) return;
+  var mv = MOVES.pop(), i;
+  for (i = 0; i < ROSTER.length; i++) {
+    if (norm(ROSTER[i].name) !== norm(mv.name)) continue;
+    if (mv.from) ROSTER[i].team = mv.from; else ROSTER.splice(i, 1);
+    break;
+  }
+  render();
+}
+function resetRoster() {
+  if (MOVES.length && !confirm('Throw away ' + MOVES.length + ' change(s) and go back to what the sheet says?')) return;
+  ROSTER = ROSTER_BASE.slice();
+  var i; for (i = 0; i < ROSTER.length; i++) ROSTER[i] = { name: ROSTER[i].name, team: ROSTER[i].team };
+  MOVES = [];
+  render();
+}
+function moveLog() {
+  $('undoBtn').disabled = !MOVES.length;
+  if (!MOVES.length) { $('moveLog').innerHTML = ''; return; }
+  var h = '<div class="warn soft"><b>' + MOVES.length + ' unsaved change' + (MOVES.length === 1 ? '' : 's') +
+    '</b> — these only live in this browser tab until you paste them back into the sheet.<br><br>', i;
+  for (i = 0; i < MOVES.length; i++)
+    h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no team') + ' &rarr; ' + esc(MOVES[i].to) + '<br>';
+  $('moveLog').innerHTML = h + '</div>';
+}
+function addMember() {
+  var nm = $('newName').value.trim(), t = $('newTeam').value, i;
+  if (!nm) return;
+  for (i = 0; i < ROSTER.length; i++)
+    if (norm(ROSTER[i].name) === norm(nm)) { alert(nm + ' is already on ' + ROSTER[i].team + '.'); return; }
+  ROSTER.push({ name: nm, team: t });
+  MOVES.push({ name: nm, from: null, to: t });
+  $('newName').value = '';
+  render();
+}
+function renameTeam(i, newName) {
+  newName = String(newName).trim();
+  if (!newName) return;
+  var old = TEAMS[i], j;
+  for (j = 0; j < ROSTER.length; j++) if (ROSTER[j].team === old) ROSTER[j].team = newName;
+  for (j = 0; j < ROSTER_BASE.length; j++) if (ROSTER_BASE[j].team === old) ROSTER_BASE[j].team = newName;
+  CARRY[newName] = CARRY[old] || 0; delete CARRY[old];
+  COLORS[newName] = COLORS[old] || color(old);
+  TEAMS[i] = newName;
+  rebuild('carry'); rebuild('teamNames');
+  render();
+}
+function copyRoster() {
+  var out = 'Member Name\tTeam\n', i;
+  for (i = 0; i < ROSTER.length; i++) out += ROSTER[i].name + '\t' + ROSTER[i].team + '\n';
+  copyText(out, 'Roster copied. Paste it into cell A1 of your Teams tab, then Refresh.');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. THE ITEM SHOP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function shop(R) {
+  var h = '', i, j;
+  for (i = 0; i < ITEMS.length; i++) {
+    var it = ITEMS[i], holders = [];
+    for (j = 0; j < R.plays.length; j++) if (R.plays[j].key === it.key) holders.push(R.plays[j]);
+    h += '<div class="item' + (holders.length ? ' held' : '') + '" style="border-top-color:' + it.colour + '">' +
+      '<div class="itemTop"><div><div class="itemName">' + esc(it.name) + '</div>' +
+      '<div class="itemType">' + esc(it.type) + '</div></div>' +
+      '<div class="itemCost">' + (it.cost ? n(it.cost) : 'FREE') + '</div></div>' +
+      '<div class="itemPlain">' + esc(it.plain) + '</div>' +
+      '<div class="itemHold">';
+    if (!holders.length) h += 'Nobody has taken this yet.<br><span style="font-size:11.5px">To log it: ' + esc(it.needs) + '</span>';
+    else {
+      h += '<b>Taken by</b>';
+      for (j = 0; j < holders.length; j++) {
+        var p = holders[j], extra = [];
+        if (p.targetMember) extra.push('took ' + p.targetMember);
+        if (p.area) extra.push('doubling ' + p.area);
+        if (p.blocked) extra.push('blocked');
+        if (p.mejai) extra.push(p.mejai.hits + '/' + p.mejai.weeks.length + ' weeks hit');
+        h += '<div class="holder"><span class="dot" style="background:' + color(p.team) + '"></span>' +
+          '<span>' + esc(p.team) + (extra.length ? ' — ' + esc(extra.join(', ')) : '') + '</span></div>';
+      }
+    }
+    h += '</div></div>';
+  }
+  $('shop').innerHTML = h;
+}
+
+function pickOrder(R) {
+  var order = R.teams.slice(), i;
+  if ($('pickRule').value === 'reverse') order.reverse();
+  var h = '';
+  for (i = 0; i < order.length; i++)
+    h += '<div class="rank" style="border-left-color:' + color(order[i].name) + ';cursor:default">' +
+      '<div class="pos">' + (i + 1) + '</div><div><div class="tname">' + esc(order[i].name) + '</div>' +
+      '<div class="tmeta">' + n(order[i].grand) + ' points &middot; ' +
+      (i === 0 ? 'first choice of the shop' : 'sees what has gone and picks against it') + '</div></div>' +
+      '<div><div class="tpts">PICK ' + (i + 1) + '</div></div></div>';
+  $('pickOrder').innerHTML = h;
+}
+
+/* ── Steal resolver ─────────────────────────────────────────────────── */
+function stealPreview(R) {
+  if (!DATA) { $('stealBox').innerHTML = '<div class="note">Load some data first.</div>'; return; }
+  if (!R || !R.teams) R = compute();
+
+  var from = $('stealFrom').value, to = $('stealTo').value;
+  var pool = [], i, k;
+  for (k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team === to) pool.push(R.members[k]);
+  pool.sort(function (a, b) { return b.total - a.total; });
+
+  var sel = $('stealWho'), want = '<option value="">Pick or draw…</option>';
+  for (i = 0; i < pool.length; i++) want += '<option>' + esc(pool[i].name) + '</option>';
+  if (sel.innerHTML !== want) { var cur = sel.value; sel.innerHTML = want; sel.value = cur; }
+
+  if (!to) { $('stealBox').innerHTML = '<div class="note">Pick a target team to see the swing.</div>'; return; }
+  if (from === to) { $('stealBox').innerHTML = '<div class="warn">A team cannot steal from itself.</div>'; return; }
+
+  var A = null, V = null;
+  for (i = 0; i < R.teams.length; i++) { if (R.teams[i].name === from) A = R.teams[i]; if (R.teams[i].name === to) V = R.teams[i]; }
+  var who = $('stealWho').value, mem = who ? R.members[norm(who)] : null;
+  var cost = item('blood').cost;
+
+  /* Does the target already hold a shield this month? */
+  var shielded = false;
+  for (i = 0; i < R.plays.length; i++) if (R.plays[i].key === 'veil' && R.plays[i].team === to) shielded = true;
+
+  var msgs = [];
+  if (SET.bloodOnlyAbove && A && V && V.preRank > A.preRank)
+    msgs.push('<div class="warn">House rule says you may only attack a team above you. ' +
+      esc(to) + ' is currently below ' + esc(from) + '.</div>');
+  if (shielded)
+    msgs.push('<div class="warn"><b>' + esc(to) + ' is holding a Banshee\'s Veil.</b> This steal is blocked. ' +
+      esc(from) + (SET.veilChargesAttacker ? ' still pays the ' + n(cost) + '.' : ' gets the ' + n(cost) + ' back.') + '</div>');
+  if (!pool.length) msgs.push('<div class="warn">' + esc(to) + ' has nobody on their roster to take.</div>');
+
+  var h = msgs.join('');
+  if (mem && !shielded) {
+    var swing = mem.total;
+    h += '<div class="cards" style="margin-top:14px">' +
+      card('Player taken', esc(mem.name), n(swing) + ' points move with them') +
+      card(esc(from) + ' after', n(A.grand + swing - cost), '+' + n(swing) + ' from ' + esc(mem.name) + ', -' + n(cost) + ' for the item') +
+      card(esc(to) + ' after', n(V.grand - swing), '-' + n(swing) + ' once ' + esc(mem.name) + ' leaves') +
+      card('Net for ' + esc(from), (swing - cost >= 0 ? '+' : '') + n(swing - cost),
+           swing - cost >= 0 ? 'worth doing' : 'costs more than it gains') + '</div>';
+    if (swing === 0) h += '<div class="warn soft">' + esc(mem.name) + ' has no points this month. ' +
+      'The move is legal, but ' + esc(from) + ' would pay ' + n(cost) + ' for nothing this month.</div>';
+  } else if (mem && shielded) {
+    h += '<div class="cards" style="margin-top:14px">' +
+      card('Player taken', 'Nobody', 'the shield held') +
+      card(esc(from) + ' after', n(A.grand - (SET.veilChargesAttacker ? cost : 0)),
+           SET.veilChargesAttacker ? 'still charged ' + n(cost) : 'no charge') +
+      card(esc(to) + ' after', n(V.grand), 'unchanged') + '</div>';
+  } else if (!mem && pool.length) {
+    h += '<div class="note">Pick who was drawn, or press <b>Draw At Random</b>.</div>';
+  }
+  $('stealBox').innerHTML = h;
+}
+
+function drawRandom() {
+  var to = $('stealTo').value;
+  if (!to || !DATA) { alert('Pick a target team first.'); return; }
+  var R = compute(), pool = [], k;
+  for (k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team === to) pool.push(R.members[k]);
+  if (!pool.length) { alert(to + ' has nobody to take.'); return; }
+  var pick = pool[Math.floor(Math.random() * pool.length)];
+  $('stealWho').value = pick.name;
+  stealPreview(R);
+  alert('Drawn: ' + pick.name + '\n\nWrite this name into the Target Member column of your GameLog tab so the ' +
+        'draw is on the record, not just on this screen.');
+}
+
+function applySteal() {
+  var from = $('stealFrom').value, who = $('stealWho').value;
+  if (!who) { alert('Pick who was drawn first.'); return; }
+  var i, found = -1;
+  for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === norm(who)) found = i;
+  var was = found >= 0 ? ROSTER[found].team : null;
+  if (found >= 0) ROSTER[found].team = from; else ROSTER.push({ name: who, team: from });
+  MOVES.push({ name: who, from: was, to: from });
+  go('roster');
+  alert(who + ' now sits with ' + from + '.\n\nThis lives in this browser tab only. Use Copy Game Log Row and ' +
+        'Copy For Sheet so it survives the next refresh.');
+}
+
+function copyStealRow() {
+  var from = $('stealFrom').value, to = $('stealTo').value, who = $('stealWho').value;
+  if (!to || !who) { alert('Pick the target team and the member drawn first.'); return; }
+  var month = (DATA && DATA.month) || '';
+  var row = [month, from, 'Item', 'Bloodthirster', to, who, '', 'taken', -item('blood').cost, 'Drawn at random'].join('\t');
+  copyText(row, 'Row copied. Paste it as a new line in your GameLog tab.');
+}
+
+/* ── Mejai's tracker ────────────────────────────────────────────────── */
+function mejaiPanel(R) {
+  if (!R.weekNames.length) {
+    $('mejai').innerHTML = '<div class="note">No weekly tabs loaded, so there is no weekly pace to show.</div>';
+    return;
+  }
+  var h = '<div class="note" style="margin:0 0 14px">A week counts when a team scores <b>' + SET.mejaiThreshold +
+    '+</b> points from that week\'s meeting — visitors, referrals and 1-2-1s. Hit <b>' + SET.mejaiWeeksNeeded +
+    '</b> weeks and the gamble pays <b>' + SET.mejaiReward + '</b>.</div>', i, j;
+  for (i = 0; i < R.teams.length; i++) {
+    var t = R.teams[i], holds = false;
+    for (j = 0; j < t.plays.length; j++) if (t.plays[j].key === 'mejai') holds = true;
+    var st = mejaiState(t, R.weekNames);
+    h += '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">' +
+      '<span style="font-weight:600"><span class="dot" style="background:' + color(t.name) + '"></span>' + esc(t.name) +
+      (holds ? '<span class="pill">holding Mejai</span>' : '') + '</span>' +
+      '<span style="font-size:13px;color:' + (st.hits >= SET.mejaiWeeksNeeded ? 'var(--green)' : 'var(--muted)') + '">' +
+      st.hits + ' of ' + st.weeks.length + ' weeks hit' +
+      (holds ? (st.hits >= SET.mejaiWeeksNeeded ? ' — pays out' : ' — needs ' + (SET.mejaiWeeksNeeded - st.hits) + ' more') : '') +
+      '</span></div><div class="wk">';
+    for (j = 0; j < st.weeks.length; j++)
+      h += '<div class="wkbox' + (st.weeks[j].hit ? ' hit' : '') + '"><div class="wl">' + esc(st.weeks[j].name) + '</div>' +
+        '<div class="wv">' + n(st.weeks[j].pts) + '</div><div class="ws">' + (st.weeks[j].hit ? 'hit' : 'short') + '</div></div>';
+    h += '</div></div>';
+  }
+  $('mejai').innerHTML = h;
+}
+
+/* ── Game log table ─────────────────────────────────────────────────── */
+function logTable() {
+  var log = (DATA && DATA.gameLog) || [], i;
+  if (!log.length) {
+    $('log').innerHTML = '<tbody><tr><td class="sub2">Nothing in the GameLog tab yet. Add rows there for ' +
+      'conversions, level-ups, theme bonuses and every item bought.</td></tr></tbody>';
+    return;
+  }
+  var h = '<thead><tr><th>Month</th><th>Team</th><th>Item / Type</th><th>Target</th><th>Area</th>' +
+          '<th>Notes</th><th>Points</th></tr></thead><tbody>';
+  for (i = 0; i < log.length; i++) {
+    var g = log[i], ik = matchItem(g.item) || matchItem(g.type) || matchItem(g.notes);
+    var tgt = g.targetMember ? (g.targetMember + (g.targetTeam ? ' (' + g.targetTeam + ')' : '')) : (g.targetTeam || '—');
+    var pts = (g.points === null || g.points === undefined || g.points === '') ? (ik ? -item(ik).cost : null) : num(g.points);
+    h += '<tr><td class="nm">' + esc(g.month || '—') + '</td>' +
+      '<td class="sub2"><span class="dot" style="background:' + color(g.team) + '"></span>' + esc(g.team) + '</td>' +
+      '<td class="sub2">' + esc(ik ? item(ik).name : (g.type || g.item || '—')) + '</td>' +
+      '<td class="sub2">' + esc(tgt) + '</td>' +
+      '<td class="sub2">' + esc(g.area || '—') + '</td>' +
+      '<td class="sub2">' + esc(g.notes || '—') + '</td>' +
+      '<td class="' + (pts !== null && pts < 0 ? 'neg' : '') + '">' +
+      (pts === null ? '—' : (pts > 0 ? '+' : '') + n(pts)) + '</td></tr>';
+  }
+  $('log').innerHTML = h + '</tbody>';
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   7. THE SETTINGS PANELS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function buildRules() {
+  var el = $('rules'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < RULES.length; i++)
+    h += '<div><label>' + RULES[i].label + '<span class="chip ' + (RULES[i].auto ? 'a' : 'm') + '">' +
+      (RULES[i].auto ? 'auto' : 'man') + '</span></label><input type="number" value="' + RULES[i].pts +
+      '" oninput="RULES[' + i + '].pts=+this.value||0;render()"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildCosts() {
+  var el = $('itemCosts'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < ITEMS.length; i++)
+    h += '<div><label>' + esc(ITEMS[i].name) + '</label><input type="number" value="' + ITEMS[i].cost +
+      '" oninput="ITEMS[' + i + '].cost=+this.value||0;render()"></div>';
+  el.innerHTML = h + '<div style="grid-column:1/-1" class="note">A row in the game log with its own ' +
+    'negative points value overrides the price here, so historical months stay correct.</div>';
+  el.dataset.built = 1;
+}
+
+var TOGGLES = [
+  ['bloodOnlyAbove', 'A team may only take a player from a team ranked above them'],
+  ['veilBlocksAll', 'One shield blocks every attempt that month (off: it blocks one, then it is spent)'],
+  ['veilChargesAttacker', 'An attacker who gets blocked still pays for the item'],
+  ['tfBeforeGA', 'Guardian Angel’s percentage counts the Trinity Force doubling'],
+  ['allowNegative', 'Item costs may push a team below zero for the month'],
+  ['oneItemPerTeam', 'Warn me if a team buys more than one item in a month']
+];
+var NUMBERS = [
+  ['mejaiThreshold', 'Mejai’s: points needed in a week'],
+  ['mejaiWeeksNeeded', 'Mejai’s: weeks that must be hit'],
+  ['mejaiWeeksOf', 'Mejai’s: out of how many weeks'],
+  ['mejaiReward', 'Mejai’s: what it pays'],
+  ['gaPercent', 'Guardian Angel: bonus percentage']
+];
+function buildSettings() {
+  var el = $('settings'); if (el.dataset.built) return;
+  var h = '<div class="grid" style="grid-template-columns:1fr">', i;
+  for (i = 0; i < TOGGLES.length; i++)
+    h += '<div style="font-size:13.5px;line-height:1.6"><label style="display:flex;align-items:start;gap:2px;' +
+      'text-transform:none;letter-spacing:0;font-family:Barlow,sans-serif;font-size:13.5px;color:var(--text)">' +
+      '<input type="checkbox"' + (SET[TOGGLES[i][0]] ? ' checked' : '') +
+      ' onchange="SET.' + TOGGLES[i][0] + '=this.checked;render()"><span>' + TOGGLES[i][1] + '</span></label></div>';
+  h += '</div><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-top:18px">';
+  for (i = 0; i < NUMBERS.length; i++)
+    h += '<div><label>' + NUMBERS[i][1] + '</label><input type="number" value="' + SET[NUMBERS[i][0]] +
+      '" oninput="SET.' + NUMBERS[i][0] + '=+this.value||0;render()"></div>';
+  h += '<div><label>Who counts as the bottom team</label><select onchange="SET.gaEligible=this.value;render()">' +
+    '<option value="preItems"' + (SET.gaEligible === 'preItems' ? ' selected' : '') + '>Last place before any items</option>' +
+    '<option value="any"' + (SET.gaEligible === 'any' ? ' selected' : '') + '>Do not check, trust the log</option>' +
+    '</select></div></div>';
+
+  h += '<h3>Rules this board treats as settled</h3><div class="note" style="margin-top:0">' +
+    '<b>A stolen player stays put.</b> They join the new team for good, and every point they earn from then on ' +
+    'belongs to that team. The roster board is the record — move them there and the maths follows.<br><br>' +
+    '<b>Items are paid for in points.</b> The cost comes straight off the month, there is no separate coin purse.<br><br>' +
+    '<b>Trinity Force doubles activity only.</b> Visitors, referrals, 1-2-1s, training and perfect attendance. ' +
+    'It cannot double a bonus that came from the game log.<br><br>' +
+    '<b>Guardian Angel is worked out before item costs</b> — its percentage is taken on what the team earned, ' +
+    'not on what is left after the shopping.<br><br>' +
+    '<b>Shields last one month.</b> This board scores one month at a time. If the chapter lets an unused shield ' +
+    'carry over, log it again in the new month so it is on the record.<br><br>' +
+    '<b>Merging teams is not scored here.</b> It changes how many teams the chapter has, so settle it in the room ' +
+    'and log the outcome as a plain points row.</div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+
+function buildCarry() {
+  var el = $('carry'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < TEAMS.length; i++)
+    h += '<div><label>' + esc(TEAMS[i]) + '</label><input type="number" value="' + (CARRY[TEAMS[i]] || 0) +
+      '" oninput="CARRY[\'' + q(TEAMS[i]) + '\']=+this.value||0;render()"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildTeamNames() {
+  var el = $('teamNames'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < TEAMS.length; i++)
+    h += '<div><label><span class="dot" style="background:' + color(TEAMS[i]) + '"></span>Team ' + (i + 1) +
+      '</label><input value="' + esc(TEAMS[i]) + '" onchange="renameTeam(' + i + ',this.value)"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildOOO() {
+  var el = $('ooo'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < OOO.length; i++) h += '<li>' + OOO[i] + '</li>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildSchema() {
+  var el = $('schema'); if (el.dataset.built) return;
+  var rows = [
+    ['Month', 'September 2026', 'Which month this row belongs to.'],
+    ['Team', 'Big Hero', 'Who the row is about. Must match a team name exactly.'],
+    ['Type', 'Item / Conversion / MTL / ThemeBonus', 'What kind of row this is.'],
+    ['Item', 'Bloodthirster', 'Which item was bought. Leave blank for a plain bonus.'],
+    ['Target Team', '6 Braincells', 'Bloodthirster only — who was attacked.'],
+    ['Target Member', 'Alex Ang', 'Bloodthirster only — who was drawn.'],
+    ['Area', 'Visitors', 'Trinity Force only — which area is doubled.'],
+    ['Outcome', 'taken / blocked / merge', 'What actually happened, once you know.'],
+    ['Points', '-300', 'Negative for a cost, positive for a bonus. Blank means use the shop price.'],
+    ['Notes', 'Drawn at random at the meeting', 'Anything a captain might ask about later.']
+  ];
+  var h = '<thead><tr><th>Column</th><th>Example</th><th>What it is for</th></tr></thead><tbody>', i;
+  for (i = 0; i < rows.length; i++)
+    h += '<tr><td class="nm">' + rows[i][0] + '</td><td class="sub2">' + esc(rows[i][1]) +
+      '</td><td class="sub2">' + esc(rows[i][2]) + '</td></tr>';
+  el.innerHTML = h + '</tbody>'; el.dataset.built = 1;
+}
+
+/* ── Data-quality check, run every time new data lands ──────────────── */
+function checkData() {
+  var msgs = [], i, j;
+  if (!ROSTER.length) msgs.push('No <b>Teams</b> tab was found, so every score stays at zero until you add one ' +
+    '— or drag people onto teams on the Roster board.');
+  if (!DATA.weeks.length) msgs.push('No weekly PALMS tabs were found. Only manual bonuses will count.');
+  var have = {};
+  for (i = 0; i < ROSTER.length; i++) have[norm(ROSTER[i].name)] = 1;
+  var orphans = {}, list = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++)
+    for (j = 0; j < DATA.weeks[i].rows.length; j++) {
+      var nm = DATA.weeks[i].rows[j].name;
+      if (!have[norm(nm)] && !orphans[nm]) { orphans[nm] = 1; list.push(nm); }
+    }
+  if (list.length) msgs.push('Active in the sheet but on no team, so their points are going nowhere: <b>' +
+    esc(list.join(', ')) + '</b>. Drag them onto a team on the Roster board.');
+  $('warnbox').innerHTML = msgs.length ? '<div class="warn">' + msgs.join('<br><br>') + '</div>' : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   8. THE ANNOUNCEMENT WRITER — plain English, for the whole chapter
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function broadcast(R) {
+  var tpl = $('tpl').value, short = $('len').value === 'short', T = R.teams, i;
+  var medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  var all = rostered(R), top = all[0];
+  var mover = T.slice().sort(function (a, b) { return b.monthTotal - a.monthTotal; })[0];
+  var gap = T.length > 1 ? T[0].grand - T[1].grand : 0;
+  var out = '';
+
+  function board2() {
+    var s = [], i2;
+    for (i2 = 0; i2 < T.length; i2++) {
+      var line = (medals[i2] || (i2 + 1) + '.') + ' *' + T[i2].name + '* - ' + n(T[i2].grand) + ' points';
+      if (!short && T[i2].monthTotal) line += '  _(' + (T[i2].monthTotal > 0 ? '+' : '') + n(T[i2].monthTotal) + ' this month)_';
+      s.push(line);
+    }
+    return s.join('\n');
+  }
+
+  if (tpl === 'standings') {
+    out = '⚔️ *LEAGUE OF TITANS - LIVE STANDINGS* ⚔️\n\n' + board2() + '\n';
+    if (!short) {
+      out += '\n🔥 Gap at the top: *' + n(gap) + ' points*';
+      if (mover && mover.monthTotal > 0) out += '\n📈 Best month so far: *' + mover.name + '* (+' + n(mover.monthTotal) + ')';
+      if (T.length) out += '\n😇 ' + T[T.length - 1].name + ' sits bottom, so the free Guardian Angel is theirs to take.';
+      out += '\n\nEvery visitor, every 1-2-1, every referral counts.\nNobody is out of this. 💪';
+    }
+  }
+  if (tpl === 'shop') {
+    var order = T.slice();
+    if ($('pickRule').value === 'reverse') order.reverse();
+    out = '🛒 *THE ITEM SHOP IS OPEN* 🛒\n\nThis month you choose in this order:\n\n';
+    for (i = 0; i < order.length; i++) out += (medals[i] || (i + 1) + '.') + ' *' + order[i].name + '*\n';
+    if (!short) {
+      out += '\nWhat is on the shelf:\n';
+      for (i = 0; i < ITEMS.length; i++)
+        out += '• *' + ITEMS[i].name + '* (' + (ITEMS[i].cost ? n(ITEMS[i].cost) + ' points' : 'free, bottom team only') +
+               ') - ' + ITEMS[i].plain + '\n';
+      out += '\nTalk it through with your team before you choose.\nOne pick each, make it count. 🧠\n\n*LET THE LEAGUE BEGIN!* 🏆';
+    }
+  }
+  if (tpl === 'midmonth') {
+    out = '⏳ *HALFWAY THROUGH THE MONTH* ⏳\n\n' + board2() + '\n';
+    if (!short) {
+      out += '\nStill wide open:\n';
+      if (T[1]) out += '• ' + T[1].name + ' needs *' + n(gap + 1) + ' points* to take top spot\n';
+      out += '• One visitor is *' + n(rule('visitor')) + ' points*. Nothing else comes close.\n' +
+             '• A single 1-2-1 is *' + n(rule('one21')) + '*. They add up faster than you would think.\n\n' +
+             'Two weeks left. Lets move. 🔥';
+    }
+  }
+  if (tpl === 'mvp') {
+    out = '🏅 *MEMBER LEADERBOARD* 🏅\n\n';
+    for (i = 0; i < Math.min(all.length, 5); i++)
+      out += (medals[i] || (i + 1) + '.') + ' *' + all[i].name + '* - ' + n(all[i].total) + ' points _(' + all[i].team + ')_\n';
+    if (!short && top) {
+      var bits = [];
+      if (top.visitor) bits.push(top.visitor + ' visitor(s)');
+      if (top.one21) bits.push(top.one21 + ' 1-2-1s');
+      if (top.referral) bits.push(top.referral + ' referrals given');
+      out += '\n👑 ' + top.name + ' is carrying ' + top.team + ' right now' +
+        (bits.length ? ': ' + bits.join(', ') : '') + '.\n\nWho is taking that crown next month? 👀';
+    }
+  }
+  if (tpl === 'close') {
+    out = '🏆 *MONTH CLOSED - FINAL STANDINGS* 🏆\n\n' + board2();
+    if (!short && T.length) {
+      out += '\n\n👑 *' + T[0].name + '* takes the month with ' + n(T[0].grand) + ' points.\n';
+      if (mover) out += '📈 Best month goes to *' + mover.name + '*, ' +
+        (mover.monthTotal > 0 ? '+' : '') + n(mover.monthTotal) + ' points.\n';
+      if (top) out += '🏅 Member of the month: *' + top.name + '* (' + n(top.total) + ' points).\n';
+      out += '\nThe shop reopens at the next physical meeting.\nRest up. Then come back hungry. ⚔️';
+    }
+  }
+  if (tpl === 'callout') {
+    var nm = $('calloutTeam').value || TEAMS[0], t = null;
+    for (i = 0; i < T.length; i++) if (T[i].name === nm) t = T[i];
+    if (t) {
+      var above = T[t.rank - 2], below = T[t.rank];
+      out = '📣 *' + t.name + ' - just for us*\n\nWe are *#' + t.rank + '* with ' + n(t.grand) + ' points.\n';
+      if (!short) {
+        if (above) out += '\n⬆️ ' + above.name + ' is *' + n(above.grand - t.grand) + ' points* ahead. That is about ' +
+          Math.ceil((above.grand - t.grand) / Math.max(1, rule('visitor'))) + ' visitor(s). Very doable.\n';
+        if (below) out += '⬇️ ' + below.name + ' is *' + n(t.grand - below.grand) + ' points* behind. No sitting back.\n';
+        if (t.members[0]) out += '\n🏅 Carrying us right now: *' + t.members[0].name + '* with ' + n(t.members[0].total) + ' points.\n';
+        var quiet = t.members[t.members.length - 1];
+        if (quiet && t.members.length > 2 && quiet.total === 0)
+          out += '🤝 ' + quiet.name + ' is still on nought. Lets get them a 1-2-1 this week.\n';
+        out += '\nOne visitor each and the whole table changes. 💪';
+      }
+    }
+  }
+  $('msg').value = out;
+}
+
+/* ── Copying things out ─────────────────────────────────────────────── */
+function copyMsg() { copyText($('msg').value, 'Announcement copied.'); }
+function copyGameLogHeader() {
+  copyText('Month\tTeam\tType\tItem\tTarget Team\tTarget Member\tArea\tOutcome\tPoints\tNotes',
+    'Header copied. Paste into cell A1 of your GameLog tab.');
+}
+function copyTeamsHeader() { copyText('Member Name\tTeam', 'Header copied. Paste into cell A1 of your Teams tab.'); }
+function copyBookmark() {
+  var u = $('url').value.trim();
+  if (!u) { setStatus('Load a source first, then this makes you a one-click link.', 'err'); return; }
+  var link = location.href.split('#')[0] + '#src=' + encodeURIComponent(u) +
+             '&tabs=' + encodeURIComponent($('tabs').value);
+  copyText(link, 'Link copied. Bookmark it — opening it loads the live numbers straight away.');
+}
+function copyText(txt, okMsg) {
+  var ok = function () { setStatus(okMsg, 'ok'); alert(okMsg); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(ok, function () { legacyCopy(txt, ok); });
+  } else legacyCopy(txt, ok);
+}
+function legacyCopy(txt, ok) {
+  var ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+  ok();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. DEMO DATA — real rosters, invented activity, every item in play
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function demo() {
+  var roster = {
+    'Big Hero': ['Connie Chye Loy Fong', 'Eric Choong', 'Crystal Low Ming Tong'],
+    /* Grace Tiau sits with Team Pokemon because the Bloodthirster below took her. */
+    'Team Pokemon': ['Raymond Phang', 'Chiew Jian Jin', 'Dominic Yeoh Wei Ching', 'Sharon Lee', 'Max Low Yong Wen', 'Patrick Soo Kwok Choy', 'Grace Tiau'],
+    '6 Braincells': ['Mogo Cheok Yee Herng', 'Michelle Fung', 'Alex Ang', 'Daniel Chew', 'Eric Chee', 'Kingsley Yap'],
+    'Heng Ong Huat': ['Surely Lim', 'Muniyandy S', 'Qingni Fong', 'Regene Ng'],
+    'Backstreet Boys': ['Shane Tan', 'Poh Pin Penny Lim', 'Jimmy Lim Jun Yew', 'Jason Lai', 'wyman soh', 'Joanne Kong', 'Sheik Yoong Ong']
+  };
+  var teams = [], names = [], t, i;
+  for (t in roster) {
+    if (!roster.hasOwnProperty(t)) continue;
+    for (i = 0; i < roster[t].length; i++) { teams.push({ name: roster[t][i], team: t }); names.push(roster[t][i]); }
+  }
+  var seed = 7;
+  function rnd(x) { seed = (seed * 9301 + 49297) % 233280; return Math.floor(seed / 233280 * x); }
+  var weeks = [], w, rows;
+  for (w = 1; w <= 4; w++) {
+    rows = [];
+    for (i = 0; i < names.length; i++)
+      rows.push({ name: names[i], P: 1, A: rnd(9) === 0 ? 1 : 0, L: 0, M: 0, S: 0,
+                  RGI: rnd(3), RGO: rnd(3), RRI: 0, RRO: 0, V: rnd(7) === 0 ? 1 : 0, ONE21: rnd(4), REV: 0 });
+    weeks.push({ tab: 'Week ' + w, rows: rows });
+  }
+  var training = [];
+  for (i = 0; i < names.length; i++) training.push({ name: names[i], sessions: rnd(3) === 0 ? 1 : 0 });
+
+  var M = 'September 2026';
+  var pay = {
+    ok: true, month: M, weeks: weeks, teams: teams, training: training,
+    gameLog: [
+      { month: M, team: 'Team Pokemon', type: 'Item', item: 'Bloodthirster', targetTeam: 'Big Hero',
+        targetMember: 'Grace Tiau', area: '', outcome: 'taken', points: null, notes: 'Drawn at random at the meeting' },
+      { month: M, team: '6 Braincells', type: 'Item', item: 'Trinity Force', targetTeam: '', targetMember: '',
+        area: 'Visitors', outcome: '', points: null, notes: 'Doubling visitors' },
+      { month: M, team: 'Backstreet Boys', type: 'Item', item: "Banshee's Veil", targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: null, notes: '' },
+      { month: M, team: 'Big Hero', type: 'Item', item: "Mejai's Soulstealer", targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: null, notes: '' },
+      { month: M, team: 'Team Pokemon', type: 'Item', item: 'Guardian Angel', targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: null, notes: 'Bottom of the table' },
+      { month: M, team: 'Big Hero', type: 'Conversion', item: '', targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: 100, notes: 'Visitor joined as a member' },
+      { month: M, team: 'Heng Ong Huat', type: 'ThemeBonus', item: '', targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: 100, notes: 'Hit the monthly invite theme' },
+      { month: M, team: '6 Braincells', type: 'MTL', item: '', targetTeam: '', targetMember: '',
+        area: '', outcome: '', points: 30, notes: 'Member levelled up' }
+    ]
+  };
+  PARSE_WARN = [];
+  LAST = { kind: 'demo' };
+  CARRY = { 'Big Hero': 1496, 'Team Pokemon': 515, '6 Braincells': 1171, 'Heng Ong Huat': 1403, 'Backstreet Boys': 750 };
+  adopt(pay, 'Demo data', '');
+  setStatus('Demo mode — invented weekly numbers on your real rosters, with all five items in play. ' +
+    'Nothing here is real. Load a link to see the true board.', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. START UP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function boot() {
+  wireFiles();
+  buildNav();
+
+  /* A link like index.html#src=<sheet url> loads itself. Bookmark it and
+     the board is live the moment you open the tab — no storage needed. */
+  var hash = location.hash.replace(/^#/, ''), parts = hash.split('&'), p = {}, i, kv;
+  for (i = 0; i < parts.length; i++) {
+    kv = parts[i].split('=');
+    if (kv[0]) p[kv[0]] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
+  }
+  if (p.tabs) $('tabs').value = p.tabs;
+  if (p.src) { $('url').value = p.src; go('overview'); load(); return; }
+  if (hash === 'demo') { go('overview'); demo(); return; }
+
+  go('data');
+  render();
+}
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Local Claude Code session/config — do not publish
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
