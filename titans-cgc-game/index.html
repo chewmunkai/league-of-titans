@@ -1,0 +1,3271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Titans CGC Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Arcade, white cabinet ────────────────────────────────────────────
+   Chunky ink outlines, hard offset shadows, pixel type for anything that
+   is a score. Everything else stays quiet so the numbers carry the page. */
+:root{
+  --bg:#eef1f7; --paper:#fff; --paper2:#f7f9fd; --ink:#0e1117; --muted:#646d85;
+  --line:#d7dde9; --line2:#e8ecf4;
+  --red:#cf2030; --red-dk:#9c1723; --gold:#ffc72c; --gold-dk:#c9960d;
+  --green:#00a24a; --blue:#1f6feb; --purple:#7c4dff; --orange:#f07e13;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;padding-bottom:72px;
+  background-image:
+    radial-gradient(ellipse 85% 42% at 50% -6%,rgba(207,32,48,.13),transparent 72%),
+    linear-gradient(0deg,rgba(14,17,23,.042) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,17,23,.042) 1px,transparent 1px);
+  background-size:auto,34px 34px,34px 34px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 18px}
+.pix{font-family:'Press Start 2P',monospace}
+
+/* ── Header ───────────────────────────────────────────────────────── */
+header{padding:34px 0 16px;text-align:center}
+.badge{display:inline-block;background:var(--gold);color:#3a2b00;font-family:'Press Start 2P',monospace;
+  font-size:8px;letter-spacing:1.2px;padding:9px 14px;border:2px solid var(--ink);border-radius:6px;
+  transform:rotate(-1.6deg);box-shadow:4px 4px 0 var(--ink);margin-bottom:20px}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(17px,4vw,36px);line-height:1.42;color:var(--ink);
+  text-shadow:3px 3px 0 var(--red)}
+.sub{color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:14px;
+  letter-spacing:2.8px;text-transform:uppercase;margin-top:14px;font-weight:600}
+.topbar{display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.src{font-size:12.5px;color:var(--muted);background:var(--paper);border:2px solid var(--line);
+  border-radius:20px;padding:6px 14px}
+.src b{color:var(--ink);font-weight:600}
+.src.live b{color:var(--green)}
+.src.demo b{color:var(--orange)}
+
+/* ── Nav ──────────────────────────────────────────────────────────── */
+nav{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:26px 0 22px}
+nav button{background:var(--paper);border:2px solid var(--ink);color:var(--ink);
+  font-family:'Press Start 2P',monospace;font-size:8.5px;padding:11px 13px;border-radius:7px;
+  cursor:pointer;transition:.1s;letter-spacing:.5px;box-shadow:3px 3px 0 var(--ink)}
+nav button:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+nav button.on{background:var(--red);color:#fff;border-color:var(--ink)}
+
+/* ── Panels ───────────────────────────────────────────────────────── */
+.panel{background:var(--paper);border:2px solid var(--ink);border-radius:13px;padding:24px;
+  margin-bottom:20px;box-shadow:0 4px 0 var(--ink)}
+.panel h2{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--ink);margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;letter-spacing:.4px;line-height:1.55}
+.panel h2::before{content:'';width:6px;height:17px;background:var(--red);border-radius:1px;flex:none}
+.panel h3{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:2px;font-weight:700;
+  text-transform:uppercase;color:var(--muted);margin:24px 0 12px}
+
+/* ── Form furniture ───────────────────────────────────────────────── */
+label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:11.5px;letter-spacing:1.6px;
+  font-weight:600;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;background:var(--paper);border:2px solid var(--line);color:var(--ink);
+  padding:10px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink)}
+select{cursor:pointer}
+input[type=checkbox]{width:auto;margin-right:9px;vertical-align:-2px;accent-color:var(--red)}
+button.b{background:var(--gold);color:#3a2b00;border:2px solid var(--ink);border-radius:7px;cursor:pointer;
+  font-family:'Press Start 2P',monospace;font-size:8.5px;padding:13px 15px;
+  box-shadow:4px 4px 0 var(--ink);transition:.08s;white-space:nowrap}
+button.b:hover{transform:translate(1px,1px);box-shadow:3px 3px 0 var(--ink)}
+button.b:active{transform:translate(4px,4px);box-shadow:none}
+button.b:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:4px 4px 0 var(--ink)}
+button.g{background:var(--paper)}
+button.sm{font-size:7.5px;padding:9px 11px;box-shadow:3px 3px 0 var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.grid{display:grid;gap:13px}
+.status{margin-top:13px;font-size:13px;color:var(--muted);min-height:18px;line-height:1.6}
+.status.err{color:var(--red)}
+.status.ok{color:var(--green)}
+.status.busy{color:var(--gold-dk)}
+.warn{background:#fdf0f1;border:2px solid var(--red);border-radius:8px;
+  padding:13px 15px;font-size:13px;color:#8d1521;margin-top:13px;line-height:1.7}
+.warn.soft{background:#fff9e6;border-color:var(--gold-dk);color:#6b4d00}
+.note{font-size:13px;color:var(--muted);line-height:1.7;margin-top:13px}
+.note b{color:var(--ink)}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:7px}
+
+/* ── The head-to-head hero — the thing the room looks at ──────────── */
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch}
+.vteam{background:var(--paper2);border:3px solid var(--ink);border-radius:13px;padding:22px 20px;
+  box-shadow:6px 6px 0 var(--ink);position:relative;overflow:hidden;border-top-width:10px;
+  border-top-color:var(--c,var(--ink));text-align:center}
+.vteam.win{background:linear-gradient(180deg,rgba(255,199,44,.22),var(--paper) 62%)}
+.vteam::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(14,17,23,.028) 0 1px,transparent 1px 4px)}
+.vcrown{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:1.3px;color:var(--muted);
+  min-height:12px}
+.vteam.win .vcrown{color:var(--gold-dk)}
+.vname{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(21px,3.4vw,32px);
+  letter-spacing:.8px;text-transform:uppercase;line-height:1.15;margin:12px 0 4px}
+.vscore{font-family:'Press Start 2P',monospace;font-size:clamp(24px,5vw,44px);color:var(--c,var(--ink));
+  margin:14px 0 8px;line-height:1.25;text-shadow:3px 3px 0 rgba(14,17,23,.13)}
+.vmeta{font-size:13px;color:var(--muted);line-height:1.65}
+.vmonth{display:inline-block;font-family:'Press Start 2P',monospace;font-size:9px;margin-top:11px;
+  padding:6px 10px;border:2px solid var(--ink);border-radius:6px;background:var(--paper)}
+.vmid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;min-width:104px}
+.vs{font-family:'Press Start 2P',monospace;font-size:19px;color:#fff;background:var(--ink);
+  border-radius:50%;width:72px;height:72px;display:flex;align-items:center;justify-content:center;
+  box-shadow:5px 5px 0 var(--red)}
+.vgap{font-family:'Press Start 2P',monospace;font-size:13px;text-align:center;line-height:1.5}
+.vgapl{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1.8px;font-weight:600;
+  text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.4}
+
+/* Tug-of-war: one bar, split by season share. */
+.tug{margin-top:20px}
+.tugbar{display:flex;height:34px;border:3px solid var(--ink);border-radius:9px;overflow:hidden;
+  box-shadow:4px 4px 0 var(--ink);background:var(--paper2)}
+.tugbar i{display:block;height:100%;transition:width .5s cubic-bezier(.2,.9,.3,1);
+  display:flex;align-items:center;font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;
+  text-shadow:1px 1px 0 rgba(0,0,0,.4);min-width:0;overflow:hidden;white-space:nowrap}
+.tugbar i.l{justify-content:flex-start;padding-left:11px}
+.tugbar i.r{justify-content:flex-end;padding-right:11px;border-left:3px solid var(--ink)}
+.tuglabel{display:flex;justify-content:space-between;margin-top:9px;font-size:12.5px;color:var(--muted);
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-weight:600}
+
+/* ── Standings rows (used when there are not exactly two squads) ──── */
+.rank{display:grid;grid-template-columns:52px 1fr 150px;gap:16px;align-items:center;background:var(--paper2);
+  border:2px solid var(--ink);border-left-width:8px;border-radius:10px;padding:16px 18px;
+  margin-bottom:11px;cursor:pointer;transition:.12s;box-shadow:3px 3px 0 var(--ink);
+  animation:pop .45s cubic-bezier(.2,.9,.3,1.3) backwards}
+.rank:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+@keyframes pop{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.pos{font-family:'Press Start 2P',monospace;font-size:17px;text-align:center;color:var(--muted)}
+.rank.p1 .pos{color:var(--gold-dk)}
+.tname{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:23px;letter-spacing:.7px;text-transform:uppercase}
+.tmeta{font-size:12px;color:var(--muted);margin-top:4px}
+.tpts{font-family:'Press Start 2P',monospace;font-size:15px;text-align:right}
+.tdelta{font-size:12px;color:var(--green);text-align:right;margin-top:6px;font-weight:600}
+.tdelta.neg{color:var(--red)}
+.bar{height:7px;background:var(--line2);border:1px solid var(--line);border-radius:4px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;animation:grow .8s ease-out}
+@keyframes grow{from{width:0}}
+
+/* ── Stat tiles ───────────────────────────────────────────────────── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px}
+.card{background:var(--paper2);border:2px solid var(--ink);border-radius:10px;padding:17px;
+  box-shadow:3px 3px 0 var(--ink)}
+.card .k{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1.7px;font-weight:600;
+  text-transform:uppercase;color:var(--muted)}
+.card .v{font-family:'Press Start 2P',monospace;font-size:15px;margin:11px 0 6px;line-height:1.45}
+.card .d{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+/* ── Tables — black header row, straight off the slide ────────────── */
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;
+  border:2px solid var(--ink);border-radius:9px;overflow:hidden}
+th{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1.4px;font-weight:600;
+  text-transform:uppercase;color:#fff;background:var(--ink);text-align:right;padding:11px 10px;
+  white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--gold)}
+th:first-child,td:first-child{text-align:left}
+td{padding:10px;border-top:1px solid var(--line2);text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:nth-child(even){background:var(--paper2)}
+tbody tr:hover{background:#fff6d9}
+td.nm{font-weight:600}
+td.sub2{color:var(--muted);font-size:13px;text-align:left}
+.tot{font-weight:700}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.neg{color:var(--red)}
+tr.hilite td{background:var(--green);color:#fff;font-weight:600}
+tr.hilite td.sub2{color:rgba(255,255,255,.88)}
+tr.pending td{background:#fff9e6}
+
+.chip{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.3px;
+  font-weight:600;padding:3px 8px;border-radius:4px;text-transform:uppercase;margin-left:7px;
+  border:1px solid currentColor}
+.chip.a{color:var(--green)}
+.chip.m{color:var(--blue)}
+.chip.p{color:var(--gold-dk)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px;
+  flex:none;border:1px solid rgba(14,17,23,.35)}
+
+/* ── MVP ──────────────────────────────────────────────────────────── */
+.mvp{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:stretch}
+.mvpHero{background:linear-gradient(155deg,rgba(255,199,44,.32),rgba(255,199,44,.05) 58%,var(--paper));
+  border:3px solid var(--ink);border-radius:12px;padding:24px;position:relative;overflow:hidden;
+  box-shadow:5px 5px 0 var(--ink)}
+.mvpHero::after{content:"\1F451";position:absolute;right:-8px;top:-14px;font-size:108px;opacity:.14;line-height:1}
+.mvpCrown{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:1.5px;color:var(--gold-dk)}
+.mvpName{font-family:'Press Start 2P',monospace;font-size:clamp(13px,2.6vw,20px);color:var(--ink);
+  margin:14px 0 10px;line-height:1.5}
+.mvpTeam{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:1.7px;font-weight:600;
+  text-transform:uppercase}
+.mvpPts{font-family:'Press Start 2P',monospace;font-size:26px;margin:18px 0 5px;
+  text-shadow:3px 3px 0 rgba(14,17,23,.12)}
+.mvpLine{font-size:13.5px;color:var(--muted);line-height:1.8;margin-top:13px;position:relative}
+.podium{display:flex;flex-direction:column;gap:10px}
+.pod{display:grid;grid-template-columns:36px 1fr auto;gap:13px;align-items:center;background:var(--paper2);
+  border:2px solid var(--ink);border-radius:9px;padding:12px 14px;box-shadow:3px 3px 0 var(--ink)}
+.pod .n{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--muted);text-align:center}
+.pod .who{font-weight:600;font-size:15px}
+.pod .whoTeam{font-size:12px;color:var(--muted);margin-top:3px}
+.pod .p{font-family:'Press Start 2P',monospace;font-size:11px}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-top:15px}
+.catbox{background:var(--paper2);border:2px solid var(--ink);border-radius:9px;padding:14px;
+  box-shadow:3px 3px 0 var(--ink)}
+.catbox .ck{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.5px;font-weight:600;
+  text-transform:uppercase;color:var(--muted)}
+.catbox .cv{font-weight:700;font-size:15px;margin:7px 0 4px;line-height:1.3}
+.catbox .cd{font-size:12px;color:var(--muted)}
+
+/* ── Category head-to-head: one diverging bar per activity ────────── */
+.h2h{display:grid;gap:15px}
+.h2hrow{display:grid;grid-template-columns:1fr 168px 1fr;gap:12px;align-items:center}
+.h2hlab{text-align:center}
+.h2hlab .hl{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:1.5px;font-weight:700;
+  text-transform:uppercase;line-height:1.25}
+.h2hlab .hp{font-size:11.5px;color:var(--muted);margin-top:3px}
+.h2hbar{height:30px;background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
+  display:flex;align-items:center;overflow:hidden}
+.h2hbar.l{justify-content:flex-end}
+.h2hbar i{display:block;height:100%;display:flex;align-items:center;font-size:12.5px;font-weight:700;
+  color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;
+  animation:grow .7s ease-out}
+.h2hbar.l i{justify-content:flex-start;padding-left:9px}
+.h2hbar.r i{justify-content:flex-end;padding-right:9px}
+.h2hhead{display:grid;grid-template-columns:1fr 168px 1fr;gap:12px;margin-bottom:4px;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1.6px;font-weight:700;
+  text-transform:uppercase}
+.h2hhead div:first-child{text-align:right}
+.h2hhead div:last-child{text-align:left}
+.h2hhead div:nth-child(2){text-align:center;color:var(--muted)}
+
+/* ── Scoring table (the mechanism, exactly as the slide states it) ── */
+.mech{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+.levelup{border:3px solid var(--ink);border-radius:14px;padding:34px 22px;
+  text-align:center;box-shadow:7px 7px 0 var(--ink);position:relative;overflow:hidden;
+  background:
+    linear-gradient(#3a2b00,#3a2b00) no-repeat left 14px top 14px/13px 13px,
+    linear-gradient(#3a2b00,#3a2b00) no-repeat right 14px top 14px/13px 13px,
+    linear-gradient(#3a2b00,#3a2b00) no-repeat left 14px bottom 14px/13px 13px,
+    linear-gradient(#3a2b00,#3a2b00) no-repeat right 14px bottom 14px/13px 13px,
+    var(--gold)}
+.levelup .lu{font-family:'Press Start 2P',monospace;font-size:clamp(16px,3.2vw,26px);color:#3a2b00;
+  line-height:1.65;letter-spacing:1px}
+.levelup .lus{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2.4px;font-weight:600;
+  text-transform:uppercase;color:#6b4d00;margin-top:16px}
+
+/* ── Squad dossier: points-from bars ──────────────────────────────── */
+.fromrow{margin-bottom:13px}
+.fromtop{display:flex;justify-content:space-between;font-size:13.5px;gap:12px}
+.fromtop b{font-variant-numeric:tabular-nums}
+
+/* ── Audit trail ──────────────────────────────────────────────────── */
+.aud{border-left:3px solid var(--line);margin-left:9px;padding-left:18px}
+.aud .step{position:relative;padding:13px 0;border-bottom:1px solid var(--line2)}
+.aud .step::before{content:'';position:absolute;left:-25px;top:19px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:3px solid var(--line)}
+.aud .step.hit::before{background:var(--green);border-color:var(--green)}
+.aud .step.cut::before{background:var(--red);border-color:var(--red)}
+.aud .sTop{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.aud .sName{font-weight:600;font-size:14.5px}
+.aud .sDelta{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--green);white-space:nowrap}
+.aud .sDelta.z{color:var(--muted)}
+.aud .sDelta.n{color:var(--red)}
+.aud .sWhy{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.65}
+.aud .sRun{font-size:12px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
+.aud .sRun b{color:var(--ink)}
+
+/* ── Roster board ─────────────────────────────────────────────────── */
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:6px}
+.col{background:var(--paper2);border:2px solid var(--ink);border-top-width:9px;
+  border-radius:10px;padding:14px;min-height:160px;transition:.12s;box-shadow:3px 3px 0 var(--ink)}
+.col.over{background:#fff6d9;transform:translate(-1px,-2px);box-shadow:5px 6px 0 var(--ink)}
+.colHead{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.colName{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.6px;
+  text-transform:uppercase;line-height:1.2}
+.colMeta{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+.pchip{background:var(--paper);border:2px solid var(--line);border-radius:8px;padding:10px;
+  margin-bottom:8px;cursor:grab;transition:.1s}
+.pchip:hover{border-color:var(--ink)}
+.pchip.drag{opacity:.35}
+.pchip .pn{display:block;font-weight:600;font-size:13.5px;line-height:1.35;margin-bottom:8px}
+.pchip .r2{display:flex;align-items:center;gap:9px}
+.pchip .pp{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none;
+  background:var(--line2);border-radius:5px;padding:3px 8px}
+.pchip .mv{background:var(--paper);border:1px solid var(--line);color:var(--muted);border-radius:6px;
+  padding:5px 6px;font-size:11.5px;flex:1;min-width:0;cursor:pointer;width:auto}
+.col.free{border-top-color:var(--red)}
+.grabhint{font-size:11.5px;color:var(--muted);font-style:italic;padding:7px 2px}
+
+/* ── The fortnightly draw ─────────────────────────────────────────── */
+.drawbar{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.rollbtn{background:var(--red);color:#fff;border:3px solid var(--ink);border-radius:9px;cursor:pointer;
+  font-family:'Press Start 2P',monospace;font-size:11px;padding:17px 22px;letter-spacing:1px;
+  box-shadow:6px 6px 0 var(--ink);transition:.08s}
+.rollbtn:hover{transform:translate(1px,1px);box-shadow:5px 5px 0 var(--ink)}
+.rollbtn:active{transform:translate(6px,6px);box-shadow:none}
+.rollbtn:disabled{cursor:wait;background:var(--gold);color:#3a2b00;animation:rollpulse .32s infinite alternate}
+@keyframes rollpulse{from{transform:none}to{transform:translate(2px,2px) rotate(-.6deg)}}
+
+.draw{display:grid;grid-template-columns:repeat(auto-fit,minmax(256px,1fr));gap:15px}
+.gcard{background:var(--paper2);border:3px solid var(--ink);border-top-width:10px;border-top-color:var(--gold-dk);
+  border-radius:11px;padding:15px;box-shadow:5px 5px 0 var(--ink);position:relative}
+.gcard.done{border-top-color:var(--green)}
+.gcard.failed{border-top-color:var(--red)}
+.gcard.landed{animation:cardpop .42s cubic-bezier(.2,.9,.3,1.5)}
+@keyframes cardpop{0%{transform:scale(.9) rotate(-1.5deg);opacity:.4}100%{transform:none;opacity:1}}
+.gtop{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:12px}
+.gname{font-family:'Press Start 2P',monospace;font-size:11px;letter-spacing:.5px}
+.gtag{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.3px;font-weight:600;
+  text-transform:uppercase;padding:3px 8px;border-radius:4px;border:2px solid currentColor;white-space:nowrap}
+.gtag.ok{color:var(--green)}
+.gtag.no{color:var(--red)}
+.gtag.wait{color:var(--gold-dk)}
+.slot{display:flex;align-items:center;gap:9px;background:var(--paper);border:2px solid var(--line);
+  border-radius:8px;padding:10px 11px;margin-bottom:8px;font-size:13.5px;font-weight:600;
+  min-height:42px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.slot .sq{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.2px;font-weight:700;
+  text-transform:uppercase;color:#fff;padding:2px 7px;border-radius:4px;flex:none}
+.slot.spin{color:var(--muted);font-weight:500;filter:blur(.5px)}
+.slot.spin .sq{opacity:.35}
+.slot.lock{animation:lockin .5s cubic-bezier(.2,.9,.3,1.6)}
+@keyframes lockin{
+  0%{transform:scale(1.16) translateX(-6px);background:var(--gold);border-color:var(--ink)}
+  55%{background:#fff6d9;border-color:var(--ink)}
+  100%{transform:none;background:var(--paper);border-color:var(--line)}}
+.fine{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--red)}
+
+/* ── Weekly boxes ─────────────────────────────────────────────────── */
+.wk{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px;margin-top:10px}
+.wkbox{background:var(--paper2);border:2px solid var(--ink);border-radius:8px;padding:11px;text-align:center;
+  box-shadow:3px 3px 0 var(--ink)}
+.wkbox .wl{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.3px;font-weight:600;
+  text-transform:uppercase;color:var(--muted)}
+.wkbox .wv{font-family:'Press Start 2P',monospace;font-size:11px;margin:8px 0 5px}
+.wkbox .ws{font-size:11px;color:var(--muted)}
+
+/* ── Data tab ─────────────────────────────────────────────────────── */
+.drop{border:3px dashed var(--line);border-radius:10px;padding:28px 18px;text-align:center;
+  color:var(--muted);font-size:13.5px;line-height:1.7;transition:.12s;cursor:pointer;background:var(--paper2)}
+.drop:hover,.drop.over{border-color:var(--ink);color:var(--ink);background:#fff6d9}
+.drop b{color:var(--ink)}
+.steps{font-size:13.5px;color:var(--muted);line-height:1.8}
+.steps li{margin:0 0 10px 20px;padding-left:4px}
+.steps li b{color:var(--ink)}
+code{background:var(--paper2);border:1px solid var(--line);border-radius:5px;padding:2px 7px;
+  font-size:12.5px;color:var(--red-dk);word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+textarea#msg{min-height:340px;line-height:1.75;font-size:14.5px}
+textarea#paste{min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.hide{display:none}
+svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;letter-spacing:1px;font-weight:600}
+.legend{display:flex;gap:17px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted);align-items:center}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+
+@media(max-width:820px){
+  .versus{grid-template-columns:1fr;gap:12px}
+  .vmid{flex-direction:row;min-width:0;gap:16px}
+  .mvp{grid-template-columns:1fr}
+  .mech{grid-template-columns:1fr}
+  .h2hrow,.h2hhead{grid-template-columns:1fr 104px 1fr;gap:8px}
+}
+@media(max-width:600px){
+  .rank{grid-template-columns:38px 1fr;gap:11px}
+  .tpts,.tdelta{grid-column:2;text-align:left}
+  .panel{padding:18px}
+  .wrap{padding:0 14px}
+}
+@media print{
+  body{background:#fff;padding:0}
+  nav,.topbar,button{display:none !important}
+  .panel{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="badge">LEVEL UP</div>
+  <h1>TITANS CGC GAME</h1>
+  <div class="sub">BNI Titan &middot; Two Squads &middot; One Scoreboard</div>
+  <div class="topbar">
+    <button class="b" onclick="refresh()" id="refreshBtn">&#8635; REFRESH POINTS</button>
+    <button class="b g" onclick="go('data')">CHANGE SOURCE</button>
+    <span class="src" id="srcTag">No data loaded yet</span>
+  </div>
+</header>
+
+<nav id="nav"></nav>
+<div id="globalWarn"></div>
+
+<!-- ══ SCOREBOARD ══ -->
+<section id="v-board" class="hide">
+  <div class="panel"><h2>Head To Head</h2>
+    <div id="versus"></div>
+    <div class="note" id="versusNote"></div></div>
+
+  <div class="panel"><h2>Where The Lead Is Won</h2>
+    <div id="h2h"></div>
+    <div class="note">Each bar is the points that activity has put on the board this month, side by side.
+      The longer bar took that category.</div></div>
+
+  <div class="panel"><h2>Player Of The Month</h2>
+    <div class="mvp">
+      <div class="mvpHero" id="mvpHero"></div>
+      <div class="podium" id="mvpPodium"></div>
+    </div>
+    <h3>Best in each category</h3>
+    <div class="catgrid" id="mvpCats"></div>
+    <div class="note">Ranked on points earned this month. Squad adjustments go to the squad, not to one
+      person, so they are not counted here.</div></div>
+
+  <div class="panel"><h2>At A Glance</h2><div class="cards" id="glance"></div></div>
+
+  <div class="panel"><h2>Momentum &mdash; Points Per Week</h2><div id="chart"></div>
+    <div class="legend" id="legend"></div></div>
+
+  <div class="panel"><h2>Where The Points Came From</h2>
+    <div class="scroll"><table id="breakdown"></table></div>
+    <div class="note">Every column here is traceable. Open a squad and scroll to <b>Audit Trail</b> to see
+      each step from raw activity to the final number.</div></div>
+</section>
+
+<!-- ══ SQUADS ══ -->
+<section id="v-squads" class="hide">
+  <div class="panel"><h2>Squad Dossier</h2>
+    <label>Choose squad</label><select id="teamPick" onchange="render()"></select></div>
+  <div id="dossier"></div>
+</section>
+
+<!-- ══ PLAYERS ══ -->
+<section id="v-players" class="hide">
+  <div class="panel"><h2>Player Leaderboard</h2>
+    <div class="row">
+      <div style="flex:1;min-width:180px"><label>Search</label>
+        <input id="search" placeholder="Type a name…" oninput="render()"></div>
+      <div style="width:210px"><label>Squad</label>
+        <select id="memFilter" onchange="render()"></select></div>
+    </div>
+    <div class="note">Click any column heading to sort by it.</div>
+    <div class="scroll" style="margin-top:15px"><table id="members"></table></div></div>
+</section>
+
+<!-- ══ GROUP 1-2-1 ══ -->
+<section id="v-groups" class="hide">
+  <div class="panel"><h2>The Fortnightly Draw</h2>
+    <div class="note" style="margin:0 0 16px">Every two weeks, four players are thrown together —
+      <b>two from each squad</b> — and they have that fortnight to do their group 1-2-1 and post it in
+      the chapter's social media group. Do it and <b>every player in the group scores
+      <span id="gPts"></span></b>. Miss it and the group pays the fine.</div>
+    <div class="drawbar">
+      <button class="rollbtn" id="rollBtn" onclick="rollDraw()">&#127922; SHUFFLE THE GROUPS</button>
+      <div style="width:210px"><label>Round name</label>
+        <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
+      <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
+    </div>
+    <div id="drawWarn"></div>
+    <div class="draw" id="draw"></div>
+    <div class="note" id="drawNote"></div>
+  </div>
+
+  <div class="panel"><h2>This Round, From The Sheet</h2>
+    <div id="roundStatus"></div></div>
+
+  <div class="panel"><h2>The Fines Jar</h2>
+    <div id="fines"></div>
+    <div class="note">Fines are money, not points. They never touch the scoreboard — a squad cannot buy
+      its way up the table, and cannot be knocked down it by owing the jar. A fine is owed by the
+      <b>group</b>; the per-squad figures below it are just that fine split by head, so you can see
+      where the jar is coming from.</div></div>
+</section>
+
+<!-- ══ ROSTER ══ -->
+<section id="v-roster" class="hide">
+  <div class="panel"><h2>Roster Board</h2>
+    <div class="note" style="margin:0 0 15px">
+      <b>Drag a name onto the other squad</b> to move them — the whole board recalculates straight away.
+      On a phone, use the small dropdown on each name instead. Nothing is written back to your sheet
+      until you hit <b>Copy For Sheet</b>.
+    </div>
+    <div class="row" style="margin-bottom:17px">
+      <button class="b" onclick="copyRoster()">COPY FOR SHEET</button>
+      <button class="b g" onclick="undoMove()" id="undoBtn">UNDO LAST MOVE</button>
+      <button class="b g" onclick="resetRoster()">RESET TO SHEET</button>
+    </div>
+    <div id="moveLog"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="panel"><h2>Add / Rename</h2>
+    <div class="row" style="margin-bottom:19px">
+      <div style="flex:1;min-width:170px"><label>Add a player</label>
+        <input id="newName" placeholder="Full name, exactly as in the sheet"></div>
+      <div style="width:200px"><label>Squad</label><select id="newTeam"></select></div>
+      <button class="b" onclick="addMember()">ADD</button>
+    </div>
+    <h3>Squad names</h3>
+    <div class="grid" id="teamNames" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))"></div>
+    <div class="note">Rename a squad here and every player moves with it. To add a third squad, put it in
+      the <b>Teams</b> tab of your sheet — the board follows whatever the sheet says.</div></div>
+</section>
+
+<!-- ══ SCORING ══ -->
+<section id="v-scoring" class="hide">
+  <div class="panel"><h2>How Points Are Scored</h2>
+    <div class="mech">
+      <div>
+        <div class="scroll"><table id="rulesTable"></table></div>
+        <div class="note"><span class="chip a">auto</span> counted straight from the PALMS tabs &nbsp;
+          <span class="chip m">groups</span> from the fortnightly draw &nbsp;
+          <span class="chip p">pending</span> agreed in principle, not yet scoring.<br><br>
+          Change any number below and the whole board recalculates instantly — nothing needs
+          redeploying.</div>
+      </div>
+      <div class="levelup"><div class="lu">LEVEL<br>UP</div>
+        <div class="lus">Every meeting counts</div></div>
+    </div>
+  </div>
+
+  <div class="panel"><h2>Point Values</h2>
+    <div class="grid" id="rules" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+    <div class="note">These are the live numbers the board is using right now. They start at exactly what
+      the chapter slide says.</div></div>
+
+  <div class="panel"><h2>How Each One Is Counted</h2>
+    <div id="settings"></div></div>
+
+  <div class="panel"><h2>Order Of Operations</h2>
+    <div class="note" style="margin:0 0 13px">Every squad is scored in exactly this sequence, every month.
+      This is the order the audit trail follows.</div>
+    <ol class="steps" id="ooo"></ol></div>
+
+  <div class="panel"><h2>Points Carried In</h2>
+    <div class="grid" id="carry" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+    <div class="note">Banked <b>before</b> this month. The weekly tabs only hold the current month, so this
+      is what keeps a multi-month season honest. Both squads start this game on <b>zero</b> — the old
+      League of Titans season is finished and its scores stay where they are.</div></div>
+</section>
+
+<!-- ══ BROADCAST ══ -->
+<section id="v-share" class="hide">
+  <div class="panel"><h2>Announcement Generator</h2>
+    <div class="row" style="margin-bottom:17px">
+      <div style="flex:1;min-width:200px"><label>Message type</label>
+        <select id="tpl" onchange="render()">
+          <option value="standings">Live standings update</option>
+          <option value="midmonth">Mid-month push</option>
+          <option value="mvp">Player of the month shoutout</option>
+          <option value="rules">How the points work</option>
+          <option value="close">Month close</option>
+          <option value="callout">Private squad nudge</option></select></div>
+      <div style="width:160px"><label>Length</label>
+        <select id="len" onchange="render()">
+          <option value="full">Full drama</option>
+          <option value="short">Short blast</option></select></div>
+      <div style="width:200px" id="calloutWrap" class="hide"><label>Which squad</label>
+        <select id="calloutTeam" onchange="render()"></select></div>
+    </div>
+    <textarea id="msg"></textarea>
+    <div class="row" style="margin-top:15px">
+      <button class="b" onclick="copyMsg()">COPY TO CLIPBOARD</button>
+      <button class="b g" onclick="render()">REGENERATE</button>
+    </div>
+    <div class="note">Edit freely before copying — nothing here touches your sheet.</div></div>
+</section>
+
+<!-- ══ DATA ══ -->
+<section id="v-data" class="hide">
+  <div class="panel"><h2>Option 1 &mdash; Read Straight From The Spreadsheet</h2>
+    <div class="note" style="margin:0 0 16px">The normal way. Paste a link, hit Load, and
+      <b>Refresh Points</b> at the top of the page re-reads it any time.</div>
+
+    <label>Google Sheet link, or Apps Script web app link ending in /exec</label>
+    <input id="url" placeholder="https://docs.google.com/spreadsheets/d/…  or  https://script.google.com/…/exec">
+    <div class="hint">A plain Google Sheet link works if the sheet is shared as
+      <b>Anyone with the link — Viewer</b>. The /exec link works no matter how the sheet is shared,
+      and finds your tabs by itself.</div>
+
+    <div class="row" style="margin-top:15px">
+      <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Adjustments, GameLog"></div>
+    </div>
+    <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
+      cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
+
+    <div class="row" style="margin-top:15px">
+      <div style="width:250px"><label>Which month's training counts</label>
+        <select id="trainMonth" onchange="TRAIN_MONTH=this.value;render()"></select></div>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <button class="b" onclick="load()">LOAD DATA</button>
+      <button class="b g" onclick="copyBookmark()">COPY ONE-CLICK LINK</button>
+      <button class="b g" onclick="useSnapshot('')">SAVED NUMBERS</button>
+      <button class="b g" onclick="demo()">DEMO MODE</button>
+    </div>
+    <div class="status" id="status">Paste a link and hit Load — or try Demo Mode to explore with sample numbers.</div>
+    <div class="note">This page already opens on the chapter's sheet, so the plain address is all you
+      need to bookmark. <b>Copy One-Click Link</b> is for pointing it at a different sheet — it gives
+      you the shortest link that still loads the right one.</div>
+    <div id="warnbox"></div>
+  </div>
+
+  <div class="panel"><h2>Option 2 &mdash; Upload The File Yourself</h2>
+    <div class="note" style="margin:0 0 16px">The last resort, for when the sheet is locked down or you
+      are offline. In Google Sheets choose <b>File &rarr; Download &rarr; Microsoft Excel (.xlsx)</b>
+      and drop that file here. CSV files work too, one tab at a time.</div>
+    <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+      <b>Drop your .xlsx or .csv here</b><br>or click to choose a file
+    </div>
+    <input type="file" id="file" class="hide" accept=".xlsx,.csv,.tsv,.txt" multiple>
+    <div class="status" id="fileStatus"></div>
+
+    <h3>Or paste it in</h3>
+    <div class="note" style="margin:0 0 11px">Select the cells in your sheet, copy, and paste below.
+      Works with one tab at a time. Tell it which tab this is.</div>
+    <div class="row" style="margin-bottom:11px">
+      <div style="width:230px"><label>This paste is the…</label>
+        <select id="pasteAs">
+          <option value="auto">Work it out for me</option>
+          <option value="Teams">Teams tab</option>
+          <option value="Adjustments">Adjustments tab</option>
+          <option value="Training">Training tab</option>
+          <option value="week">A weekly PALMS tab</option></select></div>
+      <div style="flex:1;min-width:150px"><label>Name it (weekly tabs only)</label>
+        <input id="pasteName" placeholder="Week 1"></div>
+      <button class="b" onclick="loadPaste()">ADD THIS TAB</button>
+    </div>
+    <textarea id="paste" placeholder="Paste here…"></textarea>
+  </div>
+
+  <div class="panel"><h2>What This Page Expects To Find</h2>
+    <ol class="steps">
+      <li><b>Weekly PALMS tabs</b> — any tab with a header row containing <code>First Name</code> and
+        <code>RGI</code>. One tab per meeting week. Visitors, referrals, 1-2-1s, TYFCB and attendance
+        all come from here.</li>
+      <li><b>Teams</b> — column A player name, column B squad name. Two squads: the men's and the
+        women's, with any surplus men in the women's squad.</li>
+      <li><b>Groups</b> — the fortnightly draw and whether each group delivered. Make the draw on the
+        <b>Group 1-2-1</b> tab and paste it in.</li>
+      <li><b>Training</b> — a <code>Name</code> column plus one column per month.</li>
+      <li><b>Adjustments</b> — optional. Only for a points decision made in the room that the PALMS
+        sheet cannot show. See the columns below.</li>
+    </ol>
+    <h3>Groups columns</h3>
+    <div class="scroll"><table id="groupSchema"></table></div>
+    <div class="note"><b>Done</b> has three states, not two. <b>yes</b> pays every player in the group;
+      <b>no</b> puts the group in the fines jar; <b>blank</b> means the fortnight is still running and
+      nothing happens either way. Leaving it blank is the honest answer until the two weeks are up.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="b g" onclick="copyGroupsHeader()">COPY GROUPS HEADER</button>
+    </div>
+
+    <h3>Adjustments columns</h3>
+    <div class="scroll"><table id="schema"></table></div>
+    <div class="note">Column order does not matter — the engine reads the headings, not the positions.
+      Any heading it does not recognise is ignored, and an old <code>GameLog</code> tab still reads
+      correctly.</div>
+    <div class="row" style="margin-top:15px">
+      <button class="b g" onclick="copyAdjHeader()">COPY ADJUSTMENTS HEADER</button>
+      <button class="b g" onclick="copyTeamsHeader()">COPY TEAMS HEADER</button>
+    </div>
+  </div>
+</section>
+
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   TITANS CGC GAME
+   Single file. Vanilla ES5. No build step, no storage, read-only.
+
+   The Google Sheet is the source of truth. This page never writes to it —
+   it reads, scores, and hands you paste-ready text to put back.
+
+   Six activities, two squads, one sum. There are no items, no shop and no
+   steals: a squad's score is its players' activity plus whatever the room
+   agreed, and nothing else. All scoring maths lives here so point values
+   can change without redeploying anything.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var DATA = null;               // normalised payload: weeks / teams / training / adjustments
+var VIEW = 'board';
+var SORT = { k: 'total', dir: -1 };
+var LAST = null;               // how we loaded last time, so Refresh can repeat it
+var ROSTER = [];               // [{name, team}] — live, editable, drives all scoring
+var ROSTER_BASE = [];          // roster exactly as the sheet had it, for Reset
+var MOVES = [];                // roster changes made on this page since load
+var PARSE_WARN = [];           // anything the loader could not understand
+var TRAIN_MONTH = null;        // which month's training counts; null = the sheet's latest
+
+/* The chapter's own sheet. Opening the page with no address bar clutter
+   loads this. Point it somewhere else with #s=<sheet id> in the link. */
+var DEFAULT_SHEET = '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg';
+var DEFAULT_TABS = '';         // captured from the form at start-up
+var AUTOLOAD = false;          // true while the page is loading its own default source
+
+function sheetUrl(id) { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; }
+function execUrl(id) { return 'https://script.google.com/macros/s/' + id + '/exec'; }
+
+/* September 2026, exactly as read from the chapter sheet, with the roster
+   folded into two squads. Used when the live read cannot happen — a host
+   that blocks outside requests, a sheet that stopped being shared, Google
+   having a bad day — so the page shows real numbers and says they are
+   saved ones, rather than showing nothing at all. Regenerate it whenever a
+   month closes. */
+var SNAPSHOT = {"capturedAt":"1 September 2026","month":"September 2026","trainingMonths":["April 2026","May 2026","June 2026","July 2026","August 2026","September 2026"],"weeks":[{"tab":"Master list 1st week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":12,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Chee","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":2,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":2,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":6,"RRO":1,"V":1,"ONE21":1,"REV":0},{"name":"Qingni Fong","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":3,"RRI":2,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":2,"RRI":0,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Surely Lim","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":2,"RRO":3,"V":1,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":4,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":1,"V":1,"ONE21":0,"REV":0},{"name":"Sheik Yoong Ong","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":2,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":3,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":4,"V":1,"ONE21":0,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":4,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":6,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":1,"ONE21":0,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":3,"RRO":5,"V":1,"ONE21":0,"REV":0}]},{"tab":"Master list 2nd week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":3,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Eric Chee","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":1,"RRO":5,"V":0,"ONE21":1,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":3,"REV":0},{"name":"Sharon Lee","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":1,"V":0,"ONE21":3,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Regene Ng","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":7,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":1,"ONE21":4,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":4,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":3,"RRI":1,"RRO":2,"V":0,"ONE21":0,"REV":0}]},{"tab":"Master list 3rd week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Chee","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Daniel Chew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":3,"V":0,"ONE21":0,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Chiew Jian Jin","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Joanne Kong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":4,"RRI":1,"RRO":2,"V":0,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Max Low Yong Wen","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":2,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":2,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Raymond Phang","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":5,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":2,"V":0,"ONE21":2,"REV":0},{"name":"Shane Tan","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":2,"V":0,"ONE21":3,"REV":0}]},{"tab":"Master list 4th week","rows":[{"name":"Alex Ang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Eric Chee","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Mogo Cheok Yee Herng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Daniel Chew","P":0,"A":0,"L":1,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Eric Choong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Connie Chye Loy Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":1,"V":0,"ONE21":2,"REV":0},{"name":"Qingni Fong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Michelle Fung","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Chiew Jian Jin","P":0,"A":0,"L":0,"M":1,"S":0,"RGI":0,"RGO":0,"RRI":1,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Joanne Kong","P":0,"A":0,"L":0,"M":0,"S":1,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jason Lai","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sharon Lee","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Jimmy Lim Jun Yew","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":2,"RRO":0,"V":0,"ONE21":4,"REV":0},{"name":"Surely Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":0,"REV":0},{"name":"Crystal Low Ming Tong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Max Low Yong Wen","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":1,"RRO":3,"V":0,"ONE21":0,"REV":0},{"name":"Regene Ng","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Sheik Yoong Ong","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Poh Pin Penny Lim","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":1,"RRI":2,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Raymond Phang","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"Muniyandy S","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":1,"REV":0},{"name":"wyman soh","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":1,"RGO":1,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Patrick Soo Kwok Choy","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":2,"RRI":0,"RRO":0,"V":0,"ONE21":2,"REV":0},{"name":"Shane Tan","P":0,"A":1,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":1,"V":0,"ONE21":1,"REV":0},{"name":"Grace Tiau","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":2,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":4,"REV":0},{"name":"Kingsley Yap","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":1,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":2,"V":1,"ONE21":0,"REV":0},{"name":"Dominic Yeoh Wei Ching","P":0,"A":0,"L":0,"M":0,"S":0,"RGI":0,"RGO":0,"RRI":0,"RRO":0,"V":0,"ONE21":0,"REV":0}]}],"teams":[{"name":"Grace Tiau","team":"Team 1"},{"name":"Connie Chye Loy Fong","team":"Team 1"},{"name":"Eric Choong","team":"Team 1"},{"name":"Crystal Low Ming Tong","team":"Team 1"},{"name":"Raymond Phang","team":"Team 2"},{"name":"Chiew Jian Jin","team":"Team 2"},{"name":"Dominic Yeoh Wei Ching","team":"Team 2"},{"name":"Sharon Lee","team":"Team 2"},{"name":"Max Low Yong Wen","team":"Team 2"},{"name":"Patrick Soo Kwok Choy","team":"Team 2"},{"name":"Mogo Cheok Yee Herng","team":"Team 1"},{"name":"Michelle Fung","team":"Team 1"},{"name":"Alex Ang","team":"Team 1"},{"name":"Daniel Chew","team":"Team 1"},{"name":"Eric Chee","team":"Team 1"},{"name":"Kingsley Yap","team":"Team 1"},{"name":"Surely Lim","team":"Team 1"},{"name":"Muniyandy S","team":"Team 1"},{"name":"Qingni Fong","team":"Team 1"},{"name":"Regene Ng","team":"Team 1"},{"name":"Shane Tan","team":"Team 2"},{"name":"Poh Pin Penny Lim","team":"Team 2"},{"name":"Jimmy Lim Jun Yew","team":"Team 2"},{"name":"Jason Lai","team":"Team 2"},{"name":"wyman soh","team":"Team 2"},{"name":"Joanne Kong","team":"Team 2"},{"name":"Sheik Yoong Ong","team":"Team 2"}],"training":[{"name":"Alex Ang","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Chiew Jian Jin","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":2,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Connie Chye Loy Fong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":2,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Crystal Low Ming Tong","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Daniel Chew","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Dominic Yeoh Wei Ching","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":2,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Eric Chee","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Eric Choong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Grace Tiau","sessions":0,"months":{"april 2026":0,"may 2026":4,"june 2026":0,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Jason Lai","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Jimmy Lim Jun Yew","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Kingsley Yap","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Max Low Yong Wen","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Michelle Fung","sessions":0,"months":{"april 2026":0,"may 2026":3,"june 2026":2,"july 2026":1,"august 2026":1,"september 2026":0}},{"name":"Mogo Cheok Yee Herng","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Muniyandy S","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":2,"july 2026":1,"august 2026":0,"september 2026":0}},{"name":"Patrick Soo Kwok Choy","sessions":0,"months":{"april 2026":2,"may 2026":3,"june 2026":3,"july 2026":3,"august 2026":2,"september 2026":0}},{"name":"Poh Pin Penny Lim","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":1,"july 2026":0,"august 2026":1,"september 2026":0}},{"name":"Qingni Fong","sessions":0,"months":{"april 2026":0,"may 2026":1,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Raymond Phang","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Regene Ng","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Shane Tan","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Sharon Lee","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Sheik Yoong Ong","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"SHU FANG TAN","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"Surely Lim","sessions":0,"months":{"april 2026":0,"may 2026":2,"june 2026":1,"july 2026":0,"august 2026":0,"september 2026":0}},{"name":"wyman soh","sessions":0,"months":{"april 2026":0,"may 2026":0,"june 2026":0,"july 2026":0,"august 2026":0,"september 2026":0}}],"adjustments":[]};
+
+/* ── Point values ───────────────────────────────────────────────────────
+   Straight off the chapter slide, in the slide's own order so the two can
+   be held side by side. `auto` means the number comes out of the sheet
+   with nobody typing anything; `pending` means the chapter has agreed the
+   line but not yet switched it on.                                       */
+var RULES = [
+  { key: 'visitor',    label: 'Visitor brought to meeting', short: 'Visitors',   pts: 100, auto: 1, star: 1,
+    unit: 'visitor' },
+  { key: 'training',   label: 'Attend Training',            short: 'Training',   pts: 10,  auto: 1,
+    unit: 'training session' },
+  { key: 'referral',   label: 'Referral given',             short: 'Referrals',  pts: 50,  auto: 1,
+    unit: 'referral given', units: 'referrals given' },
+  { key: 'attendance', label: 'Perfect monthly attendance',  short: 'Attendance', pts: 50,  auto: 1,
+    unit: 'player with perfect attendance', units: 'players with perfect attendance' },
+  { key: 'tyfcb',      label: 'TYFCB (Pending)',            short: 'TYFCB',      pts: 25,  auto: 1, pending: 1,
+    unit: 'TYFCB', units: 'TYFCB' },
+  { key: 'one21',      label: 'Normal 1-2-1 completed',     short: '1-2-1s',     pts: 25,  auto: 1,
+    unit: '1-2-1' },
+  /* Not from PALMS. This one comes off the Groups tab, a player at a time,
+     when their fortnightly foursome gets its group 1-2-1 done and posted. */
+  { key: 'group121',   label: 'Group 1-2-1 completed',      short: 'Group 1-2-1', pts: 50, group: 1,
+    unit: 'group 1-2-1' }
+];
+/* The six above, plus the one line that never comes from PALMS. */
+var CATS = [
+  { key: 'visitor', label: 'Visitors' }, { key: 'training', label: 'Training' },
+  { key: 'referral', label: 'Referrals' }, { key: 'attendance', label: 'Perfect attendance' },
+  { key: 'tyfcb', label: 'TYFCB' }, { key: 'one21', label: '1-2-1s' },
+  { key: 'group121', label: 'Group 1-2-1' }, { key: 'manual', label: 'Adjustments' }
+];
+
+/* ── The two squads ─────────────────────────────────────────────────────
+   Team 1 is the men's squad; Team 2 is the women's squad, with any surplus
+   men added to it at random. Who is on which is decided in the room and
+   recorded in the sheet's Teams tab — this page never guesses at it, and
+   nothing here reads a name and decides what someone is.
+
+   The names below are placeholders. The moment the Teams tab names the
+   squads, it wins. A third squad in the sheet is scored too — the board
+   just falls back from the head-to-head hero to a plain ranked list.     */
+var SQUAD_RULE = 'Team 1 is the men\u2019s squad. Team 2 is the women\u2019s squad, with any surplus ' +
+  'men added to it at random. The <b>Teams</b> tab in the sheet decides who is on which.';
+var TEAMS = ['Team 1', 'Team 2'];
+var PALETTE = ['#cf2030', '#1f6feb', '#00a24a', '#7c4dff', '#f07e13', '#00b3b0', '#d6336c', '#c9960d'];
+var COLORS = { 'Team 1': '#cf2030', 'Team 2': '#1f6feb' };
+
+/* The line-up used only when the sheet has no Teams tab of its own. The
+   old five squads folded down to two, 14 against 13. Add a Teams tab and
+   it takes over completely. */
+var DEFAULT_ROSTER = {
+  'Team 1': ['Grace Tiau', 'Connie Chye Loy Fong', 'Eric Choong', 'Crystal Low Ming Tong',
+             'Mogo Cheok Yee Herng', 'Michelle Fung', 'Alex Ang', 'Daniel Chew', 'Eric Chee',
+             'Kingsley Yap', 'Surely Lim', 'Muniyandy S', 'Qingni Fong', 'Regene Ng'],
+  'Team 2': ['Raymond Phang', 'Chiew Jian Jin', 'Dominic Yeoh Wei Ching', 'Sharon Lee',
+             'Max Low Yong Wen', 'Patrick Soo Kwok Choy', 'Shane Tan', 'Poh Pin Penny Lim',
+             'Jimmy Lim Jun Yew', 'Jason Lai', 'wyman soh', 'Joanne Kong', 'Sheik Yoong Ong']
+};
+
+/* This is a new game on a new board. Both squads start on nothing — the
+   old League of Titans season is closed and its scores stay where they
+   are. Type a number here only if you carry a month forward. */
+var CARRY = { 'Team 1': 0, 'Team 2': 0 };
+
+/* ── The only two judgement calls left ──────────────────────────────────
+   Both are on the Scoring tab, both settle an argument rather than start
+   one, and both are written down so nobody has to guess.                  */
+var SET = {
+  lateBreaksPerfect: false,   // does an L on the PALMS sheet lose perfect attendance?
+  tyfcbMode: 'auto',          // auto | slips | count — how a TYFCB column is read
+  /* The fine for a group that does not get its 1-2-1 done and posted. Money,
+     never points — see compute(). "RM5" on the chapter slide is written
+     against the group, so that is the default; switch it if the room meant
+     five ringgit each. */
+  penaltyAmount: 5,
+  penaltyPerMember: false,
+  groupSize: 4               // two from each squad
+};
+
+/* ── Order of operations, shown to the user and used by compute() ────── */
+var OOO = [
+  'Score every player from the weekly PALMS tabs and the training tab.',
+  'Award the group 1-2-1 points to every player whose fortnightly foursome got it done and posted.',
+  'Roll each player up into their squad, activity by activity.',
+  'Add any adjustment the room agreed and logged for that squad.',
+  'Add the points carried in from earlier months to get the season total.'
+];
+
+/* ── Small helpers ──────────────────────────────────────────────────── */
+function $(id) { return document.getElementById(id); }
+function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function rule(k) { var i; for (i = 0; i < RULES.length; i++) if (RULES[i].key === k) return RULES[i].pts; return 0; }
+function ruleDef(k) { var i; for (i = 0; i < RULES.length; i++) if (RULES[i].key === k) return RULES[i]; return null; }
+function n(x) { return Math.round(x || 0).toLocaleString(); }
+/* Points round to whole numbers; money must not. A RM5 group fine split by
+   four heads is RM1.25 each, and showing it as RM1 makes the parts stop
+   adding up to the whole. */
+function money(x) {
+  var v = Math.round((x || 0) * 100) / 100;
+  return (v % 1 === 0) ? v.toLocaleString() : v.toFixed(2);
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function q(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+function color(t) { return COLORS[t] || '#646d85'; }
+function num(v) {
+  if (v === '' || v === null || v === undefined) return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  var x = Number(String(v).replace(/[, ]/g, '').replace(/^(rm|myr|\$)/i, ''));
+  return isNaN(x) ? 0 : x;
+}
+function catLabel(k) { var i; for (i = 0; i < CATS.length; i++) if (CATS[i].key === k) return CATS[i].label; return k; }
+/* ═══════════════════════════════════════════════════════════════════════
+   1. GETTING THE DATA IN
+
+   Three ways in, all landing on the same normalised shape:
+     a) Apps Script /exec link   — JSONP, finds every tab by itself
+     b) Plain Google Sheet link  — gviz JSONP, one named tab at a time
+     c) A file you upload        — .xlsx unzipped in the browser, or .csv
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function setStatus(m, c, id) {
+  var e = $(id || 'status');
+  if (!e) return;
+  e.innerHTML = m;
+  e.className = 'status' + (c ? ' ' + c : '');
+}
+function srcTag(text, cls) {
+  var e = $('srcTag');
+  e.innerHTML = text;
+  e.className = 'src' + (cls ? ' ' + cls : '');
+}
+
+/* ── JSONP, the only way to read Google without CORS trouble ────────── */
+var JSONP_SEQ = 0;
+function jsonp(url, onOk, onErr, ms) {
+  var cb = 'lot_' + (++JSONP_SEQ) + '_' + (new Date()).getTime();
+  var s = document.createElement('script');
+  var done = false;
+  var timer = setTimeout(function () { finish(null, 'timed out'); }, ms || 25000);
+  function finish(res, err) {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+    if (s.parentNode) s.parentNode.removeChild(s);
+    if (err) { onErr(err); } else { onOk(res); }
+  }
+  window[cb] = function (res) { finish(res, null); };
+  s.src = url.replace(/__CB__/g, cb);
+  s.onerror = function () { finish(null, 'could not reach that link'); };
+  document.body.appendChild(s);
+  return cb;
+}
+
+/* ── Entry point for the Load button ────────────────────────────────── */
+function load() {
+  var url = $('url').value.trim();
+  if (!url) { setStatus('Paste a link first.', 'err'); return; }
+
+  if (url.indexOf('/exec') !== -1) { loadExec(url); return; }
+
+  var m = /\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/.exec(url);
+  if (m) { loadSheet(m[1]); return; }
+
+  if (url.indexOf('script.google.com') !== -1) {
+    setStatus('That looks like an Apps Script link but it does not end in <code>/exec</code>. ' +
+      'Open Deploy &rarr; Manage deployments and copy the Web app URL.', 'err');
+    return;
+  }
+  setStatus('That is not a link I recognise. Use a Google Sheet link or an Apps Script link ending in /exec.', 'err');
+}
+
+function useSnapshot(why) {
+  if (!SNAPSHOT) return false;
+  busy(0);
+  PARSE_WARN = [why
+    ? 'This page could not reach the spreadsheet, so it is showing the numbers saved on <b>' +
+      esc(SNAPSHOT.capturedAt) + '</b>. ' + why
+    : 'Showing the numbers saved on <b>' + esc(SNAPSHOT.capturedAt) + '</b>.'];
+  LAST = { kind: 'snapshot' };
+  var pay = {}, k;
+  for (k in SNAPSHOT) if (SNAPSHOT.hasOwnProperty(k)) pay[k] = SNAPSHOT[k];
+  pay.ok = true;
+  adopt(pay, 'Saved snapshot', '');
+  return true;
+}
+
+function refresh() {
+  if (LAST && LAST.kind === 'snapshot') {
+    go('data');
+    setStatus('These are saved numbers, so there is nothing to re-read. Load a link above, ' +
+      'or upload a fresh export.', 'err');
+    return;
+  }
+  if (!LAST) { go('data'); setStatus('Pick a source first, then Refresh will keep re-reading it.', 'err'); return; }
+  AUTOLOAD = false;
+  if (LAST.kind === 'exec') loadExec(LAST.url, true);
+  else if (LAST.kind === 'sheet') loadSheet(LAST.id, true);
+  else if (LAST.kind === 'demo') { demo(); }
+  else {
+    go('data');
+    setStatus('This data came from a file you uploaded, so there is nothing to re-read. ' +
+      'Upload the newer file, or switch to a spreadsheet link so Refresh works.', 'err', 'fileStatus');
+  }
+}
+function busy(on) {
+  var b = $('refreshBtn');
+  b.disabled = !!on;
+  b.innerHTML = on ? 'READING…' : '&#8635; REFRESH POINTS';
+}
+
+/* ── (a) Apps Script web app ────────────────────────────────────────── */
+function loadExec(url, quiet) {
+  PARSE_WARN = [];
+  busy(1);
+  if (!quiet) setStatus('Reading your sheet through Apps Script…', 'busy');
+  srcTag('Reading…');
+  var full = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=__CB__';
+  jsonp(full, function (res) {
+    busy(0);
+    if (!res || res.ok === false) {
+      setStatus('The script answered with an error: ' + esc(res && res.error ? res.error : 'unknown') + '.', 'err');
+      if (res && res.tabs) $('warnbox').innerHTML = '<div class="warn">Tabs it can see: ' + esc(res.tabs.join(' / ')) + '</div>';
+      srcTag('Load failed');
+      return;
+    }
+    LAST = { kind: 'exec', url: url };
+    adopt(normalise(res), 'Apps Script', url);
+  }, function (err) {
+    busy(0);
+    setStatus('Could not read it — ' + esc(err) + '. Check the deployment is set to ' +
+      '<b>Execute as: Me</b> and <b>Who has access: Anyone</b>.', 'err');
+    if (AUTOLOAD && useSnapshot('The Apps Script link did not answer.')) return;
+    srcTag('Load failed');
+  });
+}
+
+/* ── (b) Plain Google Sheet link, one named tab at a time ───────────── */
+function loadSheet(id, quiet) {
+  var names = $('tabs').value.split(',');
+  var want = [], i;
+  for (i = 0; i < names.length; i++) { var t = names[i].trim(); if (t) want.push(t); }
+  if (!want.length) { setStatus('Type at least one tab name to look for.', 'err'); return; }
+
+  PARSE_WARN = [];
+  busy(1);
+  srcTag('Reading…');
+  if (!quiet) setStatus('Looking for ' + want.length + ' tab(s) in that sheet…', 'busy');
+
+  var got = {}, misses = [], left = want.length, hardFail = 0;
+  function tick() {
+    left--;
+    if (left > 0) return;
+    busy(0);
+    var found = [];
+    for (var k in got) if (got.hasOwnProperty(k)) found.push(k);
+    if (!found.length) {
+      setStatus(hardFail
+        ? 'The sheet would not open. Set it to <b>Anyone with the link &mdash; Viewer</b>, ' +
+          'or use the Apps Script /exec link instead, which works on a private sheet.'
+        : 'Found none of those tab names. Check the spelling against the tabs at the bottom of your sheet.',
+        'err');
+      if (AUTOLOAD && useSnapshot(hardFail
+        ? 'Some places this page is hosted are not allowed to fetch from Google at all. ' +
+          'To bring it up to date here, upload the latest export below.'
+        : 'None of the expected tabs came back.')) return;
+      srcTag('Load failed');
+      return;
+    }
+    LAST = { kind: 'sheet', id: id };
+    var pay = build(got);
+    if (misses.length) PARSE_WARN.push('No tab called ' + misses.join(', ') + ' — skipped.');
+    adopt(pay, 'Google Sheet', 'https://docs.google.com/spreadsheets/d/' + id);
+  }
+
+  for (i = 0; i < want.length; i++) {
+    (function (tab) {
+      /* One header row covers most tabs. A tab with a title line above the
+         header needs two, so try that before giving up on it. */
+      fetchTab(id, tab, 1, function (grid) {
+        if (grid && classify(tab, grid) !== 'skip') { got[tab] = grid; tick(); return; }
+        fetchTab(id, tab, 2, function (grid2) {
+          if (grid2 && classify(tab, grid2) !== 'skip') got[tab] = grid2;
+          else if (grid) got[tab] = grid;
+          else misses.push(tab);
+          tick();
+        }, function () { if (grid) got[tab] = grid; else misses.push(tab); tick(); });
+      }, function (fatal) { if (fatal) hardFail = 1; misses.push(tab); tick(); });
+    })(want[i]);
+  }
+}
+
+function fetchTab(id, tab, headerRows, ok, fail) {
+  var u = 'https://docs.google.com/spreadsheets/d/' + id +
+          '/gviz/tq?tqx=out:json;responseHandler:__CB__&headers=' + headerRows +
+          '&sheet=' + encodeURIComponent(tab);
+  jsonp(u, function (res) {
+    if (res && res.status === 'error') { fail(false); return; }
+    var grid = gvizGrid(res);
+    if (grid && grid.length) ok(grid); else fail(false);
+  }, function () { fail(true); }, 25000);
+}
+
+/* gviz hands back the header separately from the data. Put it back on top,
+   because the header cells themselves come through as null wherever the
+   column is numeric. */
+function gvizGrid(res) {
+  if (!res || !res.table || !res.table.rows) return null;
+  var cols = res.table.cols || [], rows = res.table.rows, out = [], r, c, cell, v;
+  var head = [];
+  for (c = 0; c < cols.length; c++) head.push(cols[c].label == null ? '' : String(cols[c].label).trim());
+  var anyHead = 0;
+  for (c = 0; c < head.length; c++) if (head[c]) anyHead = 1;
+  if (anyHead) out.push(head);
+  for (r = 0; r < rows.length; r++) {
+    var line = [], cs = rows[r].c || [];
+    for (c = 0; c < cs.length; c++) {
+      cell = cs[c];
+      if (!cell) { line.push(''); continue; }
+      v = cell.v;
+      if (typeof v === 'string' && v.indexOf('Date(') === 0) v = cell.f || v;
+      line.push(v === null || v === undefined ? '' : v);
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/* ── (c) Files you upload ───────────────────────────────────────────── */
+function wireFiles() {
+  var d = $('drop'), f = $('file');
+  f.onchange = function () { takeFiles(f.files); f.value = ''; };
+  d.addEventListener('dragover', function (e) { e.preventDefault(); d.className = 'drop over'; });
+  d.addEventListener('dragleave', function () { d.className = 'drop'; });
+  d.addEventListener('drop', function (e) {
+    e.preventDefault(); d.className = 'drop';
+    takeFiles(e.dataTransfer.files);
+  });
+}
+
+function takeFiles(files) {
+  if (!files || !files.length) return;
+  PARSE_WARN = [];
+  var grids = {}, left = files.length, i;
+  setStatus('Reading ' + files.length + ' file(s)…', 'busy', 'fileStatus');
+
+  function tick() {
+    left--;
+    if (left > 0) return;
+    var any = 0, k;
+    for (k in grids) if (grids.hasOwnProperty(k)) any = 1;
+    if (!any) { setStatus('Nothing readable in there. Try a .xlsx or .csv export.', 'err', 'fileStatus'); return; }
+    LAST = { kind: 'file' };
+    adopt(build(grids), 'Uploaded file', '');
+    setStatus('Loaded. Because this came from a file, the Refresh button has nothing to re-read — ' +
+      'upload the next export when the numbers change.', 'ok', 'fileStatus');
+  }
+
+  for (i = 0; i < files.length; i++) {
+    (function (file) {
+      var nm = file.name.toLowerCase();
+      if (nm.indexOf('.xlsx') === nm.length - 5 && nm.length > 5) {
+        readArrayBuffer(file, function (buf) {
+          xlsxSheets(buf, function (sheets) {
+            var s; for (s in sheets) if (sheets.hasOwnProperty(s)) grids[s] = sheets[s];
+            tick();
+          }, function (msg) { PARSE_WARN.push(file.name + ': ' + msg); tick(); });
+        });
+      } else {
+        readText(file, function (txt) {
+          var base = file.name.replace(/\.[^.]+$/, '');
+          grids[base] = splitDelimited(txt);
+          tick();
+        });
+      }
+    })(files[i]);
+  }
+}
+function readText(file, done) { var r = new FileReader(); r.onload = function () { done(String(r.result)); }; r.readAsText(file); }
+function readArrayBuffer(file, done) { var r = new FileReader(); r.onload = function () { done(r.result); }; r.readAsArrayBuffer(file); }
+
+/* Paste-a-tab, the true last resort. */
+function loadPaste() {
+  var txt = $('paste').value;
+  if (!txt.trim()) { setStatus('Paste something in the box first.', 'err', 'fileStatus'); return; }
+  PARSE_WARN = [];
+  var as = $('pasteAs').value;
+  var name = as === 'week' ? ($('pasteName').value.trim() || 'Week ' + ((DATA && DATA.weeks ? DATA.weeks.length : 0) + 1))
+           : as === 'auto' ? ($('pasteName').value.trim() || 'Pasted') : as;
+  var grids = {};
+  grids[name] = splitDelimited(txt);
+
+  /* Keep whatever is already loaded and add this tab on top. */
+  if (DATA) {
+    var keep = rawTabs();
+    var k; for (k in grids) if (grids.hasOwnProperty(k)) keep[k] = grids[k];
+    grids = keep;
+  }
+  LAST = { kind: 'file' };
+  adopt(build(grids), 'Pasted data', '');
+  $('paste').value = '';
+  setStatus('Added <b>' + esc(name) + '</b>.', 'ok', 'fileStatus');
+}
+var RAWTABS = {};
+function rawTabs() { var o = {}, k; for (k in RAWTABS) if (RAWTABS.hasOwnProperty(k)) o[k] = RAWTABS[k]; return o; }
+
+/* ── Delimited text ─────────────────────────────────────────────────── */
+function splitDelimited(txt) {
+  txt = String(txt).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  var head = txt.split('\n')[0] || '';
+  var tabs = head.split('\t').length, commas = head.split(',').length;
+  return parseDelim(txt, tabs > commas ? '\t' : ',');
+}
+function parseDelim(txt, d) {
+  var rows = [], row = [], cur = '', i = 0, inQ = false, ch;
+  while (i < txt.length) {
+    ch = txt.charAt(i);
+    if (inQ) {
+      if (ch === '"') {
+        if (txt.charAt(i + 1) === '"') { cur += '"'; i += 2; continue; }
+        inQ = false; i++; continue;
+      }
+      cur += ch; i++; continue;
+    }
+    if (ch === '"') { inQ = true; i++; continue; }
+    if (ch === d) { row.push(cur); cur = ''; i++; continue; }
+    if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; i++; continue; }
+    cur += ch; i++;
+  }
+  row.push(cur);
+  if (row.length > 1 || row[0] !== '') rows.push(row);
+  return rows;
+}
+
+/* ── .xlsx, unzipped and parsed in the browser ──────────────────────────
+   An .xlsx is a zip of XML. Modern browsers can inflate a raw deflate
+   stream natively, so this needs no library and no build step.          */
+function xlsxSheets(buf, done, fail) {
+  if (typeof DecompressionStream === 'undefined') {
+    fail('this browser is too old to open .xlsx here — export the tabs as CSV instead');
+    return;
+  }
+  var entries;
+  try { entries = zipList(buf); } catch (e) { fail('the file is not a readable .xlsx'); return; }
+  if (!entries) { fail('the file is not a readable .xlsx'); return; }
+
+  var want = {}, i, e;
+  for (i = 0; i < entries.length; i++) {
+    e = entries[i];
+    if (e.name === 'xl/workbook.xml' || e.name === 'xl/_rels/workbook.xml.rels' ||
+        e.name === 'xl/sharedStrings.xml' || e.name.indexOf('xl/worksheets/') === 0) want[e.name] = e;
+  }
+  if (!want['xl/workbook.xml']) { fail('no workbook inside that .xlsx'); return; }
+
+  var names = [], k;
+  for (k in want) if (want.hasOwnProperty(k)) names.push(k);
+
+  var texts = {}, left = names.length;
+  function after() {
+    if (--left > 0) return;
+    try { done(buildSheets(texts)); }
+    catch (err) { fail('could not read the sheets inside it'); }
+  }
+  for (i = 0; i < names.length; i++) {
+    (function (nm) {
+      zipRead(buf, want[nm]).then(function (u8) {
+        texts[nm] = new TextDecoder('utf-8').decode(u8);
+        after();
+      }, function () { after(); });
+    })(names[i]);
+  }
+}
+
+function buildSheets(texts) {
+  var P = new DOMParser();
+  var wb = P.parseFromString(texts['xl/workbook.xml'], 'application/xml');
+  var rels = texts['xl/_rels/workbook.xml.rels']
+    ? P.parseFromString(texts['xl/_rels/workbook.xml.rels'], 'application/xml') : null;
+
+  var relMap = {}, i, r, rs;
+  if (rels) {
+    rs = rels.getElementsByTagName('Relationship');
+    for (i = 0; i < rs.length; i++) {
+      var tgt = rs[i].getAttribute('Target') || '';
+      relMap[rs[i].getAttribute('Id')] = tgt.replace(/^\/?xl\//, '').replace(/^\.\//, '');
+    }
+  }
+
+  var shared = [];
+  if (texts['xl/sharedStrings.xml']) {
+    var sd = P.parseFromString(texts['xl/sharedStrings.xml'], 'application/xml');
+    var sis = sd.getElementsByTagName('si');
+    for (i = 0; i < sis.length; i++) shared.push(siText(sis[i]));
+  }
+
+  var out = {}, sheets = wb.getElementsByTagName('sheet');
+  for (i = 0; i < sheets.length; i++) {
+    var name = sheets[i].getAttribute('name');
+    var rid = sheets[i].getAttribute('r:id') ||
+              sheets[i].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    var path = relMap[rid] ? 'xl/' + relMap[rid] : 'xl/worksheets/sheet' + (i + 1) + '.xml';
+    if (!texts[path]) path = 'xl/worksheets/sheet' + (i + 1) + '.xml';
+    if (!texts[path]) continue;
+    out[name] = sheetGrid(P.parseFromString(texts[path], 'application/xml'), shared);
+  }
+  return out;
+}
+
+function siText(si) {
+  var ts = si.getElementsByTagName('t'), s = '', i;
+  for (i = 0; i < ts.length; i++) {
+    if (ts[i].parentNode && ts[i].parentNode.nodeName === 'rPh') continue;
+    s += ts[i].textContent;
+  }
+  return s;
+}
+
+function sheetGrid(doc, shared) {
+  var rows = doc.getElementsByTagName('row'), grid = [], i, j;
+  for (i = 0; i < rows.length; i++) {
+    var rIdx = parseInt(rows[i].getAttribute('r'), 10);
+    if (isNaN(rIdx)) rIdx = grid.length + 1;
+    var line = [];
+    var cs = rows[i].getElementsByTagName('c');
+    for (j = 0; j < cs.length; j++) {
+      var c = cs[j], ref = c.getAttribute('r') || '', t = c.getAttribute('t');
+      var idx = ref ? colIdx(ref) : line.length;
+      var val = '';
+      if (t === 's') {
+        var vEl = c.getElementsByTagName('v')[0];
+        var si = vEl ? parseInt(vEl.textContent, 10) : -1;
+        val = (si >= 0 && shared[si] !== undefined) ? shared[si] : '';
+      } else if (t === 'inlineStr') {
+        var is = c.getElementsByTagName('is')[0];
+        val = is ? siText(is) : '';
+      } else {
+        var v2 = c.getElementsByTagName('v')[0];
+        var raw = v2 ? v2.textContent : '';
+        if (t === 'str' || t === 'e') val = raw;
+        else if (t === 'b') val = raw === '1' ? 'TRUE' : 'FALSE';
+        else val = raw === '' ? '' : Number(raw);
+      }
+      while (line.length < idx) line.push('');
+      line[idx] = val;
+    }
+    while (grid.length < rIdx - 1) grid.push([]);
+    grid[rIdx - 1] = line;
+  }
+  return grid;
+}
+function colIdx(ref) {
+  var m = /^([A-Za-z]+)/.exec(ref);
+  if (!m) return 0;
+  var s = m[1].toUpperCase(), k = 0, i;
+  for (i = 0; i < s.length; i++) k = k * 26 + (s.charCodeAt(i) - 64);
+  return k - 1;
+}
+
+/* Minimal zip reader — central directory then per-entry inflate. */
+function zipList(buf) {
+  var dv = new DataView(buf), len = buf.byteLength, i, eocd = -1;
+  var floor = Math.max(0, len - 66000);
+  for (i = len - 22; i >= floor; i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+  if (eocd < 0) return null;
+  var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), out = [];
+  var u8 = new Uint8Array(buf), dec = new TextDecoder('utf-8');
+  for (i = 0; i < count; i++) {
+    if (p + 46 > len || dv.getUint32(p, true) !== 0x02014b50) break;
+    var method = dv.getUint16(p + 10, true);
+    var csize  = dv.getUint32(p + 20, true);
+    var nlen   = dv.getUint16(p + 28, true);
+    var elen   = dv.getUint16(p + 30, true);
+    var clen   = dv.getUint16(p + 32, true);
+    var lho    = dv.getUint32(p + 42, true);
+    out.push({ name: dec.decode(u8.subarray(p + 46, p + 46 + nlen)), method: method, csize: csize, lho: lho });
+    p += 46 + nlen + elen + clen;
+  }
+  return out;
+}
+function zipRead(buf, e) {
+  var dv = new DataView(buf), u8 = new Uint8Array(buf);
+  var nlen = dv.getUint16(e.lho + 26, true), elen = dv.getUint16(e.lho + 28, true);
+  var start = e.lho + 30 + nlen + elen;
+  var raw = u8.subarray(start, start + e.csize);
+  if (e.method === 0) return Promise.resolve(raw);
+  var ds = new DecompressionStream('deflate-raw');
+  return new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer()
+    .then(function (ab) { return new Uint8Array(ab); });
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   2. MAKING SENSE OF THE TABS
+
+   Whatever route the data came in by, it ends up as the same shape:
+     weeks    [{tab, rows:[{name,P,A,V,RGI,RGO,ONE21,…}]}]
+     teams    [{name, team}]
+     training [{name, sessions}]
+     adjustments [{month, team, reason, points}]
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function build(grids) {
+  RAWTABS = grids;
+  var pay = { ok: true, month: '', weeks: [], teams: [], training: [], adjustments: [],
+              groups: [], trainingMonths: [] };
+  var k, grid, kind, unread = [];
+
+  for (k in grids) {
+    if (!grids.hasOwnProperty(k)) continue;
+    grid = grids[k];
+    if (!grid || !grid.length) continue;
+    kind = classify(k, grid);
+    if (kind === 'week') { var rows = readWeekGrid(grid); if (rows.length) pay.weeks.push({ tab: k, rows: rows }); }
+    else if (kind === 'teams')    pay.teams = pay.teams.concat(readTeamsGrid(grid));
+    else if (kind === 'training') {
+      var tr = readTrainingGrid(grid);
+      pay.training = pay.training.concat(tr.rows);
+      pay.month = pay.month || tr.month;
+      pay.trainingMonths = (pay.trainingMonths || []).concat(tr.months || []);
+    }
+    else if (kind === 'adj')      pay.adjustments = pay.adjustments.concat(readAdjGrid(grid));
+    else if (kind === 'groups')   pay.groups = pay.groups.concat(readGroupsGrid(grid));
+    else unread.push(k);
+  }
+  if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
+    esc(unread.join(', ')) + '</b>.');
+  pay.weeks.sort(function (a, b) { return String(a.tab).localeCompare(String(b.tab), undefined, { numeric: true }); });
+  return pay;
+}
+
+/* Name first, shape second. */
+function classify(name, grid) {
+  var nm = norm(name);
+  if (nm === 'teams' || nm === 'team') return 'teams';
+  if (nm === 'groups' || nm === 'group 121' || nm === 'group 1-2-1' || nm === 'pairings') return 'groups';
+  if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
+      nm === 'game log' || nm === 'log') return 'adj';
+  if (nm === 'training') return 'training';
+  if (isAggregate(name, grid)) return 'skip';
+
+  /* Shape beats name. A tab with First Name and RGI is a meeting week even
+     when it is called "Master list 1st week". */
+  if (findWeekHeader(grid) !== -1) return 'week';
+  if (findGroupsHeader(grid) !== -1) return 'groups';
+  if (findAdjHeader(grid) !== -1) return 'adj';
+  if (findTeamsHeader(grid) !== -1) return 'teams';
+  if (findTrainingHeader(grid).row !== -1) return 'training';
+  return 'skip';
+}
+
+/* A tab holding several months at once — a 5-month roll-up, an archive, a
+   leaderboard. Counting one of these as a week would multiply the month. */
+function isAggregate(name, grid) {
+  var nm = norm(name), i;
+  var words = ['archive', 'leaderboard', 'cumulative', 'rolling', 'ytd', 'year to date',
+               'past', 'history', 'summary', 'dashboard'];
+  for (i = 0; i < words.length; i++) if (nm.indexOf(words[i]) !== -1) return true;
+  if (/\d+\s*month/.test(nm)) return true;
+  if (isMonthRange(name)) return true;
+  /* Or a title row above the data that spans a range of months. */
+  for (i = 0; i < Math.min(grid.length, 4); i++) {
+    var row = grid[i] || [];
+    for (var c = 0; c < Math.min(row.length, 4); c++) if (isMonthRange(row[c])) return true;
+  }
+  return false;
+}
+var MONTHWORD = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*';
+var RANGE_RE = new RegExp('^' + MONTHWORD + '\\s*\\d{4}\\s*[-–—]\\s*' + MONTHWORD + '\\s*\\d{4}', 'i');
+function isMonthRange(v) { return RANGE_RE.test(String(v == null ? '' : v).trim()); }
+
+function headerCells(grid, r) {
+  var out = [], i, row = grid[r] || [];
+  for (i = 0; i < row.length; i++) out.push(norm(row[i]));
+  return out;
+}
+function has(cells, txt) { var i; for (i = 0; i < cells.length; i++) if (cells[i].indexOf(txt) !== -1) return true; return false; }
+function eq(cells, txt) { var i; for (i = 0; i < cells.length; i++) if (cells[i] === txt) return i; return -1; }
+
+/* ── Weekly PALMS tabs ──────────────────────────────────────────────── */
+function findWeekHeader(grid) {
+  var limit = Math.min(grid.length, 14), r, c;
+  for (r = 0; r < limit; r++) { c = headerCells(grid, r); if (has(c, 'first name') && eq(c, 'rgi') !== -1) return r; }
+  return -1;
+}
+function readWeekGrid(grid) {
+  var hr = findWeekHeader(grid);
+  if (hr === -1) return [];
+  var map = mapColumns(grid[hr]), out = [], r, rec;
+  if (map.RGI == null || map.FIRST == null) return [];
+  for (r = hr + 1; r < grid.length; r++) {
+    rec = readMemberRow(grid[r] || [], map);
+    if (rec) out.push(rec);
+  }
+  return out;
+}
+function mapColumns(header) {
+  var map = {}, c, raw, h;
+  for (c = 0; c < header.length; c++) {
+    raw = header[c];
+    h = norm(raw);
+    if (!h) continue;
+    if (h === 'first name' && map.FIRST == null) map.FIRST = c;
+    else if (h === 'last name' && map.LAST == null) map.LAST = c;
+    else if (h === 'p' && map.P == null) map.P = c;
+    else if (h === 'a' && map.A == null) map.A = c;
+    else if (h === 'l' && map.L == null) map.L = c;
+    else if (h === 'm' && map.M == null) map.M = c;
+    else if (h === 's' && map.S == null) map.S = c;
+    else if (h === 'rgi' && map.RGI == null) map.RGI = c;
+    else if (h === 'rgo' && map.RGO == null) map.RGO = c;
+    else if (h === 'rri' && map.RRI == null) map.RRI = c;
+    else if (h === 'rro' && map.RRO == null) map.RRO = c;
+    else if (h === 'v' && map.V == null) map.V = c;
+    else if (map.TYFCB == null && isTyfcb(h)) map.TYFCB = c;
+    else if (h === 'ceu' && map.CEU == null) map.CEU = c;
+    else if (map.ONE21 == null && isOneToOne(raw, h)) map.ONE21 = c;
+  }
+  return map;
+}
+/* TYFCB is spelled a dozen ways across PALMS exports. Catch the lot, but
+   never mistake "Rev Received" or "RRI" for it — those are not given. */
+function isTyfcb(h) {
+  if (h.indexOf('tyfcb') !== -1) return true;
+  if (h.indexOf('closed business') !== -1) return true;
+  if (h.indexOf('thank you') !== -1) return true;
+  if (h.indexOf('receiv') !== -1) return false;
+  return h.indexOf('rev given') !== -1 || h.indexOf('revenue given') !== -1 || h === 'rev';
+}
+
+/* Sheets loves turning the "1-2-1" heading into a date. Catch every form. */
+function isOneToOne(raw, h) {
+  if (raw instanceof Date) return true;
+  if (String(raw).indexOf('Date(') === 0) return true;
+  if (h.replace(/[^0-9]/g, '') === '121') return true;
+  if (h.indexOf('1-2-1') !== -1) return true;
+  if (h.indexOf('1/2/2001') !== -1 || h.indexOf('1-2-2001') !== -1) return true;
+  /* An .xlsx export hands it over as the raw date serial, 36893 for 2 Jan 2001. */
+  var v = Number(raw);
+  if (!isNaN(v) && v > 30000 && v < 60000) {
+    var d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+    if (d.getUTCFullYear() === 2001 && d.getUTCMonth() <= 1 && d.getUTCDate() <= 2) return true;
+  }
+  return false;
+}
+function readMemberRow(row, map) {
+  var first = String(row[map.FIRST] == null ? '' : row[map.FIRST]).trim();
+  var last = map.LAST != null ? String(row[map.LAST] == null ? '' : row[map.LAST]).trim() : '';
+  var full = (first + ' ' + last).replace(/\s+/g, ' ').trim();
+  if (!full) return null;
+  if (norm(full) === 'first name' || norm(full) === 'total' || norm(full) === 'totals') return null;
+  function g(k) { return map[k] == null ? 0 : num(row[map[k]]); }
+  return { name: full, P: g('P'), A: g('A'), L: g('L'), M: g('M'), S: g('S'),
+           RGI: g('RGI'), RGO: g('RGO'), RRI: g('RRI'), RRO: g('RRO'),
+           V: g('V'), ONE21: g('ONE21'), TYFCB: g('TYFCB') };
+}
+
+/* ── Teams tab ──────────────────────────────────────────────────────── */
+function findTeamsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (has(c, 'team') && (has(c, 'name') || has(c, 'member'))) return r;
+  }
+  return -1;
+}
+function readTeamsGrid(grid) {
+  var hr = findTeamsHeader(grid), out = [], r, nameCol = 0, teamCol = 1, c, i;
+  if (hr !== -1) {
+    c = headerCells(grid, hr);
+    for (i = 0; i < c.length; i++) {
+      if ((c[i].indexOf('name') !== -1 || c[i].indexOf('member') !== -1) && c[i].indexOf('team') === -1) nameCol = i;
+      if (c[i].indexOf('team') !== -1) teamCol = i;
+    }
+  }
+  for (r = (hr === -1 ? 1 : hr + 1); r < grid.length; r++) {
+    var row = grid[r] || [];
+    var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
+    var tm = String(row[teamCol] == null ? '' : row[teamCol]).trim();
+    /* A person's name is not a number, and neither is a team's. Without this
+       a sheet of figures can pass itself off as a roster. */
+    if (!nm || !tm) continue;
+    if (nm === String(Number(nm)) || tm === String(Number(tm))) continue;
+    out.push({ name: nm, team: tm });
+  }
+  return out;
+}
+
+/* ── Training tab ───────────────────────────────────────────────────── */
+var MONTHRE = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+function findTrainingHeader(grid) {
+  var limit = Math.min(grid.length, 12), r, c, i, nc;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    nc = nameColumn(c);
+    if (nc === -1) continue;
+    for (i = 0; i < c.length; i++) if (i !== nc && c[i] && MONTHRE.test(c[i])) return { row: r, month: i };
+  }
+  return { row: -1, month: -1 };
+}
+
+/* The column holding people's names. Exact "name" first, then anything ending
+   in "name" — a title row glued on top turns it into "September 2026 Name". */
+function nameColumn(cells) {
+  var i = eq(cells, 'name');
+  if (i !== -1) return i;
+  for (i = 0; i < cells.length; i++) if (/(^| )name$/.test(cells[i])) return i;
+  for (i = 0; i < cells.length; i++) if (cells[i].indexOf('member') !== -1) return i;
+  return -1;
+}
+
+/* Trim a header down to just the month, so the picker reads "April 2026"
+   rather than whatever title row got stuck to the front of it. */
+function monthLabel(raw) {
+  var t = String(raw == null ? '' : raw).trim();
+  var m = /((jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*'?\d{2,4})/i.exec(t);
+  return m ? m[1].replace(/\s+/g, ' ') : t;
+}
+function readTrainingGrid(grid) {
+  var f = findTrainingHeader(grid);
+  if (f.row === -1) return { rows: [], month: '', months: [] };
+  var cells = headerCells(grid, f.row), i, r, nameCol = nameColumn(cells);
+  if (nameCol === -1) nameCol = 0;
+
+  /* Every month column, left to right. Anything called "total" is a sum of
+     the others, not a month, and the name column is not a month either. */
+  var cols = [], labels = [];
+  for (i = 0; i < cells.length; i++) {
+    if (i === nameCol || !cells[i] || !MONTHRE.test(cells[i]) || cells[i].indexOf('total') !== -1) continue;
+    cols.push(i);
+    labels.push(monthLabel((grid[f.row] || [])[i]));
+  }
+  if (!cols.length) { cols = [f.month]; labels = [String((grid[f.row] || [])[f.month] || '').trim()]; }
+
+  /* The rightmost month is the one being run right now — whether or not
+     anybody has filled it in yet. Guessing by "which column has numbers"
+     silently reads last month when this month is still empty. */
+  var current = labels[labels.length - 1];
+
+  var rows = [];
+  for (r = f.row + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
+    if (!nm || norm(nm) === 'total') continue;
+    var months = {};
+    for (i = 0; i < cols.length; i++) months[norm(labels[i])] = num(row[cols[i]]);
+    rows.push({ name: nm, sessions: months[norm(current)] || 0, months: months });
+  }
+  return { rows: rows, month: current, months: labels };
+}
+
+/* ── Groups tab ─────────────────────────────────────────────────────────
+   One row per player per round. `Done` carries the whole group's outcome,
+   so it reads the same on all four rows:
+
+     yes / y / done / posted / 1   the group did it — everyone scores
+     no  / n / failed / missed / 0 the group did not — the group is fined
+     (blank)                       the fortnight is still running
+
+   Leaving it blank is not an oversight, it is the third state. Nobody is
+   fined for a round that has not finished yet.                            */
+var GRP_FIELDS = [
+  { key: 'round',  heads: ['round', 'cycle', 'fortnight', 'period'] },
+  { key: 'group',  heads: ['group no', 'group number', 'group', 'pod'] },
+  { key: 'member', heads: ['member', 'player', 'name'] },
+  { key: 'done',   heads: ['done', 'completed', 'complete', 'posted', 'status', 'outcome'] },
+  { key: 'notes',  heads: ['notes', 'note', 'detail', 'details'] }
+];
+function findGroupsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (!has(c, 'group') && !has(c, 'pod')) continue;
+    if (has(c, 'member') || has(c, 'player') || has(c, 'name')) return r;
+  }
+  return -1;
+}
+function readGroupsGrid(grid) {
+  var hr = findGroupsHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), map = {}, i, f, j, hh;
+  for (i = 0; i < GRP_FIELDS.length; i++) {
+    f = GRP_FIELDS[i];
+    for (j = 0; j < cells.length; j++) {
+      if (!cells[j] || map[f.key] != null) continue;
+      var taken = 0;
+      for (var pk in map) if (map.hasOwnProperty(pk) && map[pk] === j) taken = 1;
+      if (taken) continue;
+      for (hh = 0; hh < f.heads.length; hh++)
+        if (cells[j] === f.heads[hh] || cells[j].indexOf(f.heads[hh]) !== -1) { map[f.key] = j; break; }
+    }
+  }
+  if (map.member == null || map.group == null) return [];
+
+  var out = [], r;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var who = g('member');
+    if (!who || norm(who) === 'member' || norm(who) === 'total') continue;
+    out.push({ round: g('round'), group: g('group'), member: who, done: g('done'), notes: g('notes') });
+  }
+  return out;
+}
+
+/* yes / no / still running. Anything unrecognised is treated as still
+   running rather than as a failure — the board never invents a fine. */
+function doneState(v) {
+  var t = norm(v);
+  if (!t) return null;
+  if (/^(y|yes|done|completed|complete|posted|true|1|ok)$/.test(t)) return true;
+  if (/^(n|no|not done|failed|fail|missed|miss|false|0)$/.test(t)) return false;
+  return null;
+}
+
+/* ── Adjustments tab ────────────────────────────────────────────────────
+   The escape hatch, and the only one. PALMS cannot record a decision made
+   in the room — a correction, a one-off chapter bonus, a penalty agreed at
+   a meeting — so those go here, in plain points, with a reason attached.
+   Read by heading, so column order does not matter, and an old five-column
+   GameLog tab still lands correctly.                                      */
+var ADJ_FIELDS = [
+  { key: 'month',  heads: ['month'] },
+  { key: 'team',   heads: ['team', 'squad'], not: ['target'] },
+  { key: 'reason', heads: ['reason', 'why', 'notes', 'note', 'detail', 'details', 'type'] },
+  { key: 'points', heads: ['points', 'pts', 'score'] }
+];
+function findAdjHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (!has(c, 'team') && !has(c, 'squad')) continue;
+    if (has(c, 'points') || has(c, 'pts') || has(c, 'reason')) return r;
+  }
+  return -1;
+}
+function readAdjGrid(grid) {
+  var hr = findAdjHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), map = {}, i, f, j, hh;
+
+  for (i = 0; i < ADJ_FIELDS.length; i++) {
+    f = ADJ_FIELDS[i];
+    for (j = 0; j < cells.length; j++) {
+      if (!cells[j] || map[f.key] != null) continue;
+      var skip = 0;
+      if (f.not) { for (hh = 0; hh < f.not.length; hh++) if (cells[j].indexOf(f.not[hh]) !== -1) skip = 1; }
+      if (skip) continue;
+      for (hh = 0; hh < f.heads.length; hh++)
+        if (cells[j] === f.heads[hh] || cells[j].indexOf(f.heads[hh]) !== -1) { map[f.key] = j; break; }
+    }
+  }
+  if (map.team == null) return [];
+
+  var out = [], r;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var team = g('team');
+    if (!team || norm(team) === 'team' || norm(team) === 'total') continue;
+    out.push({ month: g('month'), team: team, reason: g('reason'),
+               points: map.points == null ? null : (g('points') === '' ? null : num(row[map.points])) });
+  }
+  return out;
+}
+
+/* ── Apps Script payload ────────────────────────────────────────────── */
+function normalise(res) {
+  var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
+              training: res.training || [], trainingMonths: res.trainingMonths || [],
+              adjustments: [], groups: [] };
+  if (res.groupsRaw && res.groupsRaw.headers)
+    pay.groups = readGroupsGrid([res.groupsRaw.headers].concat(res.groupsRaw.rows || []));
+  else pay.groups = res.groups || [];
+  /* The bridge hands over the tab raw where it can, so a chapter that
+     renamed its columns still reads correctly. */
+  var raw = res.adjustmentsRaw || res.gameLogRaw;
+  if (raw && raw.headers) {
+    pay.adjustments = readAdjGrid([raw.headers].concat(raw.rows || []));
+  } else {
+    var src = res.adjustments || res.gameLog || [], i, g;
+    for (i = 0; i < src.length; i++) {
+      g = src[i];
+      pay.adjustments.push({ month: g.month || '', team: g.team || '',
+        reason: g.reason || g.notes || g.detail || g.type || '',
+        points: (g.points === 0 || g.points) ? num(g.points) : null });
+    }
+  }
+  return pay;
+}
+
+/* ── Take a payload live ────────────────────────────────────────────── */
+function adopt(pay, sourceName, url) {
+  DATA = pay;
+  ROSTER = [];
+  var i, t;
+  for (i = 0; i < (pay.teams || []).length; i++) ROSTER.push({ name: pay.teams[i].name, team: pay.teams[i].team });
+  if (!ROSTER.length) {
+    for (t in DEFAULT_ROSTER) {
+      if (!DEFAULT_ROSTER.hasOwnProperty(t)) continue;
+      for (i = 0; i < DEFAULT_ROSTER[t].length; i++) ROSTER.push({ name: DEFAULT_ROSTER[t][i], team: t });
+    }
+    PARSE_WARN.push('No <b>Teams</b> tab in that sheet, so the chapter has been split into two ' +
+      'placeholder squads. Add a Teams tab with the real squad names and it takes over — the Roster ' +
+      'board has a <b>Copy For Sheet</b> button that gives you exactly what to paste.');
+  }
+  ROSTER_BASE = ROSTER.slice();
+  MOVES = [];
+  TRAIN_MONTH = null;
+  syncTeams();
+
+  var bits = [];
+  if (pay.weeks.length) bits.push(pay.weeks.length + ' weekly tab' + (pay.weeks.length === 1 ? '' : 's'));
+  if (ROSTER.length) bits.push(ROSTER.length + ' players');
+  if (TEAMS.length) bits.push(TEAMS.length + ' squads');
+  if (pay.adjustments.length) bits.push(pay.adjustments.length + ' adjustment' + (pay.adjustments.length === 1 ? '' : 's'));
+  srcTag('<b>' + esc(sourceName) + '</b> &middot; ' + (bits.join(' &middot; ') || 'nothing found'),
+         (sourceName === 'Demo data' || sourceName === 'Saved snapshot') ? 'demo' : 'live');
+  setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
+  checkData();
+  if (VIEW === 'data') go('board'); else render();
+}
+
+/* Squads come from the sheet, not from this file. Anything the sheet names
+   gets a colour and a carry-in slot so it can never score into a void. */
+function syncTeams() {
+  var i, t;
+  var seen = {};
+  for (i = 0; i < ROSTER.length; i++) if (ROSTER[i].team && TEAMS.indexOf(ROSTER[i].team) === -1) TEAMS.push(ROSTER[i].team);
+  for (i = 0; i < (DATA && DATA.adjustments ? DATA.adjustments.length : 0); i++) {
+    t = DATA.adjustments[i].team;
+    if (t && TEAMS.indexOf(t) === -1) TEAMS.push(t);
+  }
+  /* A placeholder squad nobody is on is noise on a public board: once the
+     sheet names real squads, drop the empties. */
+  for (i = 0; i < ROSTER.length; i++) if (ROSTER[i].team) seen[ROSTER[i].team] = 1;
+  var real = [];
+  for (i = 0; i < TEAMS.length; i++) if (seen[TEAMS[i]]) real.push(TEAMS[i]);
+  if (real.length) TEAMS = real;
+
+  for (i = 0; i < TEAMS.length; i++) {
+    if (CARRY[TEAMS[i]] === undefined) CARRY[TEAMS[i]] = 0;
+    if (!COLORS[TEAMS[i]]) COLORS[TEAMS[i]] = PALETTE[i % PALETTE.length];
+  }
+  rebuild('carry'); rebuild('teamNames');
+}
+function rebuild(id) { var e = $(id); if (e) e.dataset.built = ''; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE SCORING ENGINE
+
+   One canonical sequence, applied identically every month, with every
+   step written into an audit trail you can point at in a dispute.
+
+   There is no cleverness here on purpose. A squad's month is the sum of
+   its players' six activities, plus whatever the room agreed. That is the
+   whole game, and it is the reason the number on the screen is arguable
+   line by line instead of taken on trust.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Above this, a TYFCB column is holding money rather than a count of
+   slips. Nobody hands in twenty-one TYFCBs in one week; plenty of
+   chapters record RM 4,500. */
+var TYFCB_AMOUNT_FLOOR = 20;
+
+function compute() {
+  var W = [], i, j, k;
+  function warn(m) { W.push(m); }
+
+  var weekNames = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++) weekNames.push(DATA.weeks[i].tab);
+
+  /* ── Step 1: every player's own points ───────────────────────────── */
+  var teamOf = {}, trainOf = {}, members = {};
+  for (i = 0; i < ROSTER.length; i++) teamOf[norm(ROSTER[i].name)] = ROSTER[i].team;
+
+  var tKey = norm(trainMonth()), tAny = 0;
+  for (i = 0; i < (DATA.training || []).length; i++) {
+    var tr = DATA.training[i];
+    var got = (tr.months && tr.months[tKey] !== undefined) ? tr.months[tKey] : tr.sessions;
+    trainOf[norm(tr.name)] = num(got);
+    if (num(got) > 0) tAny = 1;
+  }
+  if ((DATA.training || []).length && !tAny)
+    warn('Nobody has any training logged for <b>' + esc(trainMonth()) + '</b>, so no squad is getting ' +
+         'training points. If that column just has not been filled in yet, fill it in and hit Refresh — ' +
+         'or pick a different month on the Data tab.');
+
+  /* Is the TYFCB column a count of slips, or a pile of ringgit? Decide it
+     once, for the whole month, and say out loud which way it went. */
+  var tyMax = 0;
+  for (i = 0; i < (DATA.weeks || []).length; i++)
+    for (j = 0; j < DATA.weeks[i].rows.length; j++)
+      tyMax = Math.max(tyMax, num(DATA.weeks[i].rows[j].TYFCB));
+  var tyAsSlips = (SET.tyfcbMode === 'slips') ||
+                  (SET.tyfcbMode === 'auto' && tyMax > TYFCB_AMOUNT_FLOOR);
+  if (tyMax > 0 && SET.tyfcbMode === 'auto' && tyAsSlips)
+    warn('The TYFCB column tops out at <b>' + n(tyMax) + '</b>, which is an amount of business rather ' +
+         'than a count of slips. Each week a player has any TYFCB is therefore being counted as <b>one</b>, ' +
+         'worth ' + n(rule('tyfcb')) + '. Change that on the Scoring tab if your column really does hold counts.');
+
+  function slot(name) {
+    var key = norm(name);
+    if (!members[key]) members[key] = { name: name, key: key, team: teamOf[key] || null,
+      visitor: 0, referral: 0, one21: 0, tyfcb: 0, group121: 0, absent: 0, late: 0, weeks: 0,
+      training: trainOf[key] || 0, byWeek: {}, rounds: [] };
+    return members[key];
+  }
+  for (i = 0; i < ROSTER.length; i++) slot(ROSTER[i].name);
+
+  for (i = 0; i < (DATA.weeks || []).length; i++) {
+    var w = DATA.weeks[i];
+    for (j = 0; j < w.rows.length; j++) {
+      var r = w.rows[j], m = slot(r.name);
+      var ty = tyAsSlips ? (num(r.TYFCB) > 0 ? 1 : 0) : num(r.TYFCB);
+      m.visitor += r.V; m.referral += r.RGI + r.RGO; m.one21 += r.ONE21; m.tyfcb += ty;
+      m.absent += r.A; m.late += r.L; m.weeks++;
+      /* Weekly pace covers only what the weekly tabs can see. Training and
+         perfect attendance are monthly and belong to no single week. */
+      m.byWeek[w.tab] = (m.byWeek[w.tab] || 0) +
+        r.V * rule('visitor') + (r.RGI + r.RGO) * rule('referral') +
+        r.ONE21 * rule('one21') + ty * rule('tyfcb');
+    }
+  }
+  for (k in trainOf) if (trainOf.hasOwnProperty(k) && !members[k]) slot(k);
+
+  /* ── The fortnightly group 1-2-1 ──────────────────────────────────
+     A group that got it done pays out to every player in it. A group that
+     did not owes the jar. A group still inside its fortnight does neither
+     — the board never invents a fine out of a blank cell. */
+  var rounds = {}, roundOrder = [], fines = [], groupList = [];
+  for (i = 0; i < (DATA.groups || []).length; i++) {
+    var gr = DATA.groups[i];
+    var rk = gr.round || 'Unnamed round';
+    if (!rounds[rk]) { rounds[rk] = {}; roundOrder.push(rk); }
+    var gk = String(gr.group || '?');
+    if (!rounds[rk][gk]) {
+      rounds[rk][gk] = { round: rk, group: gk, members: [], done: null, notes: '', conflict: false };
+      groupList.push(rounds[rk][gk]);
+    }
+    var G = rounds[rk][gk];
+    G.members.push(gr.member);
+    if (gr.notes && !G.notes) G.notes = gr.notes;
+    var st = doneState(gr.done);
+    if (st !== null) {
+      if (G.done !== null && G.done !== st) G.conflict = true;
+      G.done = st;
+    }
+  }
+  for (i = 0; i < groupList.length; i++) {
+    var G2 = groupList[i];
+    if (G2.conflict)
+      warn('Round <b>' + esc(G2.round) + '</b>, group <b>' + esc(G2.group) + '</b> has rows that both ' +
+           'agree and disagree that it was done. The whole group succeeds or fails together, so make ' +
+           'the Done column say the same thing on every one of its rows.');
+    var seen121 = {};
+    for (j = 0; j < G2.members.length; j++) {
+      var mk2 = norm(G2.members[j]);
+      if (!members[mk2]) {
+        warn('<b>' + esc(G2.members[j]) + '</b> is in round ' + esc(G2.round) + ' group ' + esc(G2.group) +
+             ' but is not in the sheet at all, so they cannot be scored for it.');
+        continue;
+      }
+      members[mk2].rounds.push({ round: G2.round, group: G2.group, done: G2.done });
+      if (G2.done !== true || seen121[mk2]) continue;
+      seen121[mk2] = 1;
+      members[mk2].group121++;
+    }
+    if (G2.done === false) {
+      var heads = SET.penaltyPerMember ? G2.members.length : 1;
+      fines.push({ round: G2.round, group: G2.group, members: G2.members.slice(),
+                   amount: SET.penaltyAmount * heads });
+    }
+  }
+
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    var m2 = members[k];
+    var missed = m2.absent + (SET.lateBreaksPerfect ? m2.late : 0);
+    m2.perfect = (m2.weeks > 0 && missed === 0) ? 1 : 0;
+    m2.pVisitor = m2.visitor * rule('visitor');
+    m2.pRef = m2.referral * rule('referral');
+    m2.p121 = m2.one21 * rule('one21');
+    m2.pTyfcb = m2.tyfcb * rule('tyfcb');
+    m2.pTrain = m2.training * rule('training');
+    m2.pAttend = m2.perfect * rule('attendance');
+    m2.pGroup = m2.group121 * rule('group121');
+    m2.total = m2.pVisitor + m2.pRef + m2.p121 + m2.pTyfcb + m2.pTrain + m2.pAttend + m2.pGroup;
+  }
+
+  /* ── Step 2: roll players up into their squad ────────────────────── */
+  var teams = {};
+  function ts(name) {
+    if (!teams[name]) teams[name] = { name: name, visitor: 0, referral: 0, one21: 0, tyfcb: 0,
+      training: 0, attendance: 0, group121: 0, manual: 0, activity: 0, monthTotal: 0, fines: 0,
+      carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {}, audit: [],
+      counts: { visitor: 0, referral: 0, one21: 0, tyfcb: 0, training: 0, attendance: 0, group121: 0 } };
+    return teams[name];
+  }
+  for (i = 0; i < TEAMS.length; i++) ts(TEAMS[i]);
+
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    var m3 = members[k];
+    if (!m3.team) continue;
+    var t = ts(m3.team);
+    t.visitor += m3.pVisitor; t.referral += m3.pRef; t.one21 += m3.p121;
+    t.tyfcb += m3.pTyfcb; t.training += m3.pTrain; t.attendance += m3.pAttend;
+    t.group121 += m3.pGroup;
+    t.counts.visitor += m3.visitor; t.counts.referral += m3.referral; t.counts.one21 += m3.one21;
+    t.counts.tyfcb += m3.tyfcb; t.counts.training += m3.training; t.counts.attendance += m3.perfect;
+    t.counts.group121 += m3.group121;
+    t.members.push(m3);
+    for (var wn in m3.byWeek) if (m3.byWeek.hasOwnProperty(wn)) t.byWeek[wn] = (t.byWeek[wn] || 0) + m3.byWeek[wn];
+  }
+
+  /* ── Step 3: adjustments the room agreed ─────────────────────────── */
+  var adjBy = {};
+  for (i = 0; i < (DATA.adjustments || []).length; i++) {
+    var g = DATA.adjustments[i];
+    if (!g.team) continue;
+    if (TEAMS.indexOf(g.team) === -1) {
+      warn('An adjustment is logged for <b>' + esc(g.team) + '</b>, which is not a squad on the board. ' +
+           'Check the spelling against the Teams tab — it was not counted.');
+      continue;
+    }
+    if (g.points === null || g.points === undefined || isNaN(g.points)) {
+      warn('The adjustment for <b>' + esc(g.team) + '</b> (' + esc(g.reason || 'no reason given') +
+           ') has no points on it, so it was ignored. Put a number in the Points column.');
+      continue;
+    }
+    if (!g.reason)
+      warn('<b>' + esc(g.team) + '</b> has an adjustment of ' + n(g.points) + ' with no reason written ' +
+           'down. It still counts, but a points change nobody can explain is a row waiting to happen.');
+    (adjBy[g.team] = adjBy[g.team] || []).push(g);
+  }
+
+  /* ── Steps 2 to 4, in order, writing the audit as we go ──────────── */
+  var teamList = [];
+  for (k in teams) if (teams.hasOwnProperty(k)) teamList.push(teams[k]);
+
+  for (i = 0; i < teamList.length; i++) {
+    var T = teamList[i], run = 0;
+    var log = function (name, why, delta, cls) {
+      if (delta !== null) run += delta;
+      T.audit.push({ name: name, why: why, delta: delta, running: run, cls: cls || '' });
+    };
+
+    /* Every activity gets its own line, so a captain can see which one is
+       carrying the squad and which one nobody is doing. */
+    for (j = 0; j < RULES.length; j++) {
+      var R2 = RULES[j], val = T[R2.key] || 0, cnt = T.counts[R2.key] || 0;
+      var unit = cnt + ' ' + (cnt === 1 ? R2.unit : (R2.units || R2.unit + 's'));
+      log(R2.short, unit + ' at ' + n(R2.pts) + ' each.', val, val > 0 ? 'hit' : '');
+    }
+    T.activity = run;
+
+    var adjs = adjBy[T.name] || [], adjSum = 0, adjBits = [];
+    for (j = 0; j < adjs.length; j++) {
+      adjSum += adjs[j].points;
+      adjBits.push((adjs[j].reason || 'no reason given') + ' ' +
+                   (adjs[j].points >= 0 ? '+' : '') + n(adjs[j].points));
+    }
+    T.manual = adjSum;
+    if (adjs.length) log('Adjustments agreed in the room', adjBits.join(', ') + '.', adjSum,
+                         adjSum >= 0 ? 'hit' : 'cut');
+
+    T.monthTotal = run;
+    log('Points carried in', T.carry ? 'Banked before this month started.'
+        : 'Nothing banked — this squad starts the game on zero.', T.carry, T.carry ? 'hit' : '');
+    T.grand = T.monthTotal + T.carry;
+    T.members.sort(function (a, b) { return b.total - a.total; });
+  }
+
+  /* Fines are money owed, not points lost: they are split across the squads
+     the fined players came from and reported on their own, so no squad can
+     be moved up or down the table by the jar. */
+  var fineTotal = 0;
+  for (i = 0; i < fines.length; i++) {
+    fineTotal += fines[i].amount;
+    var per = fines[i].amount / Math.max(1, fines[i].members.length);
+    for (j = 0; j < fines[i].members.length; j++) {
+      var fm = members[norm(fines[i].members[j])];
+      if (fm && fm.team && teams[fm.team]) teams[fm.team].fines += per;
+    }
+  }
+
+  teamList.sort(function (a, b) { return b.grand - a.grand; });
+  for (i = 0; i < teamList.length; i++) teamList[i].rank = i + 1;
+
+  return { teams: teamList, members: members, weekNames: weekNames,
+           warnings: W, tyAsSlips: tyAsSlips, tyMax: tyMax,
+           groups: groupList, roundOrder: roundOrder, fines: fines, fineTotal: fineTotal };
+}
+
+/* The month whose training counts: whatever was picked, else the sheet's latest. */
+function trainMonth() {
+  if (TRAIN_MONTH) return TRAIN_MONTH;
+  return (DATA && DATA.month) || '';
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   DRAWING THE BOARD
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var VIEWS = [['board', 'SCOREBOARD'], ['squads', 'SQUADS'], ['players', 'PLAYERS'],
+             ['groups', 'GROUP 1-2-1'], ['roster', 'ROSTER'], ['scoring', 'SCORING'],
+             ['share', 'BROADCAST'], ['data', 'DATA']];
+
+function go(v) {
+  VIEW = v;
+  var i;
+  for (i = 0; i < VIEWS.length; i++) $('v-' + VIEWS[i][0]).className = (VIEWS[i][0] === v ? '' : 'hide');
+  buildNav(); render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function buildNav() {
+  var h = '', i;
+  for (i = 0; i < VIEWS.length; i++)
+    h += '<button class="' + (VIEWS[i][0] === VIEW ? 'on' : '') + '" onclick="go(\'' + VIEWS[i][0] +
+         '\')">' + VIEWS[i][1] + '</button>';
+  $('nav').innerHTML = h;
+}
+
+function render() {
+  buildRulesTable(); buildRules(); buildSettings(); buildCarry(); buildTeamNames();
+  buildOOO(); buildSchema(); buildGroupSchema();
+  fillSelects(); fillTrainMonths();
+  if (!DATA) { $('globalWarn').innerHTML = ''; return; }
+  var R = compute();
+  showWarnings(R);
+  if (VIEW === 'board') { versus(R); h2h(R); mvp(R); glance(R); chart(R); breakdown(R); }
+  if (VIEW === 'squads') dossier(R);
+  if (VIEW === 'players') memberTable(R);
+  if (VIEW === 'groups') { renderDraw(); roundStatus(R); finesPanel(R); }
+  if (VIEW === 'roster') { board(R); moveLog(); }
+  if (VIEW === 'share') broadcast(R);
+}
+
+function showWarnings(R) {
+  var all = PARSE_WARN.concat(R.warnings);
+  $('globalWarn').innerHTML = all.length
+    ? '<div class="warn"><b>' + all.length + ' thing' + (all.length === 1 ? '' : 's') +
+      ' to look at</b><br><br>' + all.join('<br><br>') + '</div>' : '';
+}
+
+function fillTrainMonths() {
+  var sel = $('trainMonth'); if (!sel) return;
+  var list = (DATA && DATA.trainingMonths) || [], i, h = '';
+  if (!list.length) { sel.innerHTML = '<option>' + esc(trainMonth() || 'no Training tab loaded') + '</option>'; return; }
+  for (i = 0; i < list.length; i++)
+    h += '<option' + (norm(list[i]) === norm(trainMonth()) ? ' selected' : '') + '>' + esc(list[i]) + '</option>';
+  if (sel.innerHTML !== h) sel.innerHTML = h;
+}
+
+function fillSelects() {
+  var opts = '', i;
+  for (i = 0; i < TEAMS.length; i++) opts += '<option>' + esc(TEAMS[i]) + '</option>';
+  var pairs = [['teamPick', ''], ['memFilter', '<option value="">All squads</option>'],
+               ['newTeam', ''], ['calloutTeam', '']];
+  for (i = 0; i < pairs.length; i++) {
+    var s = $(pairs[i][0]); if (!s) continue;
+    var want = pairs[i][1] + opts, cur = s.value;
+    if (s.innerHTML !== want) { s.innerHTML = want; if (cur) s.value = cur; }
+  }
+  $('calloutWrap').className = ($('tpl').value === 'callout') ? '' : 'hide';
+}
+
+/* ── The head-to-head hero ──────────────────────────────────────────────
+   Two squads is the shape of this game, so the scoreboard is built for
+   two: names, scores, the gap, and one bar showing who holds the board.
+   Three or more still scores correctly — it just falls back to a list.  */
+function versus(R) {
+  var T = R.teams, i;
+  $('versus').className = (T.length === 2) ? 'versus' : '';
+  if (!T.length) {
+    $('versus').innerHTML = '<div class="note">No squads yet. Load a Teams tab, or drag people onto a ' +
+      'squad on the Roster board.</div>';
+    $('versusNote').innerHTML = ''; return;
+  }
+
+  if (T.length !== 2) {
+    var max = 1, h = '';
+    for (i = 0; i < T.length; i++) max = Math.max(max, T[i].grand);
+    for (i = 0; i < T.length; i++) {
+      var t = T[i];
+      h += '<div class="rank p' + (i + 1) + '" style="animation-delay:' + (i * 0.07) +
+        's;border-left-color:' + color(t.name) + '" onclick="openTeam(\'' + q(t.name) + '\')">' +
+        '<div class="pos">' + (i + 1) + '</div><div>' +
+        '<div class="tname">' + esc(t.name) + '</div>' +
+        '<div class="tmeta">' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
+        ' &middot; ' + n(t.carry) + ' carried in &middot; ' + n(t.monthTotal) + ' this month</div>' +
+        '<div class="bar"><i style="width:' + Math.max(0, t.grand / max * 100) + '%;background:' +
+        color(t.name) + '"></i></div></div>' +
+        '<div><div class="tpts" style="color:' + color(t.name) + '">' + n(t.grand) + '</div>' +
+        '<div class="tdelta' + (t.monthTotal < 0 ? ' neg' : '') + '">' +
+        (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + ' this month</div></div></div>';
+    }
+    $('versus').innerHTML = h;
+    $('versusNote').innerHTML = 'This game is written for two squads and the sheet has <b>' + T.length +
+      '</b>. Everything still scores correctly — the board just shows a ranked list instead of a ' +
+      'head-to-head. Tap a squad to open its full breakdown.';
+    return;
+  }
+
+  var a = T[0], b = T[1], gap = a.grand - b.grand, tied = gap === 0;
+  function side(t, win) {
+    return '<div class="vteam' + (win ? ' win' : '') + '" style="--c:' + color(t.name) + '" ' +
+      'onclick="openTeam(\'' + q(t.name) + '\')">' +
+      '<div class="vcrown">' + (win ? '★ IN FRONT' : (tied ? '— LEVEL —' : '')) + '</div>' +
+      '<div class="vname">' + esc(t.name) + '</div>' +
+      '<div class="vscore">' + n(t.grand) + '</div>' +
+      '<div class="vmeta">' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
+      (t.carry ? ' &middot; ' + n(t.carry) + ' carried in' : '') + '</div>' +
+      '<div class="vmonth">' + (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + ' THIS MONTH</div></div>';
+  }
+  $('versus').innerHTML =
+    side(a, !tied) +
+    '<div class="vmid"><div class="vs">VS</div>' +
+    '<div class="vgap">' + (tied ? 'TIED' : n(Math.abs(gap))) + '</div>' +
+    '<div class="vgapl">' + (tied ? 'dead level' : 'points in it') + '</div></div>' +
+    side(b, false) +
+    tug(a, b);
+
+  var per = rule('visitor') || 1;
+  $('versusNote').innerHTML = tied
+    ? 'Dead level. The next visitor through the door takes the lead outright.'
+    : '<b>' + esc(a.name) + '</b> lead by ' + n(Math.abs(gap)) + '. That is ' +
+      Math.ceil(Math.abs(gap) / per) + ' visitor' + (Math.ceil(Math.abs(gap) / per) === 1 ? '' : 's') +
+      ' for <b>' + esc(b.name) + '</b> to draw level. Tap a squad to open its full breakdown.';
+  $('versusNote').innerHTML += '<br><br>' + SQUAD_RULE;
+}
+
+/* One bar, split by share of the season. Zero-zero sits it in the middle
+   rather than dividing by nothing. */
+function tug(a, b) {
+  var la = Math.max(0, a.grand), lb = Math.max(0, b.grand), tot = la + lb;
+  var pa = tot > 0 ? la / tot * 100 : 50;
+  return '<div class="tug" style="grid-column:1/-1">' +
+    '<div class="tugbar">' +
+    '<i class="l" style="width:' + pa + '%;background:' + color(a.name) + '">' +
+    (pa >= 18 ? Math.round(pa) + '%' : '') + '</i>' +
+    '<i class="r" style="width:' + (100 - pa) + '%;background:' + color(b.name) + '">' +
+    ((100 - pa) >= 18 ? Math.round(100 - pa) + '%' : '') + '</i></div>' +
+    '<div class="tuglabel"><span>' + esc(a.name) + '</span>' +
+    '<span>share of the board</span><span>' + esc(b.name) + '</span></div></div>';
+}
+
+/* ── Category head-to-head ──────────────────────────────────────────── */
+function h2h(R) {
+  var T = R.teams, i, j;
+  if (T.length < 2) { $('h2h').innerHTML = '<div class="note">Two squads are needed for a head-to-head.</div>'; return; }
+
+  if (T.length === 2) {
+    var a = T[0], b = T[1], max = 1;
+    for (i = 0; i < RULES.length; i++) max = Math.max(max, a[RULES[i].key] || 0, b[RULES[i].key] || 0);
+    if (a.manual || b.manual) max = Math.max(max, Math.abs(a.manual), Math.abs(b.manual));
+    var h = '<div class="h2hhead"><div>' + esc(a.name) + '</div><div>Activity</div><div>' +
+            esc(b.name) + '</div></div><div class="h2h">';
+    var rows = RULES.slice();
+    if (a.manual || b.manual) rows.push({ key: 'manual', short: 'Adjustments', pts: null });
+    for (i = 0; i < rows.length; i++) {
+      var key = rows[i].key, av = a[key] || 0, bv = b[key] || 0;
+      h += '<div class="h2hrow">' +
+        '<div class="h2hbar l">' + (av ? '<i style="width:' + (Math.abs(av) / max * 100) +
+        '%;background:' + color(a.name) + '">' + n(av) + '</i>' : '') + '</div>' +
+        '<div class="h2hlab"><div class="hl">' + esc(rows[i].short) + '</div>' +
+        '<div class="hp">' + (rows[i].pts === null ? 'agreed in the room' : n(rows[i].pts) + ' each') +
+        '</div></div>' +
+        '<div class="h2hbar r">' + (bv ? '<i style="width:' + (Math.abs(bv) / max * 100) +
+        '%;background:' + color(b.name) + '">' + n(bv) + '</i>' : '') + '</div></div>';
+    }
+    $('h2h').innerHTML = h + '</div>';
+    return;
+  }
+
+  /* Three or more: one stacked bar per activity, each squad's share. */
+  var g = '<div class="h2h">', mx = 1;
+  for (i = 0; i < RULES.length; i++) for (j = 0; j < T.length; j++) mx = Math.max(mx, T[j][RULES[i].key] || 0);
+  for (i = 0; i < RULES.length; i++) {
+    g += '<div><div class="fromtop"><span><b>' + esc(RULES[i].short) + '</b></span>' +
+         '<span class="note" style="margin:0">' + n(RULES[i].pts) + ' each</span></div>';
+    for (j = 0; j < T.length; j++) {
+      var v = T[j][RULES[i].key] || 0;
+      g += '<div class="fromtop" style="font-size:12.5px;margin-top:6px"><span><span class="dot" style="background:' +
+        color(T[j].name) + '"></span>' + esc(T[j].name) + '</span><b>' + n(v) + '</b></div>' +
+        '<div class="bar"><i style="width:' + (v / mx * 100) + '%;background:' + color(T[j].name) + '"></i></div>';
+    }
+    g += '</div>';
+  }
+  $('h2h').innerHTML = g + '</div>';
+}
+function openTeam(name) { go('squads'); $('teamPick').value = name; render(); }
+
+/* ── Player of the month ────────────────────────────────────────────── */
+function rostered(R) {
+  var out = [], k;
+  for (k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team) out.push(R.members[k]);
+  out.sort(function (a, b) { return b.total - a.total; });
+  return out;
+}
+function mvp(R) {
+  var all = rostered(R), i;
+  if (!all.length) {
+    $('mvpHero').innerHTML = '<div class="mvpCrown">NOBODY ON A SQUAD YET</div>' +
+      '<div class="mvpLine">Load a Teams tab, or drag people onto a squad on the Roster board.</div>';
+    $('mvpPodium').innerHTML = ''; $('mvpCats').innerHTML = '';
+    return;
+  }
+  var top = all[0], bits = [];
+  if (top.visitor) bits.push(top.visitor + ' visitor' + (top.visitor === 1 ? '' : 's'));
+  if (top.referral) bits.push(top.referral + ' referral' + (top.referral === 1 ? '' : 's') + ' given');
+  if (top.one21) bits.push(top.one21 + ' 1-2-1' + (top.one21 === 1 ? '' : 's'));
+  if (top.tyfcb) bits.push(top.tyfcb + ' TYFCB');
+  if (top.training) bits.push(top.training + ' training session' + (top.training === 1 ? '' : 's'));
+  if (top.perfect) bits.push('perfect attendance');
+  var second = all[1], lead = second ? top.total - second.total : 0;
+
+  $('mvpHero').innerHTML =
+    '<div class="mvpCrown">PLAYER OF THE MONTH</div>' +
+    '<div class="mvpName">' + esc(top.name) + '</div>' +
+    '<div class="mvpTeam"><span class="dot" style="background:' + color(top.team) + '"></span>' +
+    esc(top.team) + '</div>' +
+    '<div class="mvpPts" style="color:' + color(top.team) + '">' + n(top.total) + '</div>' +
+    '<div class="mvpCrown">POINTS EARNED</div>' +
+    '<div class="mvpLine">' + (bits.length ? esc(bits.join(' · ')) : 'No activity logged yet') +
+    (second ? '<br>' + n(lead) + ' point' + (lead === 1 ? '' : 's') + ' clear of ' + esc(second.name) + '.' : '') +
+    '</div>';
+
+  var h = '';
+  for (i = 1; i < Math.min(all.length, 6); i++) {
+    h += '<div class="pod"><div class="n">' + (i + 1) + '</div><div>' +
+      '<div class="who">' + esc(all[i].name) + '</div>' +
+      '<div class="whoTeam"><span class="dot" style="background:' + color(all[i].team) + '"></span>' +
+      esc(all[i].team) + '</div></div>' +
+      '<div class="p" style="color:' + color(all[i].team) + '">' + n(all[i].total) + '</div></div>';
+  }
+  $('mvpPodium').innerHTML = h || '<div class="note">Nobody else on the board yet.</div>';
+
+  var cats = [['visitor', 'Most visitors', ''], ['referral', 'Most referrals given', ''],
+              ['one21', 'Most 1-2-1s', ''], ['tyfcb', 'Most TYFCB', ''],
+              ['training', 'Most training', ' session(s)']];
+  var ch = '', c;
+  for (c = 0; c < cats.length; c++) {
+    var key = cats[c][0], best = null, tie = 0;
+    for (i = 0; i < all.length; i++) if (!best || all[i][key] > best[key]) best = all[i];
+    for (i = 0; i < all.length; i++) if (best && all[i][key] === best[key] && best[key] > 0) tie++;
+    ch += '<div class="catbox"><div class="ck">' + cats[c][1] + '</div>' +
+      '<div class="cv">' + (best && best[key] ? esc(best.name) + (tie > 1 ? ' +' + (tie - 1) + ' more' : '') : '—') +
+      '</div><div class="cd">' + (best && best[key] ? best[key] + cats[c][2] : 'nothing yet') + '</div></div>';
+  }
+  var perf = 0;
+  for (i = 0; i < all.length; i++) if (all[i].perfect) perf++;
+  ch += '<div class="catbox"><div class="ck">Perfect attendance</div>' +
+    '<div class="cv">' + perf + ' of ' + all.length + '</div>' +
+    '<div class="cd">no absences all month</div></div>';
+  $('mvpCats').innerHTML = ch;
+}
+
+/* ── At a glance ────────────────────────────────────────────────────── */
+function glance(R) {
+  var T = R.teams, all = rostered(R), i;
+  if (!T.length) { $('glance').innerHTML = ''; return; }
+  var lead = T[0];
+  var gap = T.length > 1 ? lead.grand - T[1].grand : 0;
+  var mover = T.slice().sort(function (a, b) { return b.monthTotal - a.monthTotal; })[0];
+  var vis = 0, o21 = 0, refs = 0, ty = 0, trn = 0, perf = 0;
+  for (i = 0; i < all.length; i++) {
+    vis += all[i].visitor; o21 += all[i].one21; refs += all[i].referral;
+    ty += all[i].tyfcb; trn += all[i].training; if (all[i].perfect) perf++;
+  }
+  var c = [
+    ['In front', lead.name, T.length > 1 ? n(gap) + ' clear of ' + T[1].name : 'the only squad'],
+    ['Best month', mover ? mover.name : '—',
+      mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' this month' : ''],
+    ['Visitors', String(vis), 'worth ' + n(vis * rule('visitor')) + ' points'],
+    ['Referrals given', String(refs), 'worth ' + n(refs * rule('referral')) + ' points'],
+    ['1-2-1s', String(o21), 'worth ' + n(o21 * rule('one21')) + ' points'],
+    ['TYFCB', String(ty), ty ? 'worth ' + n(ty * rule('tyfcb')) + ' points' : 'none logged yet'],
+    ['Training', String(trn), 'worth ' + n(trn * rule('training')) + ' points'],
+    ['Perfect attendance', perf + ' of ' + all.length, 'worth ' + n(perf * rule('attendance')) + ' points']
+  ];
+  var h = '';
+  for (i = 0; i < c.length; i++)
+    h += '<div class="card"><div class="k">' + c[i][0] + '</div><div class="v">' + esc(c[i][1]) +
+      '</div><div class="d">' + esc(c[i][2]) + '</div></div>';
+  $('glance').innerHTML = h;
+}
+
+/* Weekly tabs are named for the sheet, not for an axis: "Master list 1st
+   week" is four times too wide to sit under a tick. Keep the part that
+   actually differs between tabs. */
+function weekLabel(name) {
+  var s = String(name == null ? '' : name)
+    .replace(/master\s*list/ig, '').replace(/of the month/ig, '')
+    .replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) s = String(name).trim();
+  if (s.length > 15) s = s.slice(0, 14) + '\u2026';
+  return s.toUpperCase();
+}
+
+/* ── Momentum chart ─────────────────────────────────────────────────── */
+function chart(R) {
+  var weeks = R.weekNames, i, w, t;
+  if (!weeks.length) {
+    $('chart').innerHTML = '<div class="note">No weekly tabs loaded, so there is nothing to chart yet.</div>';
+    $('legend').innerHTML = ''; return;
+  }
+  var W = 760, H = 250, PL = 50, PR = 16, PT = 16, PB = 34, max = 10;
+  for (i = 0; i < R.teams.length; i++)
+    for (w = 0; w < weeks.length; w++) max = Math.max(max, R.teams[i].byWeek[weeks[w]] || 0);
+  function xs(k) { return PL + (weeks.length < 2 ? (W - PL - PR) / 2 : k * (W - PL - PR) / (weeks.length - 1)); }
+  function ys(v) { return PT + (H - PT - PB) * (1 - v / max); }
+  var g = '';
+  for (i = 0; i <= 4; i++) {
+    var y = PT + (H - PT - PB) * i / 4, val = Math.round(max * (1 - i / 4));
+    g += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W - PR) + '" y2="' + y + '" stroke="#e8ecf4" stroke-width="1.5"/>' +
+         '<text x="' + (PL - 9) + '" y="' + (y + 4) + '" text-anchor="end">' + val + '</text>';
+  }
+  for (i = 0; i < weeks.length; i++) {
+    /* The ends would hang outside the viewBox if they were centred. */
+    var anc = i === 0 ? 'start' : (i === weeks.length - 1 ? 'end' : 'middle');
+    var ax = i === 0 ? PL - 6 : (i === weeks.length - 1 ? W - PR + 6 : xs(i));
+    g += '<text x="' + ax + '" y="' + (H - 11) + '" text-anchor="' + anc + '">' +
+         esc(weekLabel(weeks[i])) + '</text>';
+  }
+  for (i = 0; i < R.teams.length; i++) {
+    t = R.teams[i];
+    var pts = [];
+    for (w = 0; w < weeks.length; w++) pts.push(xs(w) + ',' + ys(t.byWeek[weeks[w]] || 0));
+    g += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color(t.name) +
+         '" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+    for (w = 0; w < weeks.length; w++)
+      g += '<circle cx="' + xs(w) + '" cy="' + ys(t.byWeek[weeks[w]] || 0) + '" r="4.5" fill="#fff" stroke="' +
+           color(t.name) + '" stroke-width="3"/>';
+  }
+  $('chart').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + g + '</svg>';
+  var lh = '';
+  for (i = 0; i < R.teams.length; i++)
+    lh += '<span><span class="dot" style="background:' + color(R.teams[i].name) + '"></span>' +
+          esc(R.teams[i].name) + '</span>';
+  lh += '<span style="font-style:italic">Weekly pace counts visitors, referrals, 1-2-1s and TYFCB. ' +
+        'Training and perfect attendance are monthly, so they sit outside this chart.</span>';
+  $('legend').innerHTML = lh;
+}
+
+/* ── Breakdown table ────────────────────────────────────────────────── */
+function breakdown(R) {
+  var h = '<thead><tr><th>Squad</th>', i, c;
+  for (c = 0; c < RULES.length; c++) h += '<th>' + esc(RULES[c].short) + '</th>';
+  h += '<th>Adjust.</th><th>Month</th><th>Season</th></tr></thead><tbody>';
+  for (i = 0; i < R.teams.length; i++) {
+    var t = R.teams[i];
+    h += '<tr><td class="nm"><span class="dot" style="background:' + color(t.name) + '"></span>' +
+         esc(t.name) + '</td>';
+    for (c = 0; c < RULES.length; c++) {
+      var v = t[RULES[c].key] || 0;
+      h += '<td' + (v < 0 ? ' class="neg"' : '') + '>' + n(v) + '</td>';
+    }
+    h += '<td' + (t.manual < 0 ? ' class="neg"' : '') + '>' + (t.manual ? (t.manual > 0 ? '+' : '') + n(t.manual) : '0') + '</td>' +
+         '<td' + (t.monthTotal < 0 ? ' class="neg"' : '') + '>' + n(t.monthTotal) + '</td>' +
+         '<td class="tot" style="color:' + color(t.name) + '">' + n(t.grand) + '</td></tr>';
+  }
+  $('breakdown').innerHTML = h + '</tbody>';
+}
+
+/* ── Squad dossier + audit trail ────────────────────────────────────── */
+function card(k, v, d) {
+  return '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>';
+}
+
+function dossier(R) {
+  var name = $('teamPick').value || TEAMS[0], t = null, i;
+  for (i = 0; i < R.teams.length; i++) if (R.teams[i].name === name) t = R.teams[i];
+  if (!t) { $('dossier').innerHTML = ''; return; }
+  var above = R.teams[t.rank - 2], below = R.teams[t.rank], col = color(t.name);
+  var cats = RULES.concat([{ key: 'manual', short: 'Adjustments' }]);
+  var maxc = 1;
+  for (i = 0; i < cats.length; i++) maxc = Math.max(maxc, Math.abs(t[cats[i].key] || 0));
+
+  var h = '<div class="panel" style="border-top:9px solid ' + col + '"><h2>' + esc(t.name) + '</h2>';
+  h += '<div class="cards">' +
+    card('Position', '#' + t.rank + ' of ' + R.teams.length,
+         t.rank === 1 ? 'Holding the board' : 'Chasing ' + esc(R.teams[0].name)) +
+    card('Season points', n(t.grand), n(t.carry) + ' carried in, ' + n(t.monthTotal) + ' this month') +
+    card('Gap above', above ? n(above.grand - t.grand) : '—', above ? 'to ' + esc(above.name) : 'Nobody above') +
+    card('Gap below', below ? n(t.grand - below.grand) : '—', below ? 'over ' + esc(below.name) : 'Nobody below') +
+    '</div>';
+
+  h += '<h3>Where the points came from</h3>';
+  for (i = 0; i < cats.length; i++) {
+    var v = t[cats[i].key] || 0, cnt = t.counts ? t.counts[cats[i].key] : null;
+    if (!v && cats[i].key === 'manual') continue;
+    h += '<div class="fromrow"><div class="fromtop"><span>' + esc(cats[i].short) +
+      (cnt != null && cnt > 0 ? ' <span class="note" style="margin:0">(' + cnt + ')</span>' : '') +
+      '</span><b class="' + (v < 0 ? 'neg' : '') + '">' + n(v) + '</b></div>' +
+      '<div class="bar"><i style="width:' + (Math.abs(v) / maxc * 100) + '%;background:' +
+      (v < 0 ? 'var(--red)' : col) + '"></i></div></div>';
+  }
+
+  /* The audit trail — the line-by-line a captain can argue with. */
+  h += '<h3>Audit trail &mdash; every step, in order</h3><div class="aud">';
+  for (i = 0; i < t.audit.length; i++) {
+    var a = t.audit[i];
+    var cls = (a.delta === null || a.delta === 0) ? 'z' : (a.delta < 0 ? 'n' : '');
+    var shown = a.delta === null ? 'no change' : (a.delta > 0 ? '+' : '') + n(a.delta);
+    h += '<div class="step ' + a.cls + '"><div class="sTop"><span class="sName">' + esc(a.name) + '</span>' +
+      '<span class="sDelta ' + cls + '">' + shown + '</span></div>' +
+      '<div class="sWhy">' + esc(a.why) + '</div>' +
+      '<div class="sRun">Running total: <b>' + n(a.running) + '</b></div></div>';
+  }
+  h += '</div><div class="note">Season total: <b>' + n(t.grand) + '</b>. Every number above comes ' +
+    'straight from the sheet — change a point value on the Scoring tab and this rewrites itself.</div>';
+
+  h += '<h3>What would move the needle</h3><div class="cards">';
+  if (below) h += card('Stay ahead', '+' + n(t.grand - below.grand + 1), 'to keep ' + esc(below.name) + ' behind');
+  if (above) h += card('Overtake', '+' + n(above.grand - t.grand + 1), 'to pass ' + esc(above.name) + ', about ' +
+    Math.ceil((above.grand - t.grand + 1) / Math.max(1, rule('visitor'))) + ' visitor(s)');
+  h += card('One more visitor', '+' + n(rule('visitor')), 'the single biggest lever available');
+  h += card('One more referral', '+' + n(rule('referral')), 'and every player can give one');
+  h += '</div>';
+
+  h += '<h3>Squad &mdash; ' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
+    '</h3><div class="scroll"><table><thead><tr><th>Player</th><th>Vis</th><th>Ref</th><th>1-2-1</th>' +
+    '<th>TYFCB</th><th>Trn</th><th>Grp</th><th>Perfect</th><th>Points</th></tr></thead><tbody>';
+  for (i = 0; i < t.members.length; i++) {
+    var m = t.members[i];
+    h += '<tr><td class="nm">' + esc(m.name) + '</td><td>' + m.visitor + '</td><td>' + m.referral +
+      '</td><td>' + m.one21 + '</td><td>' + m.tyfcb + '</td><td>' + m.training + '</td><td>' +
+      m.group121 + '</td><td>' + (m.perfect ? 'Yes' : '—') +
+      '</td><td class="tot">' + n(m.total) + '</td></tr>';
+  }
+  if (!t.members.length) h += '<tr><td colspan="9" class="sub2">Nobody on this squad yet.</td></tr>';
+  h += '</tbody></table></div>';
+  $('dossier').innerHTML = h + '</div>';
+}
+
+/* ── Player leaderboard ─────────────────────────────────────────────── */
+function sortBy(k) { SORT.dir = (SORT.k === k) ? -SORT.dir : -1; SORT.k = k; render(); }
+function memberTable(R) {
+  var qs = norm($('search').value), f = $('memFilter').value, i;
+  var list = rostered(R).filter(function (m) {
+    return (!f || m.team === f) && (!qs || norm(m.name).indexOf(qs) !== -1);
+  });
+  list.sort(function (a, b) {
+    var x = a[SORT.k], y = b[SORT.k];
+    if (typeof x === 'string') return SORT.dir * String(y).localeCompare(String(x));
+    return SORT.dir * ((y || 0) - (x || 0));
+  });
+  var cols = [['name', 'Player'], ['team', 'Squad'], ['visitor', 'Vis'], ['referral', 'Ref'],
+              ['one21', '1-2-1'], ['tyfcb', 'TYFCB'], ['training', 'Trn'],
+              ['group121', 'Grp'], ['perfect', 'Perfect'], ['total', 'Points']];
+  var h = '<thead><tr>';
+  for (i = 0; i < cols.length; i++)
+    h += '<th onclick="sortBy(\'' + cols[i][0] + '\')">' + cols[i][1] +
+      (SORT.k === cols[i][0] ? (SORT.dir < 0 ? ' ▾' : ' ▴') : '') + '</th>';
+  h += '</tr></thead><tbody>';
+  for (i = 0; i < list.length; i++) {
+    var m = list[i];
+    var medal = (SORT.k === 'total' && SORT.dir < 0 && i < 3) ? ['1. ', '2. ', '3. '][i] : '';
+    h += '<tr><td class="nm">' + medal + esc(m.name) + '</td>' +
+      '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' + esc(m.team) + '</td>' +
+      '<td>' + m.visitor + '</td><td>' + m.referral + '</td><td>' + m.one21 + '</td><td>' + m.tyfcb +
+      '</td><td>' + m.training + '</td><td>' + m.group121 +
+      '</td><td>' + (m.perfect ? 'Yes' : '—') +
+      '</td><td class="tot">' + n(m.total) + '</td></tr>';
+  }
+  if (!list.length) h += '<tr><td colspan="10" class="sub2">Nobody matches that.</td></tr>';
+  $('members').innerHTML = h + '</tbody>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE FORTNIGHTLY DRAW
+
+   Four players, two from each squad, thrown together for a fortnight. The
+   draw is made here and lives only in this browser tab; the sheet is still
+   the record, which is what the Copy For Sheet button is for.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var DRAW = null;        // [{ n, members:[{name,team}] }] — the current draw
+var ROLLING = false;
+
+/* Fisher-Yates. A draw that is not properly random is worse than no draw
+   at all, because people notice and stop believing it. */
+function shuffled(arr) {
+  var a = arr.slice(), i, j, t;
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor(Math.random() * (i + 1));
+    t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* Deal two from each squad into every group, then hand the leftovers round
+   one at a time. Nobody sits out: sitting out means missing the points
+   through no fault of your own. */
+function makeDraw(R) {
+  var pools = {}, i, ti;
+  for (ti = 0; ti < TEAMS.length; ti++) pools[TEAMS[ti]] = [];
+  var all = rostered(R);
+  for (i = 0; i < all.length; i++) if (pools[all[i].team]) pools[all[i].team].push(all[i].name);
+  for (ti = 0; ti < TEAMS.length; ti++) pools[TEAMS[ti]] = shuffled(pools[TEAMS[ti]]);
+
+  var per = Math.max(1, Math.floor(SET.groupSize / Math.max(1, TEAMS.length)));
+  var nGroups = 0;
+  for (ti = 0; ti < TEAMS.length; ti++)
+    nGroups = ti === 0 ? Math.floor(pools[TEAMS[ti]].length / per)
+                       : Math.min(nGroups, Math.floor(pools[TEAMS[ti]].length / per));
+  if (!isFinite(nGroups) || nGroups < 1) return null;
+
+  var groups = [], g;
+  for (g = 0; g < nGroups; g++) groups.push({ n: g + 1, members: [] });
+  for (ti = 0; ti < TEAMS.length; ti++) {
+    var tn = TEAMS[ti], pool = pools[tn];
+    for (g = 0; g < nGroups; g++)
+      for (i = 0; i < per; i++) groups[g].members.push({ name: pool.shift(), team: tn });
+  }
+  /* Leftovers: spread across the groups, smallest first, so the sizes stay
+     as close together as they can. */
+  var spare = [];
+  for (ti = 0; ti < TEAMS.length; ti++)
+    for (i = 0; i < pools[TEAMS[ti]].length; i++) spare.push({ name: pools[TEAMS[ti]][i], team: TEAMS[ti] });
+  spare = shuffled(spare);
+  for (i = 0; i < spare.length; i++) {
+    var into = groups[0];
+    for (g = 1; g < groups.length; g++) if (groups[g].members.length < into.members.length) into = groups[g];
+    into.members.push(spare[i]);
+  }
+  for (g = 0; g < groups.length; g++) groups[g].members = shuffled(groups[g].members);
+  return groups;
+}
+
+function rollDraw() {
+  if (ROLLING || !DATA) return;
+  var R = compute();
+  var made = makeDraw(R);
+  if (!made) {
+    $('drawWarn').innerHTML = '<div class="warn">There are not enough players on each squad to make ' +
+      'even one group of ' + SET.groupSize + '. Put people on both squads first, on the Roster tab.</div>';
+    $('draw').innerHTML = ''; return;
+  }
+  $('drawWarn').innerHTML = '';
+  DRAW = made;
+  spinUp(R, made);
+}
+
+/* The wow: every slot cycles real names at speed, then the groups lock in
+   one after another from the top. It is showmanship, but it is honest
+   showmanship — the answer was already decided before the spinning began. */
+function spinUp(R, groups) {
+  ROLLING = true;
+  var btn = $('rollBtn');
+  btn.disabled = true;
+  btn.textContent = 'SHUFFLING\u2026';
+  $('copyDrawBtn').disabled = true;
+
+  /* Every slot walks the same shuffled pool from a different offset, rather
+     than each picking at random. Picking at random shows the same person in
+     two slots at once, and a draw that looks broken while it spins is a
+     draw people argue with when it stops. */
+  var pool = shuffled(rostered(R)), tick = 0;
+  renderDraw(true);
+  var slots = document.querySelectorAll('#draw .slot');
+  var spin = setInterval(function () {
+    tick++;
+    for (var i = 0; i < slots.length; i++) {
+      if (slots[i].dataset.locked) continue;
+      var pick = pool[(i + tick) % pool.length];
+      if (pick) slots[i].innerHTML = '<span class="sq" style="background:' + color(pick.team) + '">' +
+        esc(shortSquad(pick.team)) + '</span>' + esc(pick.name);
+    }
+  }, 55);
+
+  var cards = document.querySelectorAll('#draw .gcard');
+  var g = 0;
+  var lock = setInterval(function () {
+    if (g >= groups.length) {
+      clearInterval(spin); clearInterval(lock);
+      ROLLING = false;
+      btn.disabled = false;
+      btn.innerHTML = '\uD83C\uDFB2 SHUFFLE AGAIN';
+      $('copyDrawBtn').disabled = false;
+      renderDraw();
+      return;
+    }
+    lockGroup(cards[g], groups[g]);
+    g++;
+  }, 150);
+}
+
+function lockGroup(card, group) {
+  if (!card) return;
+  card.className = 'gcard landed';
+  var slots = card.querySelectorAll('.slot'), i;
+  for (i = 0; i < slots.length; i++) {
+    var m = group.members[i];
+    if (!m) continue;
+    slots[i].dataset.locked = '1';
+    slots[i].className = 'slot lock';
+    slots[i].innerHTML = '<span class="sq" style="background:' + color(m.team) + '">' +
+      esc(shortSquad(m.team)) + '</span>' + esc(m.name);
+  }
+}
+
+/* "Team 1" is already short; anything longer gets initials so the badge
+   never pushes a name out of its slot. */
+function shortSquad(t) {
+  var s = String(t || '');
+  if (s.length <= 7) return s;
+  var w = s.split(/\s+/), i, out = '';
+  for (i = 0; i < w.length; i++) if (w[i]) out += w[i].charAt(0);
+  return (out.length > 1 ? out : s.slice(0, 6)).toUpperCase();
+}
+
+function renderDraw(spinning) {
+  $('gPts').textContent = n(rule('group121')) + ' points';
+  if (!DRAW) {
+    $('draw').innerHTML = '<div class="note" style="margin:0">No draw yet. Hit ' +
+      '<b>Shuffle The Groups</b> and it will deal ' + SET.groupSize + ' players a group, ' +
+      (TEAMS.length === 2 ? 'two from each squad' : 'evenly from each squad') + '.</div>';
+    $('drawNote').innerHTML = '';
+    $('copyDrawBtn').disabled = true;
+    return;
+  }
+  var h = '', i, j;
+  for (i = 0; i < DRAW.length; i++) {
+    h += '<div class="gcard"><div class="gtop"><span class="gname">GROUP ' + DRAW[i].n + '</span>' +
+      '<span class="gtag wait">' + DRAW[i].members.length + ' players</span></div>';
+    for (j = 0; j < DRAW[i].members.length; j++) {
+      var m = DRAW[i].members[j];
+      h += spinning
+        ? '<div class="slot spin">&nbsp;</div>'
+        : '<div class="slot"><span class="sq" style="background:' + color(m.team) + '">' +
+          esc(shortSquad(m.team)) + '</span>' + esc(m.name) + '</div>';
+    }
+    h += '</div>';
+  }
+  $('draw').innerHTML = h;
+  if (spinning) { $('drawNote').innerHTML = ''; return; }
+
+  var rn = ($('roundName').value || '').trim();
+  $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0"><b>This draw lives only in ' +
+    'this browser tab.</b> Hit <b>Copy For Sheet</b> and paste it into a <b>Groups</b> tab, or it is ' +
+    'gone the moment anyone reloads the page — and nothing will score.' +
+    (rn ? '' : '<br><br>Give the round a name first (something like <b>1\u201314 Sept</b>) so the ' +
+     'sheet can tell this fortnight from the next one.') + '</div>';
+}
+
+function copyDraw() {
+  if (!DRAW) return;
+  var rn = ($('roundName').value || '').trim();
+  if (!rn) { setStatus('Name the round first.', 'err', 'status'); alert('Give the round a name first — something like "1–14 Sept".'); return; }
+  var out = 'Round\tGroup\tMember\tDone\tNotes\n', i, j;
+  for (i = 0; i < DRAW.length; i++)
+    for (j = 0; j < DRAW[i].members.length; j++)
+      out += rn + '\t' + DRAW[i].n + '\t' + DRAW[i].members[j].name + '\t\t\n';
+  copyText(out, 'Draw copied. Paste it into your Groups tab, then fill the Done column in when the ' +
+    'fortnight is up.');
+}
+
+/* ── What the sheet says about the rounds already run ───────────────── */
+function roundStatus(R) {
+  var el = $('roundStatus');
+  if (!R.groups.length) {
+    el.innerHTML = '<div class="note" style="margin:0">Nothing in a <b>Groups</b> tab yet. Once you ' +
+      'paste a draw in and start filling the <b>Done</b> column, every round shows up here with who ' +
+      'scored and who owes the jar.</div>';
+    return;
+  }
+  var h = '', r, i;
+  for (r = R.roundOrder.length - 1; r >= 0; r--) {
+    var rn = R.roundOrder[r], gs = [];
+    for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) gs.push(R.groups[i]);
+    var done = 0, failed = 0, open = 0;
+    for (i = 0; i < gs.length; i++) {
+      if (gs[i].done === true) done++; else if (gs[i].done === false) failed++; else open++;
+    }
+    h += '<h3 style="margin-top:' + (r === R.roundOrder.length - 1 ? '0' : '26px') + '">' + esc(rn) +
+      ' &mdash; ' + done + ' done, ' + failed + ' missed' + (open ? ', ' + open + ' still running' : '') +
+      '</h3><div class="draw">';
+    for (i = 0; i < gs.length; i++) {
+      var G = gs[i];
+      var cls = G.done === true ? ' done' : (G.done === false ? ' failed' : '');
+      var tag = G.done === true ? '<span class="gtag ok">\u2713 DONE</span>'
+              : G.done === false ? '<span class="gtag no">MISSED</span>'
+              : '<span class="gtag wait">RUNNING</span>';
+      h += '<div class="gcard' + cls + '"><div class="gtop"><span class="gname">GROUP ' +
+        esc(G.group) + '</span>' + tag + '</div>';
+      for (var j = 0; j < G.members.length; j++) {
+        var mm = R.members[norm(G.members[j])];
+        var tn = mm && mm.team ? mm.team : '';
+        h += '<div class="slot">' + (tn ? '<span class="sq" style="background:' + color(tn) + '">' +
+          esc(shortSquad(tn)) + '</span>' : '') + esc(G.members[j]) + '</div>';
+      }
+      h += '<div class="note" style="margin-top:10px">' +
+        (G.done === true ? n(rule('group121')) + ' each, already in the scores above.'
+         : G.done === false ? 'Owes the jar.'
+         : 'Fill the <b>Done</b> column in the sheet when the fortnight is up.') +
+        (G.notes ? '<br>' + esc(G.notes) : '') + '</div></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+function finesPanel(R) {
+  var el = $('fines'), i;
+  var per = SET.penaltyPerMember ? 'per player' : 'per group';
+  var head = '<div class="row" style="margin-bottom:18px">' +
+    '<div style="width:190px"><label>Fine for a missed group</label>' +
+    '<input type="number" value="' + SET.penaltyAmount + '" oninput="SET.penaltyAmount=+this.value||0;render()"></div>' +
+    '<div style="width:230px"><label>Charged</label>' +
+    '<select onchange="SET.penaltyPerMember=(this.value===\'member\');render()">' +
+    '<option value="group"' + (SET.penaltyPerMember ? '' : ' selected') + '>Once per group</option>' +
+    '<option value="member"' + (SET.penaltyPerMember ? ' selected' : '') + '>By every player in it</option>' +
+    '</select></div></div>';
+
+  if (!R.fines.length) {
+    el.innerHTML = head + '<div class="note" style="margin:0">The jar is empty. Nothing is owed — ' +
+      'either every group has delivered, or no round has been closed off yet.</div>';
+    return;
+  }
+  var h = head + '<div class="scroll"><table><thead><tr><th>Round</th><th>Group</th><th>Players</th>' +
+    '<th>Owed</th></tr></thead><tbody>';
+  for (i = 0; i < R.fines.length; i++)
+    h += '<tr><td class="nm">' + esc(R.fines[i].round) + '</td><td class="sub2">Group ' +
+      esc(R.fines[i].group) + '</td><td class="sub2">' + esc(R.fines[i].members.join(', ')) +
+      '</td><td class="neg">RM ' + money(R.fines[i].amount) + '</td></tr>';
+  h += '</tbody></table></div>' +
+    '<div class="cards" style="margin-top:16px">' +
+    card('In the jar', 'RM ' + money(R.fineTotal), R.fines.length + ' missed group' +
+      (R.fines.length === 1 ? '' : 's') + ', at RM ' + money(SET.penaltyAmount) + ' ' + per);
+  for (i = 0; i < R.teams.length; i++)
+    if (R.teams[i].fines) h += card(R.teams[i].name, 'RM ' + money(R.teams[i].fines),
+      'the share owed by its players');
+  el.innerHTML = h + '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE ROSTER BOARD — drag a name, the whole board recalculates
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var BOARDITEMS = [];
+
+function board(R) {
+  BOARDITEMS = [];
+  var byTeam = {}, i, k, free = [];
+  for (i = 0; i < TEAMS.length; i++) byTeam[TEAMS[i]] = [];
+
+  for (k in R.members) {
+    if (!R.members.hasOwnProperty(k)) continue;
+    var m = R.members[k];
+    var rec = { name: m.name, key: k, team: m.team, pts: m.total, idx: BOARDITEMS.length };
+    BOARDITEMS.push(rec);
+    if (m.team && byTeam[m.team]) byTeam[m.team].push(rec); else free.push(rec);
+  }
+  function bypts(a, b) { return b.pts - a.pts; }
+
+  var h = '', ti;
+  for (ti = 0; ti < TEAMS.length; ti++) {
+    var tn = TEAMS[ti], arr = byTeam[tn] || [], tot = 0;
+    arr.sort(bypts);
+    for (i = 0; i < arr.length; i++) tot += arr[i].pts;
+    h += '<div class="col" style="border-top-color:' + color(tn) + '" ' +
+      'ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ondrop="dropOn(event,this,' + ti + ')">' +
+      '<div class="colHead"><span class="dot" style="background:' + color(tn) + '"></span>' +
+      '<span class="colName">' + esc(tn) + '</span></div>' +
+      '<div class="colMeta">' + arr.length + ' player' + (arr.length === 1 ? '' : 's') + ' &middot; ' +
+      n(tot) + ' points</div>';
+    for (i = 0; i < arr.length; i++) h += chipHTML(arr[i], ti);
+    if (!arr.length) h += '<div class="grabhint">Empty — drop someone here.</div>';
+    h += '</div>';
+  }
+  if (free.length) {
+    free.sort(bypts);
+    h += '<div class="col free" ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ' +
+      'ondrop="dropOn(event,this,-1)"><div class="colHead">' +
+      '<span class="dot" style="background:var(--red)"></span>' +
+      '<span class="colName">No squad yet</span></div>' +
+      '<div class="colMeta">' + free.length + ' active in the sheet, points not counting for anyone</div>';
+    for (i = 0; i < free.length; i++) h += chipHTML(free[i], -1);
+    h += '</div>';
+  }
+  $('board').innerHTML = h;
+}
+
+function chipHTML(rec, ti) {
+  var s = '<select class="mv" draggable="false" onchange="moveTo(' + rec.idx + ',this.value)" ' +
+          'onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">' +
+          '<option value="">Move to…</option>', i;
+  for (i = 0; i < TEAMS.length; i++) if (i !== ti) s += '<option value="' + i + '">' + esc(TEAMS[i]) + '</option>';
+  s += '</select>';
+  return '<div class="pchip" draggable="true" ondragstart="dragStart(event,' + rec.idx + ')" ondragend="dragEnd(this)">' +
+    '<span class="pn">' + esc(rec.name) + '</span>' +
+    '<span class="r2"><span class="pp">' + n(rec.pts) + '</span>' + s + '</span></div>';
+}
+
+var DRAGGING = -1;
+function dragStart(e, idx) {
+  DRAGGING = idx;
+  try { e.dataTransfer.setData('text/plain', String(idx)); e.dataTransfer.effectAllowed = 'move'; } catch (x) {}
+  if (e.target && e.target.className) e.target.className = 'pchip drag';
+}
+function dragEnd(el) { el.className = 'pchip'; DRAGGING = -1; }
+function dragOver(e, col) { e.preventDefault(); col.className = col.className.indexOf('free') !== -1 ? 'col free over' : 'col over'; }
+function dragOff(col) { col.className = col.className.indexOf('free') !== -1 ? 'col free' : 'col'; }
+function dropOn(e, col, ti) {
+  e.preventDefault();
+  dragOff(col);
+  var idx = DRAGGING;
+  try { var d = e.dataTransfer.getData('text/plain'); if (d !== '') idx = parseInt(d, 10); } catch (x) {}
+  if (idx >= 0) moveTo(idx, ti);
+}
+
+function moveTo(idx, ti) {
+  ti = parseInt(ti, 10);
+  var rec = BOARDITEMS[idx];
+  if (!rec || isNaN(ti)) return;
+  if (ti < 0) { render(); return; }          /* dropping back into "no squad" is a no-op */
+  var to = TEAMS[ti];
+  if (rec.team === to) { render(); return; }
+  var found = -1, i;
+  for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === rec.key) { found = i; break; }
+  if (found >= 0) ROSTER[found].team = to; else ROSTER.push({ name: rec.name, team: to });
+  MOVES.push({ name: rec.name, from: rec.team, to: to });
+  render();
+}
+function undoMove() {
+  if (!MOVES.length) return;
+  var mv = MOVES.pop(), i;
+  for (i = 0; i < ROSTER.length; i++) {
+    if (norm(ROSTER[i].name) !== norm(mv.name)) continue;
+    if (mv.from) ROSTER[i].team = mv.from; else ROSTER.splice(i, 1);
+    break;
+  }
+  render();
+}
+function resetRoster() {
+  if (MOVES.length && !confirm('Throw away ' + MOVES.length + ' change(s) and go back to what the sheet says?')) return;
+  ROSTER = ROSTER_BASE.slice();
+  var i; for (i = 0; i < ROSTER.length; i++) ROSTER[i] = { name: ROSTER[i].name, team: ROSTER[i].team };
+  MOVES = [];
+  render();
+}
+function moveLog() {
+  $('undoBtn').disabled = !MOVES.length;
+  if (!MOVES.length) { $('moveLog').innerHTML = ''; return; }
+  var h = '<div class="warn soft"><b>' + MOVES.length + ' unsaved change' + (MOVES.length === 1 ? '' : 's') +
+    '</b> — these only live in this browser tab until you paste them back into the sheet.<br><br>', i;
+  for (i = 0; i < MOVES.length; i++)
+    h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no squad') + ' &rarr; ' + esc(MOVES[i].to) + '<br>';
+  $('moveLog').innerHTML = h + '</div>';
+}
+function addMember() {
+  var nm = $('newName').value.trim(), t = $('newTeam').value, i;
+  if (!nm) return;
+  for (i = 0; i < ROSTER.length; i++)
+    if (norm(ROSTER[i].name) === norm(nm)) { alert(nm + ' is already on ' + ROSTER[i].team + '.'); return; }
+  ROSTER.push({ name: nm, team: t });
+  MOVES.push({ name: nm, from: null, to: t });
+  $('newName').value = '';
+  render();
+}
+function renameTeam(i, newName) {
+  newName = String(newName).trim();
+  if (!newName) return;
+  var old = TEAMS[i], j;
+  if (newName === old) return;
+  for (j = 0; j < ROSTER.length; j++) if (ROSTER[j].team === old) ROSTER[j].team = newName;
+  for (j = 0; j < ROSTER_BASE.length; j++) if (ROSTER_BASE[j].team === old) ROSTER_BASE[j].team = newName;
+  CARRY[newName] = CARRY[old] || 0; delete CARRY[old];
+  COLORS[newName] = COLORS[old] || color(old);
+  TEAMS[i] = newName;
+  rebuild('carry'); rebuild('teamNames');
+  render();
+}
+function copyRoster() {
+  var out = 'Member Name\tTeam\n', i;
+  for (i = 0; i < ROSTER.length; i++) out += ROSTER[i].name + '\t' + ROSTER[i].team + '\n';
+  copyText(out, 'Roster copied. Paste it into cell A1 of your Teams tab, then Refresh.');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE SCORING PANELS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* The chapter slide, rebuilt as a live table. Same order, same wording,
+   same green on the line that wins games — so the board and the slide can
+   be held side by side and agree. */
+function buildRulesTable() {
+  var el = $('rulesTable'); if (!el) return;
+  var h = '<thead><tr><th>Activity</th><th>Points</th></tr></thead><tbody>', i;
+  for (i = 0; i < RULES.length; i++) {
+    var r = RULES[i], cls = r.star ? ' class="hilite"' : (r.pending ? ' class="pending"' : '');
+    h += '<tr' + cls + '><td class="nm">' + esc(r.label) + '</td><td>' + n(r.pts) + ' pts</td></tr>';
+  }
+  el.innerHTML = h + '</tbody>';
+}
+
+function buildRules() {
+  var el = $('rules'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < RULES.length; i++)
+    h += '<div><label>' + esc(RULES[i].short) +
+      '<span class="chip ' + (RULES[i].pending ? 'p' : (RULES[i].group ? 'm' : 'a')) + '">' +
+      (RULES[i].pending ? 'pending' : (RULES[i].group ? 'groups' : 'auto')) + '</span></label>' +
+      '<input type="number" value="' + RULES[i].pts +
+      '" oninput="RULES[' + i + '].pts=+this.value||0;buildRulesTable();render()"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+
+function buildSettings() {
+  var el = $('settings'); if (el.dataset.built) return;
+  var h = '<div class="grid" style="grid-template-columns:1fr">';
+  h += '<div><label style="display:flex;align-items:start;gap:2px;text-transform:none;letter-spacing:0;' +
+    'font-family:Barlow,sans-serif;font-size:13.5px;color:var(--ink);line-height:1.65">' +
+    '<input type="checkbox"' + (SET.lateBreaksPerfect ? ' checked' : '') +
+    ' onchange="SET.lateBreaksPerfect=this.checked;render()">' +
+    '<span>Arriving <b>late</b> breaks perfect attendance. Off by default: only an <b>A</b> on the ' +
+    'PALMS sheet costs the 50. A substitute still counts as present either way.</span></label></div>';
+  h += '</div><div class="row" style="margin-top:18px">' +
+    '<div style="width:320px"><label>How the TYFCB column is read</label>' +
+    '<select onchange="SET.tyfcbMode=this.value;render()">' +
+    '<option value="auto"' + (SET.tyfcbMode === 'auto' ? ' selected' : '') + '>Work it out for me</option>' +
+    '<option value="slips"' + (SET.tyfcbMode === 'slips' ? ' selected' : '') + '>One TYFCB per player per week</option>' +
+    '<option value="count"' + (SET.tyfcbMode === 'count' ? ' selected' : '') + '>The number in the cell is the count</option>' +
+    '</select></div></div>' +
+    '<div class="hint">Most PALMS exports put the <b>value</b> of closed business in that column, not a ' +
+    'count of slips — and 25 points per ringgit would be absurd. Left on <b>Work it out for me</b>, any ' +
+    'column topping ' + TYFCB_AMOUNT_FLOOR + ' is treated as money and each week with business in it ' +
+    'scores one TYFCB. The board says so out loud at the top of the page whenever that happens.</div>';
+
+  h += '<h3>Rules this board treats as settled</h3><div class="note" style="margin-top:0">' +
+    '<b>A referral given is RGI plus RGO.</b> Given inside the chapter and given outside it both count. ' +
+    'Referrals <i>received</i> are not scored — you do not get points for someone else\'s work.<br><br>' +
+    '<b>Perfect attendance is a monthly prize, not a weekly one.</b> Miss nothing all month and the ' +
+    'squad gets ' + n(rule('attendance')) + ' once, not once per meeting.<br><br>' +
+    '<b>Training counts sessions, not people.</b> Three sessions by one player scores the same as one ' +
+    'session by three.<br><br>' +
+    '<b>TYFCB is marked pending on the chapter slide</b> and is scored here at ' + n(rule('tyfcb')) +
+    '. If the chapter has not switched it on yet, set it to 0 above and the column is read but ignored.<br><br>' +
+    '<b>A player scores for whichever squad they are on.</b> Move them on the Roster board and every ' +
+    'point they have earned this month moves with them, so mid-month swaps are visible rather than fudged.<br><br>' +
+    '<b>There are no items.</b> No shop, no steals, no shields, no gambles. A squad\'s score is its ' +
+    'players\' activity plus anything the room agreed and wrote down.';
+  el.innerHTML = h + '</div>'; el.dataset.built = 1;
+}
+
+function buildCarry() {
+  var el = $('carry'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < TEAMS.length; i++)
+    h += '<div><label><span class="dot" style="background:' + color(TEAMS[i]) + '"></span>' +
+      esc(TEAMS[i]) + '</label><input type="number" value="' + (CARRY[TEAMS[i]] || 0) +
+      '" oninput="CARRY[\'' + q(TEAMS[i]) + '\']=+this.value||0;render()"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildTeamNames() {
+  var el = $('teamNames'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < TEAMS.length; i++)
+    h += '<div><label><span class="dot" style="background:' + color(TEAMS[i]) + '"></span>Squad ' + (i + 1) +
+      '</label><input value="' + esc(TEAMS[i]) + '" onchange="renameTeam(' + i + ',this.value)"></div>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildOOO() {
+  var el = $('ooo'); if (el.dataset.built) return;
+  var h = '', i;
+  for (i = 0; i < OOO.length; i++) h += '<li>' + OOO[i] + '</li>';
+  el.innerHTML = h; el.dataset.built = 1;
+}
+function buildGroupSchema() {
+  var el = $('groupSchema'); if (!el || el.dataset.built) return;
+  var rows = [
+    ['Round', '1\u201314 Sept', 'Which fortnight. One name per draw, the same on all its rows.'],
+    ['Group', '3', 'Which group inside that round.'],
+    ['Member', 'Alex Ang', 'One row per player. Spelled as the PALMS tabs spell it.'],
+    ['Done', 'yes / no / (blank)', 'Did the group do its 1-2-1 and post it? Blank = still running.'],
+    ['Notes', 'Posted 12 Sept', 'Anything worth remembering when someone queries it.']
+  ];
+  var h = '<thead><tr><th>Column</th><th>Example</th><th>What it is for</th></tr></thead><tbody>', i;
+  for (i = 0; i < rows.length; i++)
+    h += '<tr><td class="nm">' + rows[i][0] + '</td><td class="sub2">' + esc(rows[i][1]) +
+      '</td><td class="sub2">' + esc(rows[i][2]) + '</td></tr>';
+  el.innerHTML = h + '</tbody>'; el.dataset.built = 1;
+}
+function copyGroupsHeader() {
+  copyText('Round\tGroup\tMember\tDone\tNotes',
+    'Header copied. Paste into cell A1 of a Groups tab — or just use Copy For Sheet on the draw, ' +
+    'which includes it.');
+}
+
+function buildSchema() {
+  var el = $('schema'); if (el.dataset.built) return;
+  var rows = [
+    ['Month', 'September 2026', 'Which month this row belongs to.'],
+    ['Team', 'Team 1', 'Which squad it is for. Must match a squad name exactly.'],
+    ['Reason', 'Chapter challenge won at the AGM', 'Why. A points change nobody can explain is a row waiting to happen.'],
+    ['Points', '150', 'Positive to add, negative to take away.']
+  ];
+  var h = '<thead><tr><th>Column</th><th>Example</th><th>What it is for</th></tr></thead><tbody>', i;
+  for (i = 0; i < rows.length; i++)
+    h += '<tr><td class="nm">' + rows[i][0] + '</td><td class="sub2">' + esc(rows[i][1]) +
+      '</td><td class="sub2">' + esc(rows[i][2]) + '</td></tr>';
+  el.innerHTML = h + '</tbody>'; el.dataset.built = 1;
+}
+
+/* ── Data-quality check, run every time new data lands ──────────────── */
+function checkData() {
+  var msgs = [], i, j;
+  if (!ROSTER.length) msgs.push('No <b>Teams</b> tab was found, so every score stays at zero until you ' +
+    'add one — or drag people onto a squad on the Roster board.');
+  if (!DATA.weeks.length) msgs.push('No weekly PALMS tabs were found. Only training and adjustments will count.');
+  if (!(DATA.groups || []).length) msgs.push('No <b>Groups</b> tab was found, so no fortnightly ' +
+    'group 1-2-1 is being scored. Make a draw on the <b>Group 1-2-1</b> tab and paste it in.');
+  if (TEAMS.length > 2) msgs.push('The sheet names <b>' + TEAMS.length + '</b> squads. This game is ' +
+    'written for two — everything still scores, but the scoreboard shows a ranked list rather than a ' +
+    'head-to-head.');
+  var have = {};
+  for (i = 0; i < ROSTER.length; i++) have[norm(ROSTER[i].name)] = 1;
+  var orphans = {}, list = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++)
+    for (j = 0; j < DATA.weeks[i].rows.length; j++) {
+      var nm = DATA.weeks[i].rows[j].name;
+      if (!have[norm(nm)] && !orphans[nm]) { orphans[nm] = 1; list.push(nm); }
+    }
+  if (list.length) msgs.push('Active in the sheet but on no squad, so their points are going nowhere: <b>' +
+    esc(list.join(', ')) + '</b>. Drag them onto a squad on the Roster board.');
+  $('warnbox').innerHTML = msgs.length ? '<div class="warn">' + msgs.join('<br><br>') + '</div>' : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE ANNOUNCEMENT WRITER — plain English, for the whole chapter
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function broadcast(R) {
+  var tpl = $('tpl').value, short = $('len').value === 'short', T = R.teams, i;
+  var medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  var all = rostered(R), top = all[0];
+  var gap = T.length > 1 ? T[0].grand - T[1].grand : 0;
+  var month = (DATA && DATA.month) || 'this month';
+  var out = '';
+
+  function table() {
+    var s = [], i2;
+    for (i2 = 0; i2 < T.length; i2++) {
+      var line = (medals[i2] || (i2 + 1) + '.') + ' *' + T[i2].name + '* - ' + n(T[i2].grand) + ' points';
+      if (!short && T[i2].monthTotal) line += '  _(' + (T[i2].monthTotal > 0 ? '+' : '') +
+        n(T[i2].monthTotal) + ' ' + month + ')_';
+      s.push(line);
+    }
+    return s.join('\n');
+  }
+  function headline() {
+    if (T.length < 2) return '';
+    if (gap === 0) return 'It is *dead level* between ' + T[0].name + ' and ' + T[1].name + '.';
+    return '*' + T[0].name + '* lead by *' + n(gap) + '* — about ' +
+      Math.ceil(gap / Math.max(1, rule('visitor'))) + ' visitor(s).';
+  }
+
+  if (tpl === 'standings') {
+    out = '🎮 *TITANS CGC GAME — SCOREBOARD*\n\n' + table() + '\n\n' + headline();
+    if (!short && top) out += '\n\n👑 Player of the month so far: *' + top.name + '* (' +
+      top.team + ') on ' + n(top.total) + '.';
+    if (!short) out += '\n\nEvery visitor is ' + n(rule('visitor')) + '. Bring one and you move the board.';
+  } else if (tpl === 'midmonth') {
+    out = '⏰ *HALFWAY — TITANS CGC GAME*\n\n' + table() + '\n\n' + headline() +
+      '\n\nThere is still time. One visitor is ' + n(rule('visitor')) + ', one referral is ' +
+      n(rule('referral')) + ', one 1-2-1 is ' + n(rule('one21')) + '.';
+    if (!short) out += '\nPerfect attendance for the month is worth ' + n(rule('attendance')) +
+      ' on its own — just turn up.';
+  } else if (tpl === 'mvp') {
+    if (!top) out = 'No activity logged yet.';
+    else {
+      var bits = [];
+      if (top.visitor) bits.push(top.visitor + ' visitor(s)');
+      if (top.referral) bits.push(top.referral + ' referral(s) given');
+      if (top.one21) bits.push(top.one21 + ' 1-2-1(s)');
+      if (top.tyfcb) bits.push(top.tyfcb + ' TYFCB');
+      if (top.training) bits.push(top.training + ' training session(s)');
+      if (top.perfect) bits.push('perfect attendance');
+      out = '👑 *PLAYER OF THE MONTH*\n\n*' + top.name + '* — ' + top.team + '\n*' +
+        n(top.total) + ' points*\n\n' + (bits.length ? bits.join(', ') + '.' : 'No activity yet.');
+      if (!short && all[1]) out += '\n\nRunner-up: ' + all[1].name + ' on ' + n(all[1].total) + '.';
+    }
+  } else if (tpl === 'rules') {
+    out = '🎮 *TITANS CGC GAME — HOW POINTS WORK*\n\n';
+    for (i = 0; i < RULES.length; i++)
+      out += '• ' + RULES[i].label + ' — *' + n(RULES[i].pts) + ' pts*\n';
+    out += '\nTwo squads, one scoreboard, no items and no gimmicks. Everything above is counted ' +
+      'straight off the chapter sheet, so nobody has to remember to claim anything.';
+  } else if (tpl === 'close') {
+    out = '🏁 *' + String(month).toUpperCase() + ' IS DONE*\n\n' + table() + '\n\n';
+    out += T.length ? '*' + T[0].name + '* finish on top with ' + n(T[0].grand) + '.' : '';
+    if (!short && top) out += '\n\n👑 Player of the month: *' + top.name + '* (' + top.team +
+      ') on ' + n(top.total) + '.';
+    if (!short) out += '\n\nThe board resets for activity but the totals carry. New month, same game.';
+  } else if (tpl === 'callout') {
+    var pick = $('calloutTeam').value || (T[0] && T[0].name), t = null;
+    for (i = 0; i < T.length; i++) if (T[i].name === pick) t = T[i];
+    if (!t) out = 'Pick a squad.';
+    else {
+      var above = T[t.rank - 2], below = T[t.rank];
+      out = '*' + t.name + '* — where you stand\n\n' +
+        'Position: #' + t.rank + ' of ' + T.length + '\nSeason: ' + n(t.grand) +
+        '\n' + month + ': ' + (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + '\n\n';
+      if (above) out += 'You are ' + n(above.grand - t.grand) + ' behind ' + above.name + '. That is ' +
+        Math.ceil((above.grand - t.grand + 1) / Math.max(1, rule('visitor'))) + ' visitor(s).\n';
+      if (below) out += 'You are ' + n(t.grand - below.grand) + ' ahead of ' + below.name + '. Do not sit on it.\n';
+      if (!short) {
+        var weakest = null;
+        for (i = 0; i < RULES.length; i++)
+          if (!weakest || (t[RULES[i].key] || 0) < (t[weakest.key] || 0)) weakest = RULES[i];
+        if (weakest) out += '\nYour quietest area is *' + weakest.short + '* on ' + n(t[weakest.key] || 0) +
+          '. That is where the easy points are.';
+      }
+    }
+  }
+  $('msg').value = out;
+}
+
+function copyMsg() { copyText($('msg').value, 'Announcement copied.'); }
+function copyAdjHeader() {
+  copyText('Month\tTeam\tReason\tPoints', 'Header copied. Paste into cell A1 of an Adjustments tab.');
+}
+function copyTeamsHeader() { copyText('Member Name\tTeam', 'Header copied. Paste into cell A1 of your Teams tab.'); }
+
+function copyBookmark() {
+  var u = $('url').value.trim(), base = location.origin + location.pathname, hash = '';
+  var mExec = u.match(/\/macros\/s\/([^\/]+)\//);
+  var mSheet = u.match(/\/spreadsheets\/d\/([^\/]+)/);
+  if (mExec) hash = '#e=' + mExec[1];
+  else if (mSheet) hash = (mSheet[1] === DEFAULT_SHEET) ? '' : '#s=' + mSheet[1];
+  else if (u) hash = '#src=' + encodeURIComponent(u);
+  var tabs = $('tabs').value.trim();
+  if (hash.indexOf('#s=') === 0 && tabs && tabs !== DEFAULT_TABS) hash += '&tabs=' + encodeURIComponent(tabs);
+  copyText(base + hash, hash ? 'Link copied — it opens straight onto that source.'
+    : 'Link copied. The plain address already opens the chapter sheet.');
+}
+
+function copyText(txt, okMsg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function () { setStatus(okMsg, 'ok'); },
+      function () { legacyCopy(txt, okMsg); });
+  } else legacyCopy(txt, okMsg);
+}
+function legacyCopy(txt, ok) {
+  var ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  var done = false;
+  try { done = document.execCommand('copy'); } catch (x) {}
+  document.body.removeChild(ta);
+  setStatus(done ? ok : 'Could not reach the clipboard — select the text and copy it by hand.',
+            done ? 'ok' : 'err');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DEMO DATA — real rosters, invented activity
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function demo() {
+  var roster = DEFAULT_ROSTER, teams = [], names = [], t, i;
+  for (t in roster) {
+    if (!roster.hasOwnProperty(t)) continue;
+    for (i = 0; i < roster[t].length; i++) { teams.push({ name: roster[t][i], team: t }); names.push(roster[t][i]); }
+  }
+  var seed = 7;
+  function rnd(x) { seed = (seed * 9301 + 49297) % 233280; return Math.floor(seed / 233280 * x); }
+  var weeks = [], w, rows;
+  for (w = 1; w <= 4; w++) {
+    rows = [];
+    for (i = 0; i < names.length; i++)
+      rows.push({ name: names[i], P: 1, A: rnd(9) === 0 ? 1 : 0, L: 0, M: 0, S: 0,
+                  RGI: rnd(3), RGO: rnd(3), RRI: 0, RRO: 0, V: rnd(7) === 0 ? 1 : 0,
+                  ONE21: rnd(4), TYFCB: rnd(6) === 0 ? rnd(9000) + 500 : 0 });
+    weeks.push({ tab: 'Week ' + w, rows: rows });
+  }
+  var training = [];
+  for (i = 0; i < names.length; i++) training.push({ name: names[i], sessions: rnd(3) === 0 ? 1 : 0 });
+
+  var M = 'September 2026';
+  PARSE_WARN = [];
+  LAST = { kind: 'demo' };
+  CARRY = { 'Team 1': 0, 'Team 2': 0 };
+  /* A fortnight already judged and a fortnight still running, so both
+     halves of the Groups tab are visible without anyone typing anything. */
+  var gRows = [], gi, gj;
+  var d1 = makeDrawFrom(teams, 'Team 1'), d2 = makeDrawFrom(teams, 'Team 2');
+  var pairs = Math.min(Math.floor(d1.length / 2), Math.floor(d2.length / 2));
+  for (gi = 0; gi < pairs; gi++) {
+    var verdict = gi === pairs - 1 ? 'no' : 'yes';
+    for (gj = 0; gj < 2; gj++) {
+      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: verdict, notes: '' });
+      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: verdict, notes: '' });
+    }
+    for (gj = 0; gj < 2; gj++) {
+      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: '', notes: '' });
+      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: '', notes: '' });
+    }
+  }
+  adopt({ ok: true, month: M, weeks: weeks, teams: teams, training: training, groups: gRows,
+          adjustments: [{ month: M, team: 'Team 2', reason: 'Chapter challenge won at the AGM', points: 150 }] },
+        'Demo data', '');
+  setStatus('Demo mode — invented weekly numbers on placeholder squads. Nothing here is real. ' +
+    'Load a link to see the true board.', 'ok');
+}
+
+/* Just the names on one squad, in sheet order — enough to deal demo rounds
+   from without dragging the real draw machinery into it. */
+function makeDrawFrom(teams, squad) {
+  var out = [], i;
+  for (i = 0; i < teams.length; i++) if (teams[i].team === squad) out.push(teams[i].name);
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   START UP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function boot() {
+  wireFiles();
+  buildNav();
+  DEFAULT_TABS = $('tabs').value;
+
+  /* The address bar chooses the source, shortest form first:
+       (nothing)   the chapter's own sheet
+       #s=<id>     another Google Sheet
+       #e=<id>     an Apps Script deployment
+       #src=<url>  anything else, spelled out in full
+       #demo       sample numbers
+     Nothing is stored anywhere, so the link is what remembers.            */
+  var hash = location.hash.replace(/^#/, ''), parts = hash.split('&'), p = {}, i, kv;
+  for (i = 0; i < parts.length; i++) {
+    kv = parts[i].split('=');
+    if (kv[0]) p[kv[0]] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
+  }
+  if (p.tabs) $('tabs').value = p.tabs;
+
+  var src = p.src || (p.s ? sheetUrl(p.s) : '') || (p.e ? execUrl(p.e) : '');
+  if (!src && hash !== 'demo' && DEFAULT_SHEET) src = sheetUrl(DEFAULT_SHEET);
+
+  if (hash === 'demo') { go('board'); demo(); return; }
+  if (hash === 'saved') { go('board'); useSnapshot(''); return; }
+  if (src) {
+    $('url').value = src;
+    go('board');
+    /* Show the saved month straight away so the page is never blank, then
+       quietly replace it if the live read succeeds. */
+    if (SNAPSHOT) useSnapshot('');
+    AUTOLOAD = true;
+    load();
+    return;
+  }
+
+  go('data');
+  render();
+}
+boot();
+</script>
+</body>
+</html>
