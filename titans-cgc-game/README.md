@@ -7,7 +7,7 @@ One HTML file. No build step, no install, no database. It reads your Google
 Sheet, does the scoring, and shows a line-by-line audit trail for every squad.
 It never writes to the sheet — the sheet stays the source of truth.
 
-**Open it here:** https://chewmunkai.github.io/titans-cgc-game/
+**Open it here:** https://chewmunkai.github.io/league-of-titans/titans-cgc-game/
 
 That plain address is the whole link. The page opens on the chapter's sheet and
 loads the live numbers by itself — nothing to paste, nothing to remember.
@@ -36,7 +36,7 @@ Straight off the chapter slide, in the slide's own order:
 | Perfect monthly attendance | 50 pts |
 | TYFCB *(pending)* | 25 pts |
 | Normal 1-2-1 completed | 25 pts |
-| Group 1-2-1 completed | 50 pts |
+| Group 1-2-1 completed | 25 pts |
 
 The first six are counted straight out of the PALMS tabs — nobody has to
 remember to claim anything. The seventh comes off the fortnightly draw, below.
@@ -82,7 +82,7 @@ Every two weeks, four players are thrown together — **two from each squad** �
 and they have that fortnight to do their group 1-2-1 and post it in the
 chapter's social media group.
 
-- **Done it?** Every player in the group scores **50 points**.
+- **Done it?** Every player in the group scores **25 points**.
 - **Missed it?** The group owes **RM 5** to the fines jar.
 
 Open the **GROUP 1-2-1** tab and hit **SHUFFLE THE GROUPS**. Names spin through
@@ -108,7 +108,7 @@ reads the same on all four rows, and it has **three** states, not two:
 
 | Value | What happens |
 |---|---|
-| `yes` / `done` / `posted` | Every player in the group scores 50. |
+| `yes` / `done` / `posted` | Every player in the group scores 25. |
 | `no` / `missed` / `failed` | The group goes in the fines jar. |
 | *(blank)* | The fortnight is still running. Nothing happens either way. |
 
@@ -208,7 +208,7 @@ need to bookmark. To point it somewhere else, press **Copy One-Click Link**:
 
 | Link | What it opens |
 |---|---|
-| `.../titans-cgc-game/` | the chapter's sheet — the normal case |
+| `.../league-of-titans/titans-cgc-game/` | the chapter's sheet — the normal case |
 | `.../#s=<sheet id>` | a different Google Sheet |
 | `.../#e=<deployment id>` | an Apps Script deployment |
 | `.../#saved` | the month saved inside the file |
@@ -300,23 +300,35 @@ that supply their own `<html>` shell. It is generated, and gitignored.
 
 ---
 
-## Putting it online
+## Where this is published
 
-1. Create a **public** repo called `titans-cgc-game` — no README, no
-   `.gitignore`, nothing. Just the empty repo.
-2. From this folder:
+It currently lives in a `titans-cgc-game/` folder inside the **league-of-titans**
+repo, and GitHub Pages serves it from there. That repo's own board — the finished
+League of Titans season — is still at the root of the same site, untouched:
 
-```bash
-git remote add origin https://github.com/chewmunkai/titans-cgc-game.git
-git push -u origin main
-```
+| | |
+|---|---|
+| Titans CGC Game | `chewmunkai.github.io/league-of-titans/titans-cgc-game/` |
+| League of Titans (finished) | `chewmunkai.github.io/league-of-titans/` |
 
-3. On GitHub: **Settings → Pages → Source: Deploy from a branch → `main` /
-   `(root)` → Save.**
-4. Wait about a minute. The board is live at the URL at the top of this file.
-
-To update it later, edit `index.html`, then:
+To update it, edit `index.html` in that folder, then:
 
 ```bash
 git add -A && git commit -m "what changed" && git push
 ```
+
+### Moving it to its own repo
+
+Only worth doing for the shorter URL. Create a **public** repo called
+`titans-cgc-game` — empty, no README, no `.gitignore` — then from a clone of
+**league-of-titans**:
+
+```bash
+git subtree split --prefix=titans-cgc-game -b titans
+git push https://github.com/chewmunkai/titans-cgc-game.git titans:main
+```
+
+Then **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` →
+Save**, and about a minute later it is live at
+`chewmunkai.github.io/titans-cgc-game/`. Delete the folder from
+**league-of-titans** once you have checked the new address works.
