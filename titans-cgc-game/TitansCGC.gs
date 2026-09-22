@@ -37,6 +37,9 @@ var CONFIG = {
   TEAMS_TAB: 'Teams',
   // The fortnightly group 1-2-1 draw and whether each group delivered.
   GROUPS_TAB: 'Groups',
+  // The chapter's own scoring lines. If this tab exists it defines the
+  // whole scoring list and the dashboard's built-in defaults step aside.
+  SCORING_TAB: 'Scoring',
   // Points the room agreed that PALMS cannot show. The first of these that
   // exists is used, so an old GameLog tab keeps working untouched.
   ADJUSTMENT_TABS: ['Adjustments', 'GameLog'],
@@ -89,6 +92,7 @@ function buildPayload() {
     // extra columns are harmless.
     adjustmentsRaw: readAdjustmentsRaw(),
     groupsRaw: readGroupsRaw(),
+    scoringRaw: readTabRaw(CONFIG.SCORING_TAB, ['points', 'pts']),
     warnings: []
   };
 }
@@ -144,6 +148,7 @@ function isExcluded(name) {
   for (var a = 0; a < CONFIG.ADJUSTMENT_TABS.length; a++)
     if (n === CONFIG.ADJUSTMENT_TABS[a].toLowerCase()) return true;
   if (n === CONFIG.GROUPS_TAB.toLowerCase()) return true;
+  if (n === CONFIG.SCORING_TAB.toLowerCase()) return true;
   if (n === CONFIG.TRAINING_TAB.toLowerCase()) return true;
   for (var i = 0; i < CONFIG.EXCLUDE_TABS.length; i++) {
     if (n.indexOf(CONFIG.EXCLUDE_TABS[i].toLowerCase()) !== -1) return true;
@@ -253,6 +258,37 @@ function readTeams() {
     if (name && team) out.push({ name: name, team: team });
   }
   return out;
+}
+
+// ── A tab handed over raw ────────────────────────────────────────
+// Headers plus rows, with the header row found by the words that have to
+// be in it. The dashboard reads it by heading name, so column order and
+// extra columns are both harmless.
+
+function readTabRaw(tabName, mustHave) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tabName);
+  if (!sheet) return { headers: [], rows: [] };
+  var grid = sheet.getDataRange().getValues();
+  if (!grid.length) return { headers: [], rows: [] };
+
+  var hr = 0;
+  for (var r = 0; r < Math.min(grid.length, 10); r++) {
+    var joined = grid[r].map(function (c) { return String(c).toLowerCase(); }).join('|');
+    var hit = false;
+    for (var m = 0; m < mustHave.length; m++) if (joined.indexOf(mustHave[m]) !== -1) hit = true;
+    if (hit) { hr = r; break; }
+  }
+
+  var headers = grid[hr].map(function (c) { return String(c).trim(); });
+  var rows = [];
+  for (var i = hr + 1; i < grid.length; i++) {
+    var row = grid[i].map(function (c) {
+      return (c instanceof Date) ? Utilities.formatDate(c, Session.getScriptTimeZone(), 'yyyy-MM-dd') : c;
+    });
+    var blank = row.every(function (c) { return c === '' || c === null; });
+    if (!blank) rows.push(row);
+  }
+  return { headers: headers, rows: rows };
 }
 
 // ── Groups tab ───────────────────────────────────────────────────

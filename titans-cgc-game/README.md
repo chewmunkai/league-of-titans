@@ -40,8 +40,31 @@ Straight off the chapter slide, in the slide's own order:
 
 The first six are counted straight out of the PALMS tabs — nobody has to
 remember to claim anything. The seventh comes off the fortnightly draw, below.
-Change any value on the **SCORING** tab and the whole board recalculates
-instantly — nothing needs redeploying.
+
+### Adding your own scoring lines
+
+The seven above are only the starting list. On the **SCORING** tab you can
+change any of them, remove any of them, and add your own. A line is not just a
+number: it also says **where its number comes from**, so a line you invent
+counts itself off your spreadsheet every month instead of being typed in by hand.
+
+| Source | What it counts |
+|---|---|
+| Add up a weekly column | Any column on the PALMS tabs — `V`, `RGI`, `RRI`, `CEU`, or a heading this board has never heard of |
+| Weeks a column has anything in | One per week the player has anything in that column, whatever the figure |
+| TYFCB (money check applied) | TYFCB, with the money trap below handled |
+| Training tab sessions | The Training tab |
+| Perfect attendance | Once a month, for a clean sheet |
+| Group 1-2-1s completed | The fortnightly draw |
+
+The column picker lists every column found in your loaded sheet, so if you add
+a `CEU` or `Testimonials` column to your PALMS tabs it is there to point at —
+no code change, no redeploy.
+
+Edits live in your browser tab until you hit **Copy Scoring For Sheet** and
+paste them into a **Scoring** tab. Once that tab exists it defines the whole
+scoring list and the defaults in this file step aside. A source it does not
+recognise is skipped and flagged rather than silently scoring zero.
 
 ### The two squads
 
@@ -90,12 +113,20 @@ every slot and the groups lock in one after another. The draw is a proper
 Fisher–Yates shuffle, and the answer is settled before the spinning starts — the
 animation is showmanship, not the draw.
 
-Nobody sits out. Two from each squad go into every group; whoever is left over
-is dealt round one at a time, so some groups end up with five rather than
-anybody missing the points through no fault of their own.
+**Four to a group, never five.** Two from each squad fill the full groups;
+whoever is left over forms one more group, mixed across both squads, and that
+last one is simply short. Nobody sits out and nobody ends up in a five. At
+14 / 13 that is six groups of four and one of three.
 
-The draw lives only in the browser tab until you hit **COPY FOR SHEET** and
-paste it into a **Groups** tab. That is the record, and it is what scores.
+### Saving a round
+
+**SAVE THIS ROUND** keeps a draw under its round name so you can pull it back
+up later — a draw you cannot get back is one you have to run again, and running
+it again gives different groups, which is exactly the argument nobody wants.
+
+Saved rounds live in **that browser, on that computer**. They are not shared
+with anyone and they do not score on their own. The sheet is still the record:
+a round counts when **COPY FOR SHEET** has put it in the **Groups** tab.
 
 ### Tracking it
 
@@ -242,11 +273,12 @@ button will tell you to upload the newer export instead.
 | Weekly PALMS tabs | A header row containing `First Name` and `RGI`. One tab per meeting week. The header can sit on any row. Visitors, referrals, 1-2-1s, TYFCB and attendance all come from here. |
 | `Teams` | Column A member name, column B squad name. Two squads: the men's and the women's, with any surplus men in the women's squad. |
 | `Groups` | The fortnightly draw and whether each group delivered. Make the draw on the GROUP 1-2-1 tab and paste it in. |
+| `Scoring` | Optional. Your own scoring lines. If it exists it defines the whole list. |
 | `Training` | A `Name` column plus one column per month. It reads every month and uses the rightmost one, whether or not it is filled in yet. Change it with the month picker on the DATA tab. |
 | `Adjustments` | Optional. See below. |
 
-`templates/Teams.csv`, `templates/Groups.csv` and `templates/Adjustments.csv`
-are ready to paste into cell A1.
+`templates/Teams.csv`, `templates/Groups.csv`, `templates/Scoring.csv` and
+`templates/Adjustments.csv` are ready to paste into cell A1.
 
 ### Adjustments
 
@@ -268,17 +300,37 @@ happen.
 
 ---
 
+## Managing the roster
+
+The **ROSTER** tab is where the line-up is kept honest between sheet updates.
+
+- **Drag anyone onto another squad** and the whole board recalculates at once.
+- **Drag them onto "No squad"** when they leave the chapter. They come off the
+  board and their points stop counting for anyone, without deleting the history.
+- **Add a player** who has joined, or who is in the room but missing from the
+  sheet. Spell the name exactly as the PALMS tabs spell it or their activity
+  will not find them.
+
+All of it is browser-local until **Copy For Sheet** puts it back in the `Teams`
+tab. Undo and Reset To Sheet are both there.
+
+---
+
 ## Nothing is ever silently wrong
 
-Anything the engine cannot resolve raises a warning at the top of the page
+Anything the engine cannot resolve raises a notice at the top of the page
 instead of producing a quiet number: a player active in the sheet but on no
 squad, an adjustment for a squad that does not exist, an adjustment with no
 points on it, a training column nobody has filled in, a TYFCB column that holds
 money rather than counts, a group whose rows disagree about whether it was done,
 a name in the Groups tab that is in no PALMS tab, or a sheet that names more
-than two squads.
+than two squads, or a scoring line pointed at a source that does not exist.
 
-That last one still scores correctly — the scoreboard just falls back from the
+On the scoreboard those notices are folded into a single chip so they do not
+shout over a board being shown to a room; tap it to read them, and they open by
+themselves on the DATA, SCORING and ROSTER tabs where you would be fixing them.
+
+A sheet with more than two squads still scores correctly — the scoreboard just falls back from the
 head-to-head to a plain ranked list, and says why.
 
 ---

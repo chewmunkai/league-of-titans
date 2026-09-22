@@ -293,6 +293,20 @@ tr.pending td{background:#fff9e6}
 .col.free{border-top-color:var(--red)}
 .grabhint{font-size:11.5px;color:var(--muted);font-style:italic;padding:7px 2px}
 
+/* ── Notices, folded away ─────────────────────────────────────────── */
+.warnbar{margin-bottom:18px}
+.warntab{background:var(--paper);border:2px solid var(--red);color:var(--red-dk);border-radius:20px;
+  font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:1.4px;font-weight:700;
+  text-transform:uppercase;padding:6px 15px;cursor:pointer;transition:.1s}
+.warntab:hover{background:#fdf0f1}
+.warn .warntab{border-color:var(--red);background:#fff}
+
+/* ── The scoring editor ───────────────────────────────────────────── */
+.rulerow{display:flex;gap:11px;flex-wrap:wrap;align-items:end;background:var(--paper2);
+  border:2px solid var(--line);border-radius:9px;padding:13px;margin-bottom:11px}
+.rulerow > div:first-child{flex:1;min-width:190px}
+.rulerow button{align-self:flex-end}
+
 /* ── The fortnightly draw ─────────────────────────────────────────── */
 .drawbar{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
 .rollbtn{background:var(--red);color:#fff;border:3px solid var(--ink);border-radius:9px;cursor:pointer;
@@ -458,12 +472,16 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
       <button class="rollbtn" id="rollBtn" onclick="rollDraw()">&#127922; SHUFFLE THE GROUPS</button>
       <div style="width:210px"><label>Round name</label>
         <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
+      <button class="b" onclick="saveDraw()" id="saveDrawBtn">SAVE THIS ROUND</button>
       <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
     </div>
     <div id="drawWarn"></div>
     <div class="draw" id="draw"></div>
     <div class="note" id="drawNote"></div>
   </div>
+
+  <div class="panel"><h2>Saved Rounds</h2>
+    <div id="savedRounds"></div></div>
 
   <div class="panel"><h2>This Round, From The Sheet</h2>
     <div id="roundStatus"></div></div>
@@ -486,6 +504,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     </div>
     <div class="row" style="margin-bottom:17px">
       <button class="b" onclick="copyRoster()">COPY FOR SHEET</button>
+      <button class="b g" onclick="jumpAdd()">+ ADD A PLAYER</button>
       <button class="b g" onclick="undoMove()" id="undoBtn">UNDO LAST MOVE</button>
       <button class="b g" onclick="resetRoster()">RESET TO SHEET</button>
     </div>
@@ -493,14 +512,18 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     <div class="board" id="board"></div>
   </div>
 
-  <div class="panel"><h2>Add / Rename</h2>
+  <div class="panel" id="addPanel"><h2>Add A Player</h2>
+    <div class="note" style="margin:0 0 15px">Someone who has joined the chapter, or who is in the
+      meeting but missing from the sheet. Spell the name <b>exactly</b> as the PALMS tabs spell it, or
+      their activity will not find them.</div>
     <div class="row" style="margin-bottom:19px">
-      <div style="flex:1;min-width:170px"><label>Add a player</label>
-        <input id="newName" placeholder="Full name, exactly as in the sheet"></div>
-      <div style="width:200px"><label>Squad</label><select id="newTeam"></select></div>
+      <div style="flex:1;min-width:170px"><label>Full name</label>
+        <input id="newName" placeholder="e.g. Alex Ang" onkeydown="if(event.key==='Enter')addMember()"></div>
+      <div style="width:210px"><label>Squad</label><select id="newTeam"></select></div>
       <button class="b" onclick="addMember()">ADD</button>
     </div>
-    <h3>Squad names</h3>
+    <div class="status" id="addStatus"></div>
+    <h3>Rename a squad</h3>
     <div class="grid" id="teamNames" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))"></div>
     <div class="note">Rename a squad here and every player moves with it. To add a third squad, put it in
       the <b>Teams</b> tab of your sheet — the board follows whatever the sheet says.</div></div>
@@ -523,10 +546,19 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     </div>
   </div>
 
-  <div class="panel"><h2>Point Values</h2>
-    <div class="grid" id="rules" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
-    <div class="note">These are the live numbers the board is using right now. They start at exactly what
-      the chapter slide says.</div></div>
+  <div class="panel"><h2>Point Values &amp; Sources</h2>
+    <div class="note" style="margin:0 0 16px">Every line below is editable, and you can add your own.
+      A line is not just a number — it also says <b>where its number comes from</b>, so a new scoring
+      line counts itself off your spreadsheet every month instead of being typed in by hand.</div>
+    <div id="ruleEditor"></div>
+    <div class="row" style="margin-top:18px">
+      <button class="b" onclick="addRule()">+ ADD A SCORING LINE</button>
+      <button class="b g" onclick="copyScoring()">COPY SCORING FOR SHEET</button>
+      <button class="b g" onclick="resetRules()">RESET TO DEFAULTS</button>
+    </div>
+    <div class="note"><b>These edits live only in this browser tab.</b> To make them stick for everyone,
+      hit <b>Copy Scoring For Sheet</b> and paste it into a <b>Scoring</b> tab. Once that tab exists it
+      defines the whole scoring list, and this page follows it.</div></div>
 
   <div class="panel"><h2>How Each One Is Counted</h2>
     <div id="settings"></div></div>
@@ -584,7 +616,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
     <div class="row" style="margin-top:15px">
       <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
-        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Adjustments, GameLog"></div>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Scoring, Adjustments, GameLog"></div>
     </div>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
@@ -644,10 +676,18 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
         women's, with any surplus men in the women's squad.</li>
       <li><b>Groups</b> — the fortnightly draw and whether each group delivered. Make the draw on the
         <b>Group 1-2-1</b> tab and paste it in.</li>
+      <li><b>Scoring</b> — optional. Your own scoring lines. If this tab exists it defines the whole
+        list and the defaults in this page step aside.</li>
       <li><b>Training</b> — a <code>Name</code> column plus one column per month.</li>
       <li><b>Adjustments</b> — optional. Only for a points decision made in the room that the PALMS
         sheet cannot show. See the columns below.</li>
     </ol>
+    <h3>Scoring columns</h3>
+    <div class="scroll"><table id="scoreSchema"></table></div>
+    <div class="note">Build the lines on the <b>Scoring</b> tab of this page and hit <b>Copy Scoring
+      For Sheet</b> rather than typing this out — it fills in the keys and spells the sources the way
+      the engine expects.</div>
+
     <h3>Groups columns</h3>
     <div class="scroll"><table id="groupSchema"></table></div>
     <div class="note"><b>Done</b> has three states, not two. <b>yes</b> pays every player in the group;
@@ -717,22 +757,46 @@ var SNAPSHOT = {"capturedAt":"1 September 2026","month":"September 2026","traini
    with nobody typing anything; `pending` means the chapter has agreed the
    line but not yet switched it on.                                       */
 var RULES = [
-  { key: 'visitor',    label: 'Visitor brought to meeting', short: 'Visitors',   pts: 100, auto: 1, star: 1,
-    unit: 'visitor' },
-  { key: 'training',   label: 'Attend Training',            short: 'Training',   pts: 10,  auto: 1,
-    unit: 'training session' },
-  { key: 'referral',   label: 'Referral given',             short: 'Referrals',  pts: 50,  auto: 1,
-    unit: 'referral given', units: 'referrals given' },
-  { key: 'attendance', label: 'Perfect monthly attendance',  short: 'Attendance', pts: 50,  auto: 1,
+  { key: 'visitor',    label: 'Visitor brought to meeting', short: 'Visitors',   pts: 100, star: 1,
+    src: { kind: 'week', cols: ['V'] }, unit: 'visitor' },
+  { key: 'training',   label: 'Attend Training',            short: 'Training',   pts: 10,
+    src: { kind: 'training' }, unit: 'training session' },
+  { key: 'referral',   label: 'Referral given',             short: 'Referrals',  pts: 50,
+    src: { kind: 'week', cols: ['RGI', 'RGO'] }, unit: 'referral given', units: 'referrals given' },
+  { key: 'attendance', label: 'Perfect monthly attendance',  short: 'Attendance', pts: 50,
+    src: { kind: 'perfect' },
     unit: 'player with perfect attendance', units: 'players with perfect attendance' },
-  { key: 'tyfcb',      label: 'TYFCB (Pending)',            short: 'TYFCB',      pts: 25,  auto: 1, pending: 1,
-    unit: 'TYFCB', units: 'TYFCB' },
-  { key: 'one21',      label: 'Normal 1-2-1 completed',     short: '1-2-1s',     pts: 25,  auto: 1,
-    unit: '1-2-1' },
+  { key: 'tyfcb',      label: 'TYFCB (Pending)',            short: 'TYFCB',      pts: 25, pending: 1,
+    src: { kind: 'tyfcb' }, unit: 'TYFCB', units: 'TYFCB' },
+  { key: 'one21',      label: 'Normal 1-2-1 completed',     short: '1-2-1s',     pts: 25,
+    src: { kind: 'week', cols: ['ONE21'] }, unit: '1-2-1' },
   /* Not from PALMS. This one comes off the Groups tab, a player at a time,
      when their fortnightly foursome gets its group 1-2-1 done and posted. */
-  { key: 'group121',   label: 'Group 1-2-1 completed',      short: 'Group 1-2-1', pts: 25, group: 1,
-    unit: 'group 1-2-1' }
+  { key: 'group121',   label: 'Group 1-2-1 completed',      short: 'Group 1-2-1', pts: 25,
+    src: { kind: 'groups' }, unit: 'group 1-2-1' }
+];
+/* Kept so a sheet with no Scoring tab still scores exactly as shipped. */
+var RULES_DEFAULT = RULES.slice();
+
+/* Every way the board knows how to turn a sheet into a number. A scoring
+   line you add yourself picks one of these, which is what stops "add your
+   own" from meaning "type a number in by hand every month". */
+var SOURCES = [
+  { kind: 'week',     label: 'Add up a weekly column' },
+  { kind: 'weekAny',  label: 'Weeks a column has anything in' },
+  { kind: 'tyfcb',    label: 'TYFCB (money check applied)' },
+  { kind: 'training', label: 'Training tab sessions' },
+  { kind: 'perfect',  label: 'Perfect attendance' },
+  { kind: 'groups',   label: 'Group 1-2-1s completed' }
+];
+/* The PALMS codes this file maps by name. Anything else in the sheet shows
+   up alongside these in the column picker, read straight off the heading. */
+var PALMS_COLS = [
+  ['V', 'V — visitors'], ['RGI', 'RGI — referrals given inside'],
+  ['RGO', 'RGO — referrals given outside'], ['RRI', 'RRI — referrals received inside'],
+  ['RRO', 'RRO — referrals received outside'], ['ONE21', '1-2-1'],
+  ['TYFCB', 'TYFCB'], ['CEU', 'CEU'], ['P', 'P — present'], ['A', 'A — absent'],
+  ['L', 'L — late'], ['M', 'M — medical'], ['S', 'S — substitute']
 ];
 /* The six above, plus the one line that never comes from PALMS. */
 var CATS = [
@@ -1312,7 +1376,7 @@ function zipRead(buf, e) {
 function build(grids) {
   RAWTABS = grids;
   var pay = { ok: true, month: '', weeks: [], teams: [], training: [], adjustments: [],
-              groups: [], trainingMonths: [] };
+              groups: [], scoring: [], trainingMonths: [] };
   var k, grid, kind, unread = [];
 
   for (k in grids) {
@@ -1330,6 +1394,7 @@ function build(grids) {
     }
     else if (kind === 'adj')      pay.adjustments = pay.adjustments.concat(readAdjGrid(grid));
     else if (kind === 'groups')   pay.groups = pay.groups.concat(readGroupsGrid(grid));
+    else if (kind === 'scoring')  pay.scoring = pay.scoring.concat(readScoringGrid(grid));
     else unread.push(k);
   }
   if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
@@ -1342,6 +1407,7 @@ function build(grids) {
 function classify(name, grid) {
   var nm = norm(name);
   if (nm === 'teams' || nm === 'team') return 'teams';
+  if (nm === 'scoring' || nm === 'points' || nm === 'point values') return 'scoring';
   if (nm === 'groups' || nm === 'group 121' || nm === 'group 1-2-1' || nm === 'pairings') return 'groups';
   if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
       nm === 'game log' || nm === 'log') return 'adj';
@@ -1351,6 +1417,7 @@ function classify(name, grid) {
   /* Shape beats name. A tab with First Name and RGI is a meeting week even
      when it is called "Master list 1st week". */
   if (findWeekHeader(grid) !== -1) return 'week';
+  if (findScoringHeader(grid) !== -1) return 'scoring';
   if (findGroupsHeader(grid) !== -1) return 'groups';
   if (findAdjHeader(grid) !== -1) return 'adj';
   if (findTeamsHeader(grid) !== -1) return 'teams';
@@ -1404,7 +1471,7 @@ function readWeekGrid(grid) {
   return out;
 }
 function mapColumns(header) {
-  var map = {}, c, raw, h;
+  var map = { EXTRA: {} }, c, raw, h;
   for (c = 0; c < header.length; c++) {
     raw = header[c];
     h = norm(raw);
@@ -1424,6 +1491,7 @@ function mapColumns(header) {
     else if (map.TYFCB == null && isTyfcb(h)) map.TYFCB = c;
     else if (h === 'ceu' && map.CEU == null) map.CEU = c;
     else if (map.ONE21 == null && isOneToOne(raw, h)) map.ONE21 = c;
+    else if (!map.EXTRA[h]) map.EXTRA[h] = c;
   }
   return map;
 }
@@ -1459,9 +1527,11 @@ function readMemberRow(row, map) {
   if (!full) return null;
   if (norm(full) === 'first name' || norm(full) === 'total' || norm(full) === 'totals') return null;
   function g(k) { return map[k] == null ? 0 : num(row[map[k]]); }
+  var extra = {}, hh;
+  for (hh in map.EXTRA) if (map.EXTRA.hasOwnProperty(hh)) extra[hh] = num(row[map.EXTRA[hh]]);
   return { name: full, P: g('P'), A: g('A'), L: g('L'), M: g('M'), S: g('S'),
            RGI: g('RGI'), RGO: g('RGO'), RRI: g('RRI'), RRO: g('RRO'),
-           V: g('V'), ONE21: g('ONE21'), TYFCB: g('TYFCB') };
+           V: g('V'), ONE21: g('ONE21'), TYFCB: g('TYFCB'), CEU: g('CEU'), X: extra };
 }
 
 /* ── Teams tab ──────────────────────────────────────────────────────── */
@@ -1556,6 +1626,76 @@ function readTrainingGrid(grid) {
     rows.push({ name: nm, sessions: months[norm(current)] || 0, months: months });
   }
   return { rows: rows, month: current, months: labels };
+}
+
+/* ── Scoring tab ────────────────────────────────────────────────────────
+   Where a chapter's own scoring lines live once they are agreed. If this
+   tab exists it defines the list outright — the defaults in this file are
+   only what you get when nobody has said otherwise.
+
+     Key | Name | Points | Source | Columns                                */
+function findScoringHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (!has(c, 'points') && !has(c, 'pts')) continue;
+    if (has(c, 'source') || has(c, 'name') || has(c, 'key')) return r;
+  }
+  return -1;
+}
+var SC_FIELDS = [
+  { key: 'key',    heads: ['key', 'id'] },
+  { key: 'label',  heads: ['name', 'label', 'activity'] },
+  { key: 'pts',    heads: ['points', 'pts', 'score'] },
+  { key: 'kind',   heads: ['source', 'counted from', 'from'] },
+  { key: 'cols',   heads: ['columns', 'column', 'which'] }
+];
+function readScoringGrid(grid) {
+  var hr = findScoringHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), map = {}, i, f, j, hh;
+  for (i = 0; i < SC_FIELDS.length; i++) {
+    f = SC_FIELDS[i];
+    for (j = 0; j < cells.length; j++) {
+      if (!cells[j] || map[f.key] != null) continue;
+      var taken = 0;
+      for (var pk in map) if (map.hasOwnProperty(pk) && map[pk] === j) taken = 1;
+      if (taken) continue;
+      for (hh = 0; hh < f.heads.length; hh++)
+        if (cells[j] === f.heads[hh] || cells[j].indexOf(f.heads[hh]) !== -1) { map[f.key] = j; break; }
+    }
+  }
+  if (map.label == null || map.pts == null) return [];
+
+  var out = [], r, known = {};
+  for (i = 0; i < SOURCES.length; i++) known[SOURCES[i].kind] = 1;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var label = g('label');
+    if (!label || norm(label) === 'name' || norm(label) === 'total') continue;
+    var kind = norm(g('kind')) || 'week';
+    if (!known[kind]) {
+      PARSE_WARN.push('The Scoring tab gives <b>' + esc(label) + '</b> a source of <b>' + esc(g('kind')) +
+        '</b>, which this board does not know how to count. It was skipped — the Scoring tab lists ' +
+        'the sources it accepts.');
+      continue;
+    }
+    var src = { kind: kind };
+    if (kind === 'week' || kind === 'weekAny') {
+      var parts = g('cols').split(','), cols = [], z;
+      for (z = 0; z < parts.length; z++) if (parts[z].trim()) cols.push(parts[z].trim());
+      if (!cols.length) {
+        PARSE_WARN.push('<b>' + esc(label) + '</b> on the Scoring tab reads a weekly column but does ' +
+          'not say which one, so it was skipped. Put the column heading in the Columns cell.');
+        continue;
+      }
+      src.cols = cols;
+    }
+    out.push({ key: g('key') || ('sheet' + r), label: label, short: label,
+               pts: num(row[map.pts]), src: src, unit: 'entry', fromSheet: 1 });
+  }
+  return out;
 }
 
 /* ── Groups tab ─────────────────────────────────────────────────────────
@@ -1677,7 +1817,10 @@ function readAdjGrid(grid) {
 function normalise(res) {
   var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
               training: res.training || [], trainingMonths: res.trainingMonths || [],
-              adjustments: [], groups: [] };
+              adjustments: [], groups: [], scoring: [] };
+  if (res.scoringRaw && res.scoringRaw.headers)
+    pay.scoring = readScoringGrid([res.scoringRaw.headers].concat(res.scoringRaw.rows || []));
+  else pay.scoring = res.scoring || [];
   if (res.groupsRaw && res.groupsRaw.headers)
     pay.groups = readGroupsGrid([res.groupsRaw.headers].concat(res.groupsRaw.rows || []));
   else pay.groups = res.groups || [];
@@ -1701,6 +1844,12 @@ function normalise(res) {
 /* ── Take a payload live ────────────────────────────────────────────── */
 function adopt(pay, sourceName, url) {
   DATA = pay;
+  /* A Scoring tab replaces the list outright rather than merging with it:
+     a half-applied scoring change is worse than either version of it. */
+  RULES = [];
+  var src = (pay.scoring && pay.scoring.length) ? pay.scoring : RULES_DEFAULT;
+  for (var z = 0; z < src.length; z++) RULES.push(cloneRule(src[z]));
+  rebuild('ruleEditor');
   ROSTER = [];
   var i, t;
   for (i = 0; i < (pay.teams || []).length; i++) ROSTER.push({ name: pay.teams[i].name, team: pay.teams[i].team });
@@ -1811,24 +1960,42 @@ function compute() {
   function slot(name) {
     var key = norm(name);
     if (!members[key]) members[key] = { name: name, key: key, team: teamOf[key] || null,
-      visitor: 0, referral: 0, one21: 0, tyfcb: 0, group121: 0, absent: 0, late: 0, weeks: 0,
+      c: {}, p: {}, absent: 0, late: 0, weeks: 0, group121: 0,
       training: trainOf[key] || 0, byWeek: {}, rounds: [] };
     return members[key];
   }
   for (i = 0; i < ROSTER.length; i++) slot(ROSTER[i].name);
 
+  /* One weekly row, counted against every rule that reads the weekly tabs.
+     A rule names its columns rather than the engine naming its rules, which
+     is the whole reason a new scoring line needs no code. */
+  function weekValue(r, src) {
+    if (!src) return 0;
+    if (src.kind === 'tyfcb') return tyAsSlips ? (num(r.TYFCB) > 0 ? 1 : 0) : num(r.TYFCB);
+    if (src.kind !== 'week' && src.kind !== 'weekAny') return 0;
+    var cols = src.cols || [], c, v = 0;
+    for (c = 0; c < cols.length; c++) v += weekCol(r, cols[c]);
+    return src.kind === 'weekAny' ? (v > 0 ? 1 : 0) : v;
+  }
+  function weekCol(r, col) {
+    if (r[col] !== undefined && col !== 'X') return num(r[col]);
+    return (r.X && r.X[norm(col)] !== undefined) ? num(r.X[norm(col)]) : 0;
+  }
+
   for (i = 0; i < (DATA.weeks || []).length; i++) {
     var w = DATA.weeks[i];
     for (j = 0; j < w.rows.length; j++) {
-      var r = w.rows[j], m = slot(r.name);
-      var ty = tyAsSlips ? (num(r.TYFCB) > 0 ? 1 : 0) : num(r.TYFCB);
-      m.visitor += r.V; m.referral += r.RGI + r.RGO; m.one21 += r.ONE21; m.tyfcb += ty;
-      m.absent += r.A; m.late += r.L; m.weeks++;
-      /* Weekly pace covers only what the weekly tabs can see. Training and
-         perfect attendance are monthly and belong to no single week. */
-      m.byWeek[w.tab] = (m.byWeek[w.tab] || 0) +
-        r.V * rule('visitor') + (r.RGI + r.RGO) * rule('referral') +
-        r.ONE21 * rule('one21') + ty * rule('tyfcb');
+      var r = w.rows[j], m = slot(r.name), ri, RW;
+      m.absent += num(r.A); m.late += num(r.L); m.weeks++;
+      for (ri = 0; ri < RULES.length; ri++) {
+        RW = RULES[ri];
+        if (!RW.src || (RW.src.kind !== 'week' && RW.src.kind !== 'weekAny' && RW.src.kind !== 'tyfcb')) continue;
+        var got = weekValue(r, RW.src);
+        m.c[RW.key] = (m.c[RW.key] || 0) + got;
+        /* Weekly pace covers only what the weekly tabs can see. Training and
+           perfect attendance are monthly and belong to no single week. */
+        m.byWeek[w.tab] = (m.byWeek[w.tab] || 0) + got * RW.pts;
+      }
     }
   }
   for (k in trainOf) if (trainOf.hasOwnProperty(k) && !members[k]) slot(k);
@@ -1884,26 +2051,34 @@ function compute() {
 
   for (k in members) {
     if (!members.hasOwnProperty(k)) continue;
-    var m2 = members[k];
+    var m2 = members[k], ri2, R3;
     var missed = m2.absent + (SET.lateBreaksPerfect ? m2.late : 0);
     m2.perfect = (m2.weeks > 0 && missed === 0) ? 1 : 0;
-    m2.pVisitor = m2.visitor * rule('visitor');
-    m2.pRef = m2.referral * rule('referral');
-    m2.p121 = m2.one21 * rule('one21');
-    m2.pTyfcb = m2.tyfcb * rule('tyfcb');
-    m2.pTrain = m2.training * rule('training');
-    m2.pAttend = m2.perfect * rule('attendance');
-    m2.pGroup = m2.group121 * rule('group121');
-    m2.total = m2.pVisitor + m2.pRef + m2.p121 + m2.pTyfcb + m2.pTrain + m2.pAttend + m2.pGroup;
+    m2.total = 0;
+    for (ri2 = 0; ri2 < RULES.length; ri2++) {
+      R3 = RULES[ri2];
+      var kind = R3.src ? R3.src.kind : '';
+      if (kind === 'perfect') m2.c[R3.key] = m2.perfect;
+      else if (kind === 'training') m2.c[R3.key] = m2.training;
+      else if (kind === 'groups') m2.c[R3.key] = m2.group121;
+      else if (m2.c[R3.key] === undefined) m2.c[R3.key] = 0;
+      m2.p[R3.key] = m2.c[R3.key] * R3.pts;
+      m2.total += m2.p[R3.key];
+      /* The views ask for m.visitor, m.referral and so on by name. Keep
+         those in step with the counts rather than computing them twice. */
+      m2[R3.key] = m2.c[R3.key];
+    }
   }
 
   /* ── Step 2: roll players up into their squad ────────────────────── */
   var teams = {};
   function ts(name) {
-    if (!teams[name]) teams[name] = { name: name, visitor: 0, referral: 0, one21: 0, tyfcb: 0,
-      training: 0, attendance: 0, group121: 0, manual: 0, activity: 0, monthTotal: 0, fines: 0,
-      carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {}, audit: [],
-      counts: { visitor: 0, referral: 0, one21: 0, tyfcb: 0, training: 0, attendance: 0, group121: 0 } };
+    if (!teams[name]) {
+      var T0 = { name: name, manual: 0, activity: 0, monthTotal: 0, fines: 0,
+        carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {}, audit: [], counts: {} }, z;
+      for (z = 0; z < RULES.length; z++) { T0[RULES[z].key] = 0; T0.counts[RULES[z].key] = 0; }
+      teams[name] = T0;
+    }
     return teams[name];
   }
   for (i = 0; i < TEAMS.length; i++) ts(TEAMS[i]);
@@ -1912,13 +2087,12 @@ function compute() {
     if (!members.hasOwnProperty(k)) continue;
     var m3 = members[k];
     if (!m3.team) continue;
-    var t = ts(m3.team);
-    t.visitor += m3.pVisitor; t.referral += m3.pRef; t.one21 += m3.p121;
-    t.tyfcb += m3.pTyfcb; t.training += m3.pTrain; t.attendance += m3.pAttend;
-    t.group121 += m3.pGroup;
-    t.counts.visitor += m3.visitor; t.counts.referral += m3.referral; t.counts.one21 += m3.one21;
-    t.counts.tyfcb += m3.tyfcb; t.counts.training += m3.training; t.counts.attendance += m3.perfect;
-    t.counts.group121 += m3.group121;
+    var t = ts(m3.team), z2;
+    for (z2 = 0; z2 < RULES.length; z2++) {
+      var rk2 = RULES[z2].key;
+      t[rk2] = (t[rk2] || 0) + (m3.p[rk2] || 0);
+      t.counts[rk2] = (t.counts[rk2] || 0) + (m3.c[rk2] || 0);
+    }
     t.members.push(m3);
     for (var wn in m3.byWeek) if (m3.byWeek.hasOwnProperty(wn)) t.byWeek[wn] = (t.byWeek[wn] || 0) + m3.byWeek[wn];
   }
@@ -2031,8 +2205,9 @@ function buildNav() {
 }
 
 function render() {
-  buildRulesTable(); buildRules(); buildSettings(); buildCarry(); buildTeamNames();
-  buildOOO(); buildSchema(); buildGroupSchema();
+  buildRulesTable(); buildSettings(); buildCarry(); buildTeamNames();
+  if (VIEW === 'scoring') buildRules();
+  buildOOO(); buildSchema(); buildGroupSchema(); buildScoreSchema();
   fillSelects(); fillTrainMonths();
   if (!DATA) { $('globalWarn').innerHTML = ''; return; }
   var R = compute();
@@ -2040,16 +2215,28 @@ function render() {
   if (VIEW === 'board') { versus(R); h2h(R); mvp(R); glance(R); chart(R); breakdown(R); }
   if (VIEW === 'squads') dossier(R);
   if (VIEW === 'players') memberTable(R);
-  if (VIEW === 'groups') { renderDraw(); roundStatus(R); finesPanel(R); }
+  if (VIEW === 'groups') { renderDraw(); renderSaved(); roundStatus(R); finesPanel(R); }
   if (VIEW === 'roster') { board(R); moveLog(); }
   if (VIEW === 'share') broadcast(R);
 }
 
+/* The notices matter — a TYFCB column misread as money is exactly the kind
+   of thing that must never go quiet — but a wall of red across the top of a
+   board being shown to a room is the wrong place to say it. Collapsed to one
+   line by default, open on the tabs where you are actually fixing things. */
+var WARN_OPEN = false;
+function toggleWarn() { WARN_OPEN = !WARN_OPEN; render(); }
 function showWarnings(R) {
   var all = PARSE_WARN.concat(R.warnings);
-  $('globalWarn').innerHTML = all.length
-    ? '<div class="warn"><b>' + all.length + ' thing' + (all.length === 1 ? '' : 's') +
-      ' to look at</b><br><br>' + all.join('<br><br>') + '</div>' : '';
+  if (!all.length) { $('globalWarn').innerHTML = ''; return; }
+  var working = (VIEW === 'data' || VIEW === 'scoring' || VIEW === 'roster');
+  var open = WARN_OPEN || working;
+  var head = '<button class="warntab" onclick="toggleWarn()">' +
+    (open ? '\u25be' : '\u25b8') + ' ' + all.length + ' notice' + (all.length === 1 ? '' : 's') +
+    (open ? '' : ' \u00b7 tap to read') + '</button>';
+  $('globalWarn').innerHTML = open
+    ? '<div class="warn">' + head + '<div style="margin-top:12px">' + all.join('<br><br>') + '</div></div>'
+    : '<div class="warnbar">' + head + '</div>';
 }
 
 function fillTrainMonths() {
@@ -2245,23 +2432,28 @@ function mvp(R) {
   }
   $('mvpPodium').innerHTML = h || '<div class="note">Nobody else on the board yet.</div>';
 
-  var cats = [['visitor', 'Most visitors', ''], ['referral', 'Most referrals given', ''],
-              ['one21', 'Most 1-2-1s', ''], ['tyfcb', 'Most TYFCB', ''],
-              ['training', 'Most training', ' session(s)']];
   var ch = '', c;
-  for (c = 0; c < cats.length; c++) {
-    var key = cats[c][0], best = null, tie = 0;
-    for (i = 0; i < all.length; i++) if (!best || all[i][key] > best[key]) best = all[i];
-    for (i = 0; i < all.length; i++) if (best && all[i][key] === best[key] && best[key] > 0) tie++;
-    ch += '<div class="catbox"><div class="ck">' + cats[c][1] + '</div>' +
-      '<div class="cv">' + (best && best[key] ? esc(best.name) + (tie > 1 ? ' +' + (tie - 1) + ' more' : '') : '—') +
-      '</div><div class="cd">' + (best && best[key] ? best[key] + cats[c][2] : 'nothing yet') + '</div></div>';
+  for (c = 0; c < RULES.length; c++) {
+    var RC = RULES[c], key = RC.key;
+    /* A yes/no line has no "most": it has a headcount. */
+    if (RC.src && RC.src.kind === 'perfect') {
+      var got = 0;
+      for (i = 0; i < all.length; i++) if (all[i].c[key]) got++;
+      ch += '<div class="catbox"><div class="ck">' + esc(RC.short) + '</div>' +
+        '<div class="cv">' + got + ' of ' + all.length + '</div>' +
+        '<div class="cd">' + n(got * RC.pts) + ' points</div></div>';
+      continue;
+    }
+    var best = null, tie = 0;
+    for (i = 0; i < all.length; i++) if (!best || (all[i].c[key] || 0) > (best.c[key] || 0)) best = all[i];
+    for (i = 0; i < all.length; i++)
+      if (best && (all[i].c[key] || 0) === (best.c[key] || 0) && (best.c[key] || 0) > 0) tie++;
+    var won = best && best.c[key];
+    ch += '<div class="catbox"><div class="ck">Most ' + esc(norm(RC.short)) + '</div>' +
+      '<div class="cv">' + (won ? esc(best.name) + (tie > 1 ? ' +' + (tie - 1) + ' more' : '') : '—') +
+      '</div><div class="cd">' + (won ? best.c[key] + ' · ' + n(best.p[key]) + ' points' : 'nothing yet') +
+      '</div></div>';
   }
-  var perf = 0;
-  for (i = 0; i < all.length; i++) if (all[i].perfect) perf++;
-  ch += '<div class="catbox"><div class="ck">Perfect attendance</div>' +
-    '<div class="cv">' + perf + ' of ' + all.length + '</div>' +
-    '<div class="cd">no absences all month</div></div>';
   $('mvpCats').innerHTML = ch;
 }
 
@@ -2272,22 +2464,18 @@ function glance(R) {
   var lead = T[0];
   var gap = T.length > 1 ? lead.grand - T[1].grand : 0;
   var mover = T.slice().sort(function (a, b) { return b.monthTotal - a.monthTotal; })[0];
-  var vis = 0, o21 = 0, refs = 0, ty = 0, trn = 0, perf = 0;
-  for (i = 0; i < all.length; i++) {
-    vis += all[i].visitor; o21 += all[i].one21; refs += all[i].referral;
-    ty += all[i].tyfcb; trn += all[i].training; if (all[i].perfect) perf++;
-  }
   var c = [
     ['In front', lead.name, T.length > 1 ? n(gap) + ' clear of ' + T[1].name : 'the only squad'],
     ['Best month', mover ? mover.name : '—',
-      mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' this month' : ''],
-    ['Visitors', String(vis), 'worth ' + n(vis * rule('visitor')) + ' points'],
-    ['Referrals given', String(refs), 'worth ' + n(refs * rule('referral')) + ' points'],
-    ['1-2-1s', String(o21), 'worth ' + n(o21 * rule('one21')) + ' points'],
-    ['TYFCB', String(ty), ty ? 'worth ' + n(ty * rule('tyfcb')) + ' points' : 'none logged yet'],
-    ['Training', String(trn), 'worth ' + n(trn * rule('training')) + ' points'],
-    ['Perfect attendance', perf + ' of ' + all.length, 'worth ' + n(perf * rule('attendance')) + ' points']
-  ];
+      mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' this month' : '']
+  ], gi;
+  for (gi = 0; gi < RULES.length; gi++) {
+    var RG = RULES[gi], tot = 0, pts = 0;
+    for (i = 0; i < all.length; i++) { tot += (all[i].c[RG.key] || 0); pts += (all[i].p[RG.key] || 0); }
+    c.push([RG.short,
+      (RG.src && RG.src.kind === 'perfect') ? tot + ' of ' + all.length : String(tot),
+      pts ? 'worth ' + n(pts) + ' points' : 'nothing yet']);
+  }
   var h = '';
   for (i = 0; i < c.length; i++)
     h += '<div class="card"><div class="k">' + c[i][0] + '</div><div class="v">' + esc(c[i][1]) +
@@ -2373,6 +2561,18 @@ function breakdown(R) {
 }
 
 /* ── Squad dossier + audit trail ────────────────────────────────────── */
+/* A yes/no line reads as Yes, not as 1. Anything else is a count. */
+function cellCount(m, R) {
+  var v = m.c[R.key] || 0;
+  if (R.src && R.src.kind === 'perfect') return v ? 'Yes' : '—';
+  return String(v);
+}
+/* Column headings have to survive a squad table with ten rules in it. */
+function abbr(s) {
+  var t = String(s || '');
+  return t.length <= 9 ? t : t.slice(0, 8) + '…';
+}
+
 function card(k, v, d) {
   return '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + d + '</div></div>';
 }
@@ -2429,16 +2629,17 @@ function dossier(R) {
   h += '</div>';
 
   h += '<h3>Squad &mdash; ' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
-    '</h3><div class="scroll"><table><thead><tr><th>Player</th><th>Vis</th><th>Ref</th><th>1-2-1</th>' +
-    '<th>TYFCB</th><th>Trn</th><th>Grp</th><th>Perfect</th><th>Points</th></tr></thead><tbody>';
+    '</h3><div class="scroll"><table><thead><tr><th>Player</th>';
+  for (i = 0; i < RULES.length; i++) h += '<th>' + esc(abbr(RULES[i].short)) + '</th>';
+  h += '<th>Points</th></tr></thead><tbody>';
   for (i = 0; i < t.members.length; i++) {
-    var m = t.members[i];
-    h += '<tr><td class="nm">' + esc(m.name) + '</td><td>' + m.visitor + '</td><td>' + m.referral +
-      '</td><td>' + m.one21 + '</td><td>' + m.tyfcb + '</td><td>' + m.training + '</td><td>' +
-      m.group121 + '</td><td>' + (m.perfect ? 'Yes' : '—') +
-      '</td><td class="tot">' + n(m.total) + '</td></tr>';
+    var m = t.members[i], mi;
+    h += '<tr><td class="nm">' + esc(m.name) + '</td>';
+    for (mi = 0; mi < RULES.length; mi++) h += '<td>' + cellCount(m, RULES[mi]) + '</td>';
+    h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
-  if (!t.members.length) h += '<tr><td colspan="9" class="sub2">Nobody on this squad yet.</td></tr>';
+  if (!t.members.length) h += '<tr><td colspan="' + (RULES.length + 2) +
+    '" class="sub2">Nobody on this squad yet.</td></tr>';
   h += '</tbody></table></div>';
   $('dossier').innerHTML = h + '</div>';
 }
@@ -2455,9 +2656,9 @@ function memberTable(R) {
     if (typeof x === 'string') return SORT.dir * String(y).localeCompare(String(x));
     return SORT.dir * ((y || 0) - (x || 0));
   });
-  var cols = [['name', 'Player'], ['team', 'Squad'], ['visitor', 'Vis'], ['referral', 'Ref'],
-              ['one21', '1-2-1'], ['tyfcb', 'TYFCB'], ['training', 'Trn'],
-              ['group121', 'Grp'], ['perfect', 'Perfect'], ['total', 'Points']];
+  var cols = [['name', 'Player'], ['team', 'Squad']], ci;
+  for (ci = 0; ci < RULES.length; ci++) cols.push([RULES[ci].key, abbr(RULES[ci].short)]);
+  cols.push(['total', 'Points']);
   var h = '<thead><tr>';
   for (i = 0; i < cols.length; i++)
     h += '<th onclick="sortBy(\'' + cols[i][0] + '\')">' + cols[i][1] +
@@ -2467,13 +2668,12 @@ function memberTable(R) {
     var m = list[i];
     var medal = (SORT.k === 'total' && SORT.dir < 0 && i < 3) ? ['1. ', '2. ', '3. '][i] : '';
     h += '<tr><td class="nm">' + medal + esc(m.name) + '</td>' +
-      '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' + esc(m.team) + '</td>' +
-      '<td>' + m.visitor + '</td><td>' + m.referral + '</td><td>' + m.one21 + '</td><td>' + m.tyfcb +
-      '</td><td>' + m.training + '</td><td>' + m.group121 +
-      '</td><td>' + (m.perfect ? 'Yes' : '—') +
-      '</td><td class="tot">' + n(m.total) + '</td></tr>';
+      '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' +
+      esc(m.team) + '</td>';
+    for (ci = 0; ci < RULES.length; ci++) h += '<td>' + cellCount(m, RULES[ci]) + '</td>';
+    h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
-  if (!list.length) h += '<tr><td colspan="10" class="sub2">Nobody matches that.</td></tr>';
+  if (!list.length) h += '<tr><td colspan="' + cols.length + '" class="sub2">Nobody matches that.</td></tr>';
   $('members').innerHTML = h + '</tbody>';
 }
 
@@ -2514,7 +2714,23 @@ function makeDraw(R) {
   for (ti = 0; ti < TEAMS.length; ti++)
     nGroups = ti === 0 ? Math.floor(pools[TEAMS[ti]].length / per)
                        : Math.min(nGroups, Math.floor(pools[TEAMS[ti]].length / per));
-  if (!isFinite(nGroups) || nGroups < 1) return null;
+  if (!isFinite(nGroups)) nGroups = 0;
+  if (nGroups < 1) {
+    /* Not enough on one squad to pair off. Rather than refuse, mix whoever
+       there is into groups of four — a short round still beats no round. */
+    var everyone = [];
+    for (ti = 0; ti < TEAMS.length; ti++)
+      for (i = 0; i < pools[TEAMS[ti]].length; i++)
+        everyone.push({ name: pools[TEAMS[ti]][i], team: TEAMS[ti] });
+    if (!everyone.length) return null;
+    var solo = [], gz;
+    for (i = 0; i < everyone.length; i++) {
+      if (i % SET.groupSize === 0) solo.push({ n: solo.length + 1, members: [] });
+      solo[solo.length - 1].members.push(everyone[i]);
+    }
+    for (gz = 0; gz < solo.length; gz++) solo[gz].members = shuffled(solo[gz].members);
+    return solo;
+  }
 
   var groups = [], g;
   for (g = 0; g < nGroups; g++) groups.push({ n: g + 1, members: [] });
@@ -2523,16 +2739,21 @@ function makeDraw(R) {
     for (g = 0; g < nGroups; g++)
       for (i = 0; i < per; i++) groups[g].members.push({ name: pool.shift(), team: tn });
   }
-  /* Leftovers: spread across the groups, smallest first, so the sizes stay
-     as close together as they can. */
-  var spare = [];
-  for (ti = 0; ti < TEAMS.length; ti++)
-    for (i = 0; i < pools[TEAMS[ti]].length; i++) spare.push({ name: pools[TEAMS[ti]][i], team: TEAMS[ti] });
-  spare = shuffled(spare);
+  /* Leftovers. Four is a hard ceiling, so they cannot be stuffed into the
+     existing groups: they form their own, mixed across the squads, and the
+     last one is simply short. Nobody sits out and nobody is in a five. */
+  var spare = [], rr = 0, most = 0;
+  for (ti = 0; ti < TEAMS.length; ti++) most = Math.max(most, pools[TEAMS[ti]].length);
+  for (rr = 0; rr < most; rr++)
+    for (ti = 0; ti < TEAMS.length; ti++)
+      if (pools[TEAMS[ti]][rr]) spare.push({ name: pools[TEAMS[ti]][rr], team: TEAMS[ti] });
   for (i = 0; i < spare.length; i++) {
-    var into = groups[0];
-    for (g = 1; g < groups.length; g++) if (groups[g].members.length < into.members.length) into = groups[g];
-    into.members.push(spare[i]);
+    var last = groups[groups.length - 1];
+    if (!last || last.members.length >= SET.groupSize) {
+      last = { n: groups.length + 1, members: [] };
+      groups.push(last);
+    }
+    last.members.push(spare[i]);
   }
   for (g = 0; g < groups.length; g++) groups[g].members = shuffled(groups[g].members);
   return groups;
@@ -2561,6 +2782,7 @@ function spinUp(R, groups) {
   btn.disabled = true;
   btn.textContent = 'SHUFFLING\u2026';
   $('copyDrawBtn').disabled = true;
+  $('saveDrawBtn').disabled = true;
 
   /* Every slot walks the same shuffled pool from a different offset, rather
      than each picking at random. Picking at random shows the same person in
@@ -2588,6 +2810,7 @@ function spinUp(R, groups) {
       btn.disabled = false;
       btn.innerHTML = '\uD83C\uDFB2 SHUFFLE AGAIN';
       $('copyDrawBtn').disabled = false;
+      $('saveDrawBtn').disabled = false;
       renderDraw();
       return;
     }
@@ -2628,8 +2851,10 @@ function renderDraw(spinning) {
       (TEAMS.length === 2 ? 'two from each squad' : 'evenly from each squad') + '.</div>';
     $('drawNote').innerHTML = '';
     $('copyDrawBtn').disabled = true;
+    $('saveDrawBtn').disabled = true;
     return;
   }
+  $('saveDrawBtn').disabled = false;
   var h = '', i, j;
   for (i = 0; i < DRAW.length; i++) {
     h += '<div class="gcard"><div class="gtop"><span class="gname">GROUP ' + DRAW[i].n + '</span>' +
@@ -2652,6 +2877,117 @@ function renderDraw(spinning) {
     'gone the moment anyone reloads the page — and nothing will score.' +
     (rn ? '' : '<br><br>Give the round a name first (something like <b>1\u201314 Sept</b>) so the ' +
      'sheet can tell this fortnight from the next one.') + '</div>';
+}
+
+/* ── Saved rounds ───────────────────────────────────────────────────────
+   A draw you cannot get back is a draw you have to run again, and running
+   it again gives different groups — which is exactly the argument nobody
+   wants. So a round can be saved and reopened.
+
+   This is the one thing on the page that is written to the browser, and it
+   is worth being blunt about what that means: it is saved on THIS computer,
+   in THIS browser, for whoever is sitting at it. It is not shared, it does
+   not reach anyone else, and clearing site data takes it with it. The sheet
+   is still the record — Copy For Sheet is what makes a round count.        */
+var SAVE_KEY = 'titans-cgc-rounds';
+
+function loadSaved() {
+  try {
+    var raw = window.localStorage.getItem(SAVE_KEY);
+    var got = raw ? JSON.parse(raw) : [];
+    return Object.prototype.toString.call(got) === '[object Array]' ? got : [];
+  } catch (e) { return []; }
+}
+function putSaved(list) {
+  try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(list)); return true; }
+  catch (e) { return false; }
+}
+
+function saveDraw() {
+  if (!DRAW) return;
+  var rn = ($('roundName').value || '').trim();
+  if (!rn) {
+    alert('Give the round a name first \u2014 something like "1\u201314 Sept". That is what you will ' +
+          'be looking for when you come back to it.');
+    $('roundName').focus();
+    return;
+  }
+  var list = loadSaved(), i;
+  for (i = 0; i < list.length; i++)
+    if (norm(list[i].round) === norm(rn)) {
+      if (!confirm('A round called "' + rn + '" is already saved. Replace it?\n\nThe groups in it will ' +
+                   'be thrown away and these ones kept instead.')) return;
+      list.splice(i, 1);
+      break;
+    }
+  list.unshift({ round: rn, at: new Date().toISOString(),
+                 groups: DRAW.map(function (g) {
+                   return { n: g.n, members: g.members.map(function (m) {
+                     return { name: m.name, team: m.team }; }) };
+                 }) });
+  if (list.length > 40) list.length = 40;
+  if (!putSaved(list)) {
+    alert('This browser will not let the page save anything \u2014 private browsing, or site data is ' +
+          'blocked. Use Copy For Sheet instead: that is the record that actually matters.');
+    return;
+  }
+  renderSaved();
+  setStatus('Round saved in this browser. Copy For Sheet is still what makes it count.', 'ok', 'status');
+  $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0"><b>Saved as "' + esc(rn) +
+    '" on this computer.</b> That is a convenience, not the record \u2014 paste it into the ' +
+    '<b>Groups</b> tab with <b>Copy For Sheet</b> and it scores for everyone.</div>';
+}
+
+function openSaved(i) {
+  var list = loadSaved(), rec = list[i];
+  if (!rec) return;
+  DRAW = rec.groups.map(function (g) {
+    return { n: g.n, members: g.members.slice() };
+  });
+  $('roundName').value = rec.round;
+  $('rollBtn').innerHTML = '\uD83C\uDFB2 SHUFFLE AGAIN';
+  renderDraw();
+  $('draw').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function dropSaved(i) {
+  var list = loadSaved(), rec = list[i];
+  if (!rec) return;
+  if (!confirm('Forget the saved round "' + rec.round + '"?\n\nIf it is already in your Groups tab it ' +
+               'keeps scoring \u2014 this only clears the copy held in this browser.')) return;
+  list.splice(i, 1);
+  putSaved(list);
+  renderSaved();
+}
+
+function renderSaved() {
+  var el = $('savedRounds'); if (!el) return;
+  var list = loadSaved(), i;
+  var caveat = '<div class="note" style="margin-top:16px">Saved rounds live in <b>this browser on this ' +
+    'computer</b> only. They are not shared with anyone and they do not score on their own \u2014 a ' +
+    'round counts when it is in the <b>Groups</b> tab of the sheet.</div>';
+  if (!list.length) {
+    el.innerHTML = '<div class="note" style="margin:0">Nothing saved yet. Shuffle a round, name it, and ' +
+      'hit <b>Save This Round</b> to be able to pull it back up later.</div>' + caveat;
+    return;
+  }
+  var h = '<div class="scroll"><table><thead><tr><th>Round</th><th>Groups</th><th>Players</th>' +
+    '<th>Saved</th><th></th></tr></thead><tbody>';
+  for (i = 0; i < list.length; i++) {
+    var rec = list[i], heads = 0, g;
+    for (g = 0; g < rec.groups.length; g++) heads += rec.groups[g].members.length;
+    h += '<tr><td class="nm">' + esc(rec.round) + '</td><td>' + rec.groups.length + '</td><td>' + heads +
+      '</td><td class="sub2">' + esc(whenText(rec.at)) + '</td>' +
+      '<td><button class="b g sm" onclick="openSaved(' + i + ')">OPEN</button> ' +
+      '<button class="b g sm" onclick="dropSaved(' + i + ')">FORGET</button></td></tr>';
+  }
+  el.innerHTML = h + '</tbody></table></div>' + caveat;
+}
+
+function whenText(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return 'unknown';
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' +
+         d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 function copyDraw() {
@@ -2779,16 +3115,19 @@ function board(R) {
     if (!arr.length) h += '<div class="grabhint">Empty — drop someone here.</div>';
     h += '</div>';
   }
-  if (free.length) {
-    free.sort(bypts);
-    h += '<div class="col free" ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ' +
-      'ondrop="dropOn(event,this,-1)"><div class="colHead">' +
-      '<span class="dot" style="background:var(--red)"></span>' +
-      '<span class="colName">No squad yet</span></div>' +
-      '<div class="colMeta">' + free.length + ' active in the sheet, points not counting for anyone</div>';
-    for (i = 0; i < free.length; i++) h += chipHTML(free[i], -1);
-    h += '</div>';
-  }
+  /* Always shown, never hidden when empty: it is where you drag someone who
+     has left the chapter, and a drop target you cannot see is no use. */
+  free.sort(bypts);
+  h += '<div class="col free" ondragover="dragOver(event,this)" ondragleave="dragOff(this)" ' +
+    'ondrop="dropOn(event,this,-1)"><div class="colHead">' +
+    '<span class="dot" style="background:var(--red)"></span>' +
+    '<span class="colName">No squad</span></div>' +
+    '<div class="colMeta">' + (free.length
+      ? free.length + ' player' + (free.length === 1 ? '' : 's') + ', scoring for nobody'
+      : 'drop someone here when they leave the chapter') + '</div>';
+  for (i = 0; i < free.length; i++) h += chipHTML(free[i], -1);
+  if (!free.length) h += '<div class="grabhint">Empty \u2014 everyone is on a squad.</div>';
+  h += '</div>';
   $('board').innerHTML = h;
 }
 
@@ -2797,6 +3136,7 @@ function chipHTML(rec, ti) {
           'onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">' +
           '<option value="">Move to…</option>', i;
   for (i = 0; i < TEAMS.length; i++) if (i !== ti) s += '<option value="' + i + '">' + esc(TEAMS[i]) + '</option>';
+  if (ti !== -1) s += '<option value="-1">No squad (left the chapter)</option>';
   s += '</select>';
   return '<div class="pchip" draggable="true" ondragstart="dragStart(event,' + rec.idx + ')" ondragend="dragEnd(this)">' +
     '<span class="pn">' + esc(rec.name) + '</span>' +
@@ -2824,10 +3164,20 @@ function moveTo(idx, ti) {
   ti = parseInt(ti, 10);
   var rec = BOARDITEMS[idx];
   if (!rec || isNaN(ti)) return;
-  if (ti < 0) { render(); return; }          /* dropping back into "no squad" is a no-op */
+  var i;
+  if (ti < 0) {
+    /* Off every squad. Their points stop counting for anyone from here on,
+       which is the whole point when somebody leaves the chapter. */
+    if (!rec.team) { render(); return; }
+    for (i = 0; i < ROSTER.length; i++)
+      if (norm(ROSTER[i].name) === rec.key) { ROSTER[i].team = ''; break; }
+    MOVES.push({ name: rec.name, from: rec.team, to: '' });
+    render();
+    return;
+  }
   var to = TEAMS[ti];
   if (rec.team === to) { render(); return; }
-  var found = -1, i;
+  var found = -1;
   for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === rec.key) { found = i; break; }
   if (found >= 0) ROSTER[found].team = to; else ROSTER.push({ name: rec.name, team: to });
   MOVES.push({ name: rec.name, from: rec.team, to: to });
@@ -2838,7 +3188,9 @@ function undoMove() {
   var mv = MOVES.pop(), i;
   for (i = 0; i < ROSTER.length; i++) {
     if (norm(ROSTER[i].name) !== norm(mv.name)) continue;
-    if (mv.from) ROSTER[i].team = mv.from; else ROSTER.splice(i, 1);
+    if (mv.from) ROSTER[i].team = mv.from;
+    else if (mv.to) ROSTER.splice(i, 1);   /* it was an Add — take them back out */
+    else ROSTER[i].team = '';
     break;
   }
   render();
@@ -2856,18 +3208,30 @@ function moveLog() {
   var h = '<div class="warn soft"><b>' + MOVES.length + ' unsaved change' + (MOVES.length === 1 ? '' : 's') +
     '</b> — these only live in this browser tab until you paste them back into the sheet.<br><br>', i;
   for (i = 0; i < MOVES.length; i++)
-    h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no squad') + ' &rarr; ' + esc(MOVES[i].to) + '<br>';
+    h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no squad') + ' &rarr; ' +
+      esc(MOVES[i].to || 'no squad') + '<br>';
   $('moveLog').innerHTML = h + '</div>';
+}
+function jumpAdd() {
+  var el = $('addPanel');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  var inp = $('newName');
+  if (inp) setTimeout(function () { inp.focus(); }, 320);
 }
 function addMember() {
   var nm = $('newName').value.trim(), t = $('newTeam').value, i;
-  if (!nm) return;
+  if (!nm) { setStatus('Type a name first.', 'err', 'addStatus'); return; }
   for (i = 0; i < ROSTER.length; i++)
-    if (norm(ROSTER[i].name) === norm(nm)) { alert(nm + ' is already on ' + ROSTER[i].team + '.'); return; }
+    if (norm(ROSTER[i].name) === norm(nm)) {
+      setStatus(esc(nm) + ' is already on <b>' + esc(ROSTER[i].team || 'no squad') + '</b>.', 'err', 'addStatus');
+      return;
+    }
   ROSTER.push({ name: nm, team: t });
   MOVES.push({ name: nm, from: null, to: t });
   $('newName').value = '';
   render();
+  setStatus('<b>' + esc(nm) + '</b> added to ' + esc(t) + '. Hit <b>Copy For Sheet</b> to make it stick.',
+    'ok', 'addStatus');
 }
 function renameTeam(i, newName) {
   newName = String(newName).trim();
@@ -2905,16 +3269,116 @@ function buildRulesTable() {
   el.innerHTML = h + '</tbody>';
 }
 
+/* Which columns the loaded sheet actually has, so the picker offers real
+   choices rather than a list this file guessed at months ago. */
+function weekColumns() {
+  var out = [], seen = {}, i, j, k;
+  for (i = 0; i < PALMS_COLS.length; i++) { out.push(PALMS_COLS[i]); seen[PALMS_COLS[i][0]] = 1; }
+  for (i = 0; i < (DATA && DATA.weeks ? DATA.weeks.length : 0); i++)
+    for (j = 0; j < DATA.weeks[i].rows.length; j++) {
+      var x = DATA.weeks[i].rows[j].X || {};
+      for (k in x) if (x.hasOwnProperty(k) && !seen[k]) { seen[k] = 1; out.push([k, k + ' (from your sheet)']); }
+    }
+  return out;
+}
+function srcLabel(src) {
+  if (!src) return 'nothing';
+  var i;
+  for (i = 0; i < SOURCES.length; i++) if (SOURCES[i].kind === src.kind) {
+    if (src.kind === 'week' || src.kind === 'weekAny')
+      return SOURCES[i].label + ': ' + (src.cols || []).join(' + ');
+    return SOURCES[i].label;
+  }
+  return src.kind;
+}
+
 function buildRules() {
-  var el = $('rules'); if (el.dataset.built) return;
-  var h = '', i;
-  for (i = 0; i < RULES.length; i++)
-    h += '<div><label>' + esc(RULES[i].short) +
-      '<span class="chip ' + (RULES[i].pending ? 'p' : (RULES[i].group ? 'm' : 'a')) + '">' +
-      (RULES[i].pending ? 'pending' : (RULES[i].group ? 'groups' : 'auto')) + '</span></label>' +
-      '<input type="number" value="' + RULES[i].pts +
-      '" oninput="RULES[' + i + '].pts=+this.value||0;buildRulesTable();render()"></div>';
-  el.innerHTML = h; el.dataset.built = 1;
+  var el = $('ruleEditor'); if (!el) return;
+  var cols = weekColumns(), h = '', i, j;
+  for (i = 0; i < RULES.length; i++) {
+    var R = RULES[i], k = R.src ? R.src.kind : 'week';
+    var chip = R.pending ? '<span class="chip p">pending</span>' : '';
+    h += '<div class="rulerow">' +
+      '<div><label>Name</label><input value="' + esc(R.label) +
+        '" onchange="editRule(' + i + ',\'label\',this.value)"></div>' +
+      '<div style="width:100px"><label>Points</label><input type="number" value="' + R.pts +
+        '" oninput="editRule(' + i + ',\'pts\',+this.value||0)"></div>' +
+      '<div style="width:250px"><label>Counted from' + chip + '</label>' +
+        '<select onchange="editRule(' + i + ',\'kind\',this.value)">';
+    for (j = 0; j < SOURCES.length; j++)
+      h += '<option value="' + SOURCES[j].kind + '"' + (k === SOURCES[j].kind ? ' selected' : '') +
+        '>' + esc(SOURCES[j].label) + '</option>';
+    h += '</select></div>';
+    if (k === 'week' || k === 'weekAny') {
+      h += '<div style="width:230px"><label>Which column(s)</label><input value="' +
+        esc((R.src.cols || []).join(', ')) + '" onchange="editRule(' + i + ',\'cols\',this.value)" ' +
+        'list="colList' + i + '"><datalist id="colList' + i + '">';
+      for (j = 0; j < cols.length; j++)
+        h += '<option value="' + esc(cols[j][0]) + '">' + esc(cols[j][1]) + '</option>';
+      h += '</datalist></div>';
+    }
+    h += '<button class="b g sm" onclick="dropRule(' + i + ')" title="Remove this line">REMOVE</button>' +
+      '</div>';
+  }
+  el.innerHTML = h || '<div class="note" style="margin:0">No scoring lines at all — every score is ' +
+    'zero. Add one, or hit Reset To Defaults.</div>';
+}
+
+function editRule(i, field, val) {
+  var R = RULES[i];
+  if (!R) return;
+  if (field === 'label') { R.label = String(val); R.short = String(val); }
+  else if (field === 'pts') R.pts = val;
+  else if (field === 'kind') {
+    R.src = { kind: val };
+    if (val === 'week' || val === 'weekAny') R.src.cols = ['V'];
+    rebuildEditor();
+  } else if (field === 'cols') {
+    var parts = String(val).split(','), out = [], z;
+    for (z = 0; z < parts.length; z++) if (parts[z].trim()) out.push(parts[z].trim());
+    R.src.cols = out;
+  }
+  buildRulesTable(); render();
+}
+function addRule() {
+  RULES.push({ key: 'custom' + (RULES.length + 1) + '_' + Math.floor(Math.random() * 9999),
+    label: 'New scoring line', short: 'New line', pts: 10,
+    src: { kind: 'week', cols: ['V'] }, unit: 'entry' });
+  rebuildEditor(); buildRulesTable(); render();
+}
+function dropRule(i) {
+  if (!RULES[i]) return;
+  if (!confirm('Remove "' + RULES[i].label + '"? Every score that came from it goes with it.')) return;
+  RULES.splice(i, 1);
+  rebuildEditor(); buildRulesTable(); render();
+}
+function resetRules() {
+  if (!confirm('Put the scoring back to the chapter slide, and throw away any line you have added?')) return;
+  RULES = [];
+  var i;
+  for (i = 0; i < RULES_DEFAULT.length; i++) RULES.push(cloneRule(RULES_DEFAULT[i]));
+  rebuildEditor(); buildRulesTable(); render();
+}
+function cloneRule(R) {
+  var o = {}, k;
+  for (k in R) if (R.hasOwnProperty(k)) o[k] = k === 'src' ? cloneSrc(R.src) : R[k];
+  return o;
+}
+function cloneSrc(src) {
+  if (!src) return null;
+  return src.cols ? { kind: src.kind, cols: src.cols.slice() } : { kind: src.kind };
+}
+function rebuildEditor() { buildRules(); }
+
+function copyScoring() {
+  var out = 'Key\tName\tPoints\tSource\tColumns\n', i;
+  for (i = 0; i < RULES.length; i++) {
+    var R = RULES[i], src = R.src || {};
+    out += R.key + '\t' + R.label + '\t' + R.pts + '\t' + (src.kind || '') + '\t' +
+      ((src.cols || []).join(', ')) + '\n';
+  }
+  copyText(out, 'Scoring copied. Paste it into cell A1 of a Scoring tab, then Refresh — that tab ' +
+    'then defines the scoring for everyone, not just this browser.');
 }
 
 function buildSettings() {
@@ -2977,6 +3441,24 @@ function buildOOO() {
   for (i = 0; i < OOO.length; i++) h += '<li>' + OOO[i] + '</li>';
   el.innerHTML = h; el.dataset.built = 1;
 }
+function buildScoreSchema() {
+  var el = $('scoreSchema'); if (!el || el.dataset.built) return;
+  var i, srcs = [];
+  for (i = 0; i < SOURCES.length; i++) srcs.push(SOURCES[i].kind);
+  var rows = [
+    ['Key', 'visitor', 'A short name for the line. Anything, as long as no two rows share one.'],
+    ['Name', 'Visitor brought to meeting', 'What it is called on the board.'],
+    ['Points', '100', 'What one of them is worth.'],
+    ['Source', srcs.join(' / '), 'Where the number is counted from.'],
+    ['Columns', 'RGI, RGO', 'Weekly sources only — which column heading(s) to add up.']
+  ];
+  var h = '<thead><tr><th>Column</th><th>Example</th><th>What it is for</th></tr></thead><tbody>';
+  for (i = 0; i < rows.length; i++)
+    h += '<tr><td class="nm">' + rows[i][0] + '</td><td class="sub2">' + esc(rows[i][1]) +
+      '</td><td class="sub2">' + esc(rows[i][2]) + '</td></tr>';
+  el.innerHTML = h + '</tbody>'; el.dataset.built = 1;
+}
+
 function buildGroupSchema() {
   var el = $('groupSchema'); if (!el || el.dataset.built) return;
   var rows = [

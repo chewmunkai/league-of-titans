@@ -1,0 +1,8 @@
+Key,Name,Points,Source,Columns
+visitor,Visitor brought to meeting,100,week,V
+training,Attend Training,10,training,
+referral,Referral given,50,week,"RGI, RGO"
+attendance,Perfect monthly attendance,50,perfect,
+tyfcb,TYFCB (Pending),25,tyfcb,
+one21,Normal 1-2-1 completed,25,week,ONE21
+group121,Group 1-2-1 completed,25,groups,
