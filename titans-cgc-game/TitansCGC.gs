@@ -42,6 +42,11 @@ var CONFIG = {
   EXCLUDE_TABS: ['past 5 month', 'past ', 'cumulative', 'archive', 'leaderboard',
                  'rolling', 'dashboard', 'mtl ', 'formula', 'settings', 'mentor'],
 
+  // The chapter's sheet. Only used if this script was created on its own at
+  // script.google.com rather than from inside the sheet (Extensions → Apps
+  // Script) — either way now works.
+  SHEET_ID: '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg',
+
   TEAMS_TAB: 'Teams',
   // The fortnightly group 1-2-1 draw and whether each group delivered.
   GROUPS_TAB: 'Groups',
@@ -68,6 +73,12 @@ var CONFIG = {
   // The dashboard can switch months without touching this.
   CURRENT_MONTH: null
 };
+
+// The spreadsheet this script works on: the one it lives inside, or failing
+// that the one named in CONFIG.SHEET_ID.
+function book() {
+  return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(CONFIG.SHEET_ID);
+}
 
 // ── Entry point ──────────────────────────────────────────────────
 
@@ -151,7 +162,7 @@ function readTabName(section) {
   if (section === 'scoring') return CONFIG.SCORING_TAB;
   if (section === 'settings') return CONFIG.SETTINGS_TAB;
   if (section === 'adjustments') {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = book();
     for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++)
       if (ss.getSheetByName(CONFIG.ADJUSTMENT_TABS[i])) return CONFIG.ADJUSTMENT_TABS[i];
     return CONFIG.ADJUSTMENT_TABS[0];
@@ -218,7 +229,7 @@ function cell(v) {
 }
 
 function writeTab(name, rows) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var sheet = ss.getSheetByName(name) || ss.insertSheet(name);
   sheet.clearContents();
   sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
@@ -227,7 +238,7 @@ function writeTab(name, rows) {
 }
 
 function hashTab(name) {
-  var sheet = name ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name) : null;
+  var sheet = name ? book().getSheetByName(name) : null;
   if (!sheet) return '';
   var text = JSON.stringify(sheet.getDataRange().getDisplayValues());
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text, Utilities.Charset.UTF_8);
@@ -270,7 +281,7 @@ function buildPayload() {
 }
 
 function getTabNames() {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) {
+  return book().getSheets().map(function (s) {
     return s.getName();
   });
 }
@@ -287,7 +298,7 @@ function listTabs() {
  * "First Name" and "RGI". Header position varies, so we hunt for it.
  */
 function readWeeks() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var out = [];
 
   ss.getSheets().forEach(function (sheet) {
@@ -420,7 +431,7 @@ function num(v) {
 // Expected: col A = Member Name, col B = Team
 
 function readTeams() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TEAMS_TAB);
+  var sheet = book().getSheetByName(CONFIG.TEAMS_TAB);
   if (!sheet) return [];
   var grid = sheet.getDataRange().getValues();
   var out = [];
@@ -438,7 +449,7 @@ function readTeams() {
 // extra columns are both harmless.
 
 function readTabRaw(tabName, mustHave) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tabName);
+  var sheet = book().getSheetByName(tabName);
   if (!sheet) return { headers: [], rows: [] };
   var grid = sheet.getDataRange().getValues();
   if (!grid.length) return { headers: [], rows: [] };
@@ -468,7 +479,7 @@ function readTabRaw(tabName, mustHave) {
 // Handed over raw; the dashboard reads it by heading name.
 
 function readGroupsRaw() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.GROUPS_TAB);
+  var sheet = book().getSheetByName(CONFIG.GROUPS_TAB);
   if (!sheet) return { headers: [], rows: [] };
   var grid = sheet.getDataRange().getValues();
   if (!grid.length) return { headers: [], rows: [] };
@@ -496,7 +507,7 @@ function readGroupsRaw() {
 // matter and extra columns are harmless. Expected: Month | Team | Reason | Points.
 
 function adjustmentsGrid() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++) {
     var sheet = ss.getSheetByName(CONFIG.ADJUSTMENT_TABS[i]);
     if (!sheet) continue;
@@ -534,7 +545,7 @@ function readAdjustmentsRaw() {
 // or the rightmost month column that actually has numbers in it.
 
 function readTraining() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var sheet = ss.getSheetByName(CONFIG.TRAINING_TAB);
 
   if (!sheet) {
