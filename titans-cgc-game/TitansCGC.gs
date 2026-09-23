@@ -1,10 +1,15 @@
 /**
  * TITANS CGC GAME
- * Data bridge: reads the BNI Titan master sheet, returns clean JSON.
+ * Data bridge: reads the BNI Titan master sheet, returns clean JSON, and
+ * saves the dashboard's edits back into it.
  *
- * This script does NO scoring. It only hands the raw rows over.
- * All point maths lives in the dashboard HTML, so you can change point
- * values without redeploying this.
+ * This script does NO scoring. It hands the raw rows over, and writes back
+ * only the tabs the dashboard owns: Teams, Groups, Mentors, Scoring,
+ * Settings and Adjustments. It never touches a PALMS tab or Training.
+ *
+ * The sheet is the shared record. Anyone with the dashboard link can READ
+ * it; SAVING needs the edit PIN below, so the board can be put up in front
+ * of the whole chapter without anyone in the room being able to change it.
  *
  * ── SETUP ───────────────────────────────────────────────────────
  * 1. Open your sheet → Extensions → Apps Script
@@ -12,14 +17,17 @@
  * 3. Run `listTabs()` once, click "Allow" on the permission popup,
  *    then read the Execution Log to see your real tab names
  * 4. Fix the CONFIG block below if any of them differ
- * 5. Deploy → New deployment → type "Web app"
+ * 5. Set EDIT_PIN in the CONFIG block to something only your
+ *    committee knows. Saving stays switched OFF until you do.
+ * 6. Deploy → New deployment → type "Web app"
  *      Execute as: Me
  *      Who has access: Anyone
- * 6. Copy the /exec URL into the dashboard, hit Load, then
+ * 7. Copy the /exec URL into the dashboard, hit Load, then
  *    Copy One-Click Link and bookmark that.
  *
  * Re-deploy (Manage deployments → edit → New version) only if you change
- * THIS file. Changing point values never needs a redeploy.
+ * THIS file — including a change to EDIT_PIN. Changing point values, the
+ * roster or the draw never needs a redeploy: that is what saving is for.
  * ────────────────────────────────────────────────────────────────
  */
 
@@ -44,6 +52,16 @@ var CONFIG = {
   // exists is used, so an old GameLog tab keeps working untouched.
   ADJUSTMENT_TABS: ['Adjustments', 'GameLog'],
   TRAINING_TAB: 'Training',
+  // The fixed group leaders for the fortnightly draw, in group order.
+  MENTORS_TAB: 'Mentors',
+  // Everything the dashboard lets you tune: group size, the fine, points
+  // carried in. One row per setting.
+  SETTINGS_TAB: 'Settings',
+
+  // Saving is refused until this is set. Anyone who has it can change the
+  // roster, the draw and the scoring for everybody, so treat it like a
+  // committee password, not a secret for one person.
+  EDIT_PIN: '',
 
   // Which column of the Training tab is the current month.
   // Leave as null and it takes the rightmost month column in the sheet.
@@ -54,6 +72,10 @@ var CONFIG = {
 // ── Entry point ──────────────────────────────────────────────────
 
 function doGet(e) {
+  var p = (e && e.parameter) || {};
+  // Saves normally arrive by POST. This is the fallback for a browser that
+  // refuses the POST, and it also answers the PIN check.
+  if (p.action) return reply(handleAction(p), p.callback);
   var payload;
   try {
     payload = buildPayload();
@@ -75,6 +97,149 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function doPost(e) {
+  var req;
+  try { req = JSON.parse(e.postData.contents); }
+  catch (err) { return reply({ ok: false, code: 'bad', error: 'Could not read that save request.' }); }
+  return reply(handleSave(req));
+}
+
+function reply(obj, cb) {
+  var json = JSON.stringify(obj);
+  if (cb) {
+    return ContentService.createTextOutput(cb + '(' + json + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleAction(p) {
+  if (p.action === 'checkpin') {
+    if (!CONFIG.EDIT_PIN) return { ok: false, code: 'nopin', error: pinOffMessage() };
+    return String(p.pin || '') === String(CONFIG.EDIT_PIN)
+      ? { ok: true } : { ok: false, code: 'badpin', error: 'That edit PIN is not right.' };
+  }
+  if (p.action === 'save') {
+    var req;
+    try { req = JSON.parse(p.payload); }
+    catch (err) { return { ok: false, code: 'bad', error: 'Could not read that save request.' }; }
+    return handleSave(req);
+  }
+  return { ok: false, code: 'bad', error: 'Unknown action ' + p.action + '.' };
+}
+
+// ── Saving ───────────────────────────────────────────────────────
+// Each section the dashboard can save is one whole tab, written in full.
+// Whole-tab writes are what make the conflict check below possible: the
+// page says "I last saw the tab like THIS", and if it has moved on since,
+// the save is refused and the page re-reads it.
+
+var SECTIONS = {
+  teams:       { headers: ['Member Name', 'Team'] },
+  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'] },
+  mentors:     { headers: ['Mentor', 'Order'] },
+  scoring:     { headers: ['Key', 'Name', 'Points', 'Source', 'Columns'] },
+  settings:    { headers: ['Setting', 'Value'] },
+  adjustments: { headers: ['Month', 'Team', 'Reason', 'Points'] }
+};
+
+// The tab a section is read from right now…
+function readTabName(section) {
+  if (section === 'teams') return CONFIG.TEAMS_TAB;
+  if (section === 'groups') return CONFIG.GROUPS_TAB;
+  if (section === 'mentors') return CONFIG.MENTORS_TAB;
+  if (section === 'scoring') return CONFIG.SCORING_TAB;
+  if (section === 'settings') return CONFIG.SETTINGS_TAB;
+  if (section === 'adjustments') {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++)
+      if (ss.getSheetByName(CONFIG.ADJUSTMENT_TABS[i])) return CONFIG.ADJUSTMENT_TABS[i];
+    return CONFIG.ADJUSTMENT_TABS[0];
+  }
+  return null;
+}
+// …and the tab it is written to. Only adjustments differ: an old GameLog
+// is read, and its rows are saved forward into a proper Adjustments tab.
+function writeTabName(section) {
+  return section === 'adjustments' ? CONFIG.ADJUSTMENT_TABS[0] : readTabName(section);
+}
+
+function pinOffMessage() {
+  return 'Saving is switched off until an EDIT_PIN is set in the Apps Script CONFIG ' +
+    'and the script is deployed again.';
+}
+
+function handleSave(req) {
+  req = req || {};
+  if (!CONFIG.EDIT_PIN) return { ok: false, code: 'nopin', error: pinOffMessage() };
+  if (String(req.pin || '') !== String(CONFIG.EDIT_PIN))
+    return { ok: false, code: 'badpin', error: 'That edit PIN is not right.' };
+  var sec = SECTIONS[req.section];
+  if (!sec) return { ok: false, code: 'bad', error: 'There is no section called ' + req.section + '.' };
+  if (Object.prototype.toString.call(req.rows) !== '[object Array]')
+    return { ok: false, code: 'bad', error: 'That save had no rows in it.' };
+
+  // One writer at a time. Two committee members saving in the same second
+  // must not interleave half of each other's tab.
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000))
+    return { ok: false, code: 'busy', error: 'Someone else is saving right now. Try again in a moment.' };
+  try {
+    var now = hashTab(readTabName(req.section));
+    if (req.base !== undefined && req.base !== null && String(req.base) !== now)
+      return { ok: false, code: 'conflict', hash: now,
+               error: 'The ' + req.section + ' tab changed since you opened the page.' };
+
+    var width = sec.headers.length, rows = [sec.headers], i, j;
+    for (i = 0; i < req.rows.length && i < 5000; i++) {
+      var src = req.rows[i] || [], row = [];
+      for (j = 0; j < width; j++) row.push(cell(src[j]));
+      rows.push(row);
+    }
+    writeTab(writeTabName(req.section), rows);
+    SpreadsheetApp.flush();
+    return { ok: true, section: req.section, rows: rows.length - 1,
+             hash: hashTab(readTabName(req.section)) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// A value on its way into a cell. Numbers stay numbers; text is kept as
+// text. Anything that looks like a formula is escaped with a leading
+// apostrophe, so a name typed as "=IMPORTXML(...)" is stored, not run.
+function cell(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number') return isFinite(v) ? v : '';
+  if (typeof v === 'boolean') return v ? 'yes' : 'no';
+  var s = String(v).slice(0, 500);
+  if (/^[=+@]/.test(s) || (/^-/.test(s) && isNaN(Number(s)))) s = "'" + s;
+  return s;
+}
+
+function writeTab(name, rows) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(name) || ss.insertSheet(name);
+  sheet.clearContents();
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+  sheet.getRange(1, 1, 1, rows[0].length).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+}
+
+function hashTab(name) {
+  var sheet = name ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name) : null;
+  if (!sheet) return '';
+  var text = JSON.stringify(sheet.getDataRange().getDisplayValues());
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text, Utilities.Charset.UTF_8);
+  return bytes.map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+}
+
+function allHashes() {
+  var out = {};
+  for (var k in SECTIONS) if (SECTIONS.hasOwnProperty(k)) out[k] = hashTab(readTabName(k));
+  return out;
+}
+
 // ── Payload ──────────────────────────────────────────────────────
 
 function buildPayload() {
@@ -93,6 +258,13 @@ function buildPayload() {
     adjustmentsRaw: readAdjustmentsRaw(),
     groupsRaw: readGroupsRaw(),
     scoringRaw: readTabRaw(CONFIG.SCORING_TAB, ['points', 'pts']),
+    mentorsRaw: readTabRaw(CONFIG.MENTORS_TAB, ['mentor']),
+    settingsRaw: readTabRaw(CONFIG.SETTINGS_TAB, ['setting']),
+    // A fingerprint of each saveable tab as it stands. The dashboard sends
+    // it back with a save, and a save against a tab that has changed since
+    // is refused rather than silently overwriting someone else's work.
+    hashes: allHashes(),
+    canSave: !!CONFIG.EDIT_PIN,
     warnings: []
   };
 }

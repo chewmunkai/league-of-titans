@@ -1,13 +1,9 @@
-Round,Group,Member,Done,Notes
-1–14 Sept,1,Alex Ang,yes,Posted 12 Sept
-1–14 Sept,1,Daniel Chew,yes,
-1–14 Sept,1,Raymond Phang,yes,
-1–14 Sept,1,Sharon Lee,yes,
-1–14 Sept,2,Michelle Fung,no,Could not find a slot that worked
-1–14 Sept,2,Eric Chee,no,
-1–14 Sept,2,Shane Tan,no,
-1–14 Sept,2,Jason Lai,no,
-15–28 Sept,1,Grace Tiau,,
-15–28 Sept,1,Surely Lim,,
-15–28 Sept,1,Max Low Yong Wen,,
-15–28 Sept,1,Joanne Kong,,
+Round,Group,Member,Role,Done,Notes
+1–14 Sept,1,Alex Ang,Mentor,yes,Posted 12 Sept
+1–14 Sept,1,Daniel Chew,,yes,
+1–14 Sept,1,Raymond Phang,,yes,
+1–14 Sept,1,Sharon Lee,,yes,
+1–14 Sept,2,Shane Tan,Mentor,no,Could not find a slot that worked
+1–14 Sept,2,Eric Chee,,no,
+1–14 Sept,2,Michelle Fung,,no,
+1–14 Sept,2,Jason Lai,,no,

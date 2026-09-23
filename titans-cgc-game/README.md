@@ -3,9 +3,13 @@
 Live arcade scoreboard for the BNI Titan chapter. **Two squads, seven ways to
 score, one number each.**
 
-One HTML file. No build step, no install, no database. It reads your Google
-Sheet, does the scoring, and shows a line-by-line audit trail for every squad.
-It never writes to the sheet — the sheet stays the source of truth.
+One HTML file. No build step, no install, no separate database: **your Google
+Sheet is the database.** The page reads it, does the scoring, shows a
+line-by-line audit trail for every squad — and saves every change made on it
+back into the sheet, so everyone who opens the board sees the same thing.
+
+> ⚠️ **Saving needs a one-time setup** — see [Switching saving on](#switching-saving-on).
+> Until it is done the board reads fine but every change is lost on reload.
 
 **Open it here:** https://chewmunkai.github.io/league-of-titans/titans-cgc-game/
 
@@ -61,9 +65,9 @@ The column picker lists every column found in your loaded sheet, so if you add
 a `CEU` or `Testimonials` column to your PALMS tabs it is there to point at —
 no code change, no redeploy.
 
-Edits live in your browser tab until you hit **Copy Scoring For Sheet** and
-paste them into a **Scoring** tab. Once that tab exists it defines the whole
-scoring list and the defaults in this file step aside. A source it does not
+Changes save to a **Scoring** tab in the sheet. Once that tab exists it
+defines the whole scoring list for everyone, and the defaults in this file step
+aside. A source it does not
 recognise is skipped and flagged rather than silently scoring zero.
 
 ### The two squads
@@ -101,9 +105,9 @@ SCORING tab to override it either way.
 
 ## The fortnightly group 1-2-1
 
-Every two weeks, four players are thrown together — **two from each squad** —
-and they have that fortnight to do their group 1-2-1 and post it in the
-chapter's social media group.
+Every two weeks the chapter is split into small groups, mixed across both
+squads, each led by the same **mentor** every round. They have that fortnight
+to do their group 1-2-1 and post it in the chapter's social media group.
 
 - **Done it?** Every player in the group scores **25 points**.
 - **Missed it?** The group owes **RM 5** to the fines jar.
@@ -113,29 +117,61 @@ every slot and the groups lock in one after another. The draw is a proper
 Fisher–Yates shuffle, and the answer is settled before the spinning starts — the
 animation is showmanship, not the draw.
 
-**Four to a group, never five.** Two from each squad fill the full groups;
-whoever is left over forms one more group, mixed across both squads, and that
-last one is simply short. Nobody sits out and nobody ends up in a five. At
-14 / 13 that is six groups of four and one of three.
+### Mentors
+
+Five or six people lead a group each and **never move**. The first mentor
+always leads Group 1, the second Group 2, and so on — only the members around
+them are reshuffled. Add, remove and reorder them in the **Mentors** panel on
+the GROUP 1-2-1 tab; they are saved to a **Mentors** tab.
+
+### Group size
+
+**Players per group** is a setting: up to 3, 4, 5 or 6, default 4, counting the
+mentor. The draw makes enough groups that nobody is over it, and never fewer
+groups than there are mentors. Everyone is dealt; nobody sits out.
+
+The line above the draw tells you what the next shuffle will produce, and the
+fix when it does not add up. With the September roster:
+
+| Setting | Result |
+|---|---|
+| 27 players, 6 mentors, up to **4** | 7 groups — **one without a mentor**. The page says "set 5 per group". |
+| 27 players, 6 mentors, up to **5** | 6 groups of 4–5, **one mentor each**. |
+
+Squads take turns at the deck and each player goes to the smallest group, then
+to the one with fewest from their squad — so groups stay mixed and within one
+of each other in size.
+
+### Rebalancing by hand
+
+After a shuffle, **drag a player onto another group** — or on a phone, **tap
+them, then tap the group**. Drop onto **+ New Group** to split someone off.
+Mentors cannot be moved. A group over the size, or with only one squad in it,
+is flagged in red on its card.
 
 ### Saving a round
 
-**SAVE THIS ROUND** keeps a draw under its round name so you can pull it back
-up later — a draw you cannot get back is one you have to run again, and running
-it again gives different groups, which is exactly the argument nobody wants.
+**SAVE THIS ROUND** writes it to the **Groups** tab of the sheet, under its
+round name (filled in for you as the next fortnight). It is then the same round
+for everyone, and it is what scores. **Saved Rounds** lists every round; **Open**
+brings one back into the editor to change and save again, which replaces it.
+Replacing a round keeps each group's Done/Missed where the group number still
+exists.
 
-Saved rounds live in **that browser, on that computer**. They are not shared
-with anyone and they do not score on their own. The sheet is still the record:
-a round counts when **COPY FOR SHEET** has put it in the **Groups** tab.
+### Marking each group
 
-### Tracking it
+When the fortnight is up, hit **✓ Done** or **Missed** on each group's card.
+That is saved straight to the sheet: Done pays every player in the group, Missed
+puts the group in the fines jar, **Running** puts it back to undecided.
+
+In the sheet it looks like this:
 
 ```
-Round | Group | Member | Done | Notes
+Round | Group | Member | Role | Done | Notes
 ```
 
-One row per player per round. **Done** carries the whole group's outcome, so it
-reads the same on all four rows, and it has **three** states, not two:
+One row per player per round; `Role` is `Mentor` for the mentor. **Done** has
+**three** states, not two:
 
 | Value | What happens |
 |---|---|
@@ -143,9 +179,8 @@ reads the same on all four rows, and it has **three** states, not two:
 | `no` / `missed` / `failed` | The group goes in the fines jar. |
 | *(blank)* | The fortnight is still running. Nothing happens either way. |
 
-Leaving it blank is the honest answer until the two weeks are up. The board will
-never invent a fine out of an empty cell, and if the rows of one group disagree
-with each other it says so rather than picking one.
+The board will never invent a fine out of an empty cell, and if the rows of one
+group disagree with each other it says so rather than picking one.
 
 ### Fines are money, not points
 
@@ -215,6 +250,47 @@ Two things worth your judgement, both flagged on the page rather than guessed at
   over completely — names, colours, everything.
 
 ---
+
+## Switching saving on
+
+The page is a static file on GitHub Pages; it cannot store anything by itself.
+It saves by writing into **your own Google Sheet** through a small Apps Script
+that you deploy from your own Google account. Nothing else is involved — no new
+service, no new account, nothing that costs money. About five minutes, once:
+
+1. Open the chapter sheet → **Extensions → Apps Script**. Delete what is there
+   and paste in **`TitansCGC.gs`** from this folder. Save.
+2. In its `CONFIG` block set **`EDIT_PIN`** to something only the committee
+   knows. Saving stays refused until you do.
+3. **Deploy → New deployment → Web app.** Execute as **Me**, who has access
+   **Anyone**. Approve the permission prompt (it is asking to edit *this*
+   sheet, as you).
+4. Copy the **`/exec`** link. Paste it on the DATA tab and hit Load — or send
+   it to whoever maintains this page to be baked in as the default, so the plain
+   address saves for everyone with no special link.
+
+Then on each device that should be able to change things, tap the badge at the
+top and enter the PIN once.
+
+### How it behaves
+
+- **The badge at the top is the truth.** `✓ Saved`, `Saving…`, `Unsaved — tap
+  to enter edit PIN`, `Not saved — tap to retry`, or `View only`.
+- **Everyone can look; only PIN-holders can change.** Put the board on the
+  projector from a device without the PIN (or hit **Forget PIN on this device**
+  on the DATA tab) and nobody in the room can alter it.
+- **Two people editing at once cannot overwrite each other.** Each save carries
+  a fingerprint of the tab as it was when the page read it. If someone else —
+  another committee member, or a hand edit in the sheet — has changed that tab
+  since, the save is refused, the page tells you so, and reloads their version
+  for you to redo your change on top of.
+- **What gets saved:** roster (Teams), rounds and Done/Missed (Groups),
+  mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in and
+  the attendance and TYFCB options (Settings), adjustments (Adjustments). PALMS
+  and Training are never written to.
+- **Leaving with something unsaved** triggers the browser's "leave this page?"
+  warning.
+- A name typed as a formula (`=…`) is stored as text, never run.
 
 ## Connecting your data
 
@@ -311,8 +387,9 @@ The **ROSTER** tab is where the line-up is kept honest between sheet updates.
   sheet. Spell the name exactly as the PALMS tabs spell it or their activity
   will not find them.
 
-All of it is browser-local until **Copy For Sheet** puts it back in the `Teams`
-tab. Undo and Reset To Sheet are both there.
+Every move saves to the **Teams** tab straight away (someone who has left is
+written as `No squad`). Undo works, and **Reset To Sheet** puts the roster back
+to what was last saved.
 
 ---
 

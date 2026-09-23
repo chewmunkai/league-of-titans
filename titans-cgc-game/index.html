@@ -44,6 +44,21 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(17px,4vw,36px);line-he
 .src.live b{color:var(--green)}
 .src.demo b{color:var(--orange)}
 
+/* ── Save badge + toast ───────────────────────────────────────────── */
+.sync{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1.2px;font-weight:700;
+  text-transform:uppercase;border:2px solid var(--ink);border-radius:20px;padding:6px 14px;
+  background:var(--paper);box-shadow:3px 3px 0 var(--ink);user-select:none}
+.sync.ok{background:#e7f8ee;color:#00662f}
+.sync.busy{background:#fff6d9;color:#6b4d00}
+.sync.bad{background:var(--red);color:#fff;animation:rollpulse .5s infinite alternate}
+.sync.off{background:var(--paper2);color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);max-width:min(620px,92vw);
+  background:var(--ink);color:#fff;border-radius:10px;padding:14px 18px;font-size:14px;line-height:1.55;
+  box-shadow:5px 5px 0 var(--red);z-index:50;transition:transform .25s cubic-bezier(.2,.9,.3,1.2)}
+.toast.show{transform:translate(-50%,0)}
+.toast.ok{box-shadow:5px 5px 0 var(--green)}
+.toast b{color:var(--gold)}
+
 /* ── Nav ──────────────────────────────────────────────────────────── */
 nav{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:26px 0 22px}
 nav button{background:var(--paper);border:2px solid var(--ink);color:var(--ink);
@@ -344,6 +359,27 @@ tr.pending td{background:#fff9e6}
   55%{background:#fff6d9;border-color:var(--ink)}
   100%{transform:none;background:var(--paper);border-color:var(--line)}}
 .fine{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--red)}
+.slot.mentor{background:#fff6d9;border-color:var(--gold-dk)}
+.slot .sn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtag{margin-left:auto;padding-left:6px;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:1.2px;
+  font-weight:700;text-transform:uppercase;color:var(--gold-dk);flex:none}
+.slot.move{cursor:grab}
+.slot.move:hover{border-color:var(--ink)}
+.slot.sel{border-color:var(--red);background:#fdf0f1;box-shadow:0 0 0 2px var(--red)}
+.gcard.dg.over,.gcard.newg.over{background:#fff6d9;transform:translate(-1px,-2px)}
+.gcard.target{outline:3px dashed var(--red);outline-offset:3px;cursor:pointer}
+.gcard.newg{border-style:dashed;border-top-width:3px;border-top-color:var(--ink);box-shadow:none;
+  display:flex;flex-direction:column;justify-content:center;min-height:120px;cursor:pointer}
+.donebar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+button.b.red{background:var(--red);color:#fff}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 11px;border:2px solid var(--line);border-radius:9px;
+  margin-bottom:8px;background:var(--paper2)}
+.mrow.gone{opacity:.6}
+.mnum{font-family:'Press Start 2P',monospace;font-size:10px;width:30px;flex:none}
+.mname{flex:1;font-weight:600;font-size:14px;min-width:0}
+.mname i{font-weight:400;color:var(--muted);font-size:12.5px}
+.mrow .sq{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.2px;font-weight:700;
+  text-transform:uppercase;color:#fff;padding:2px 7px;border-radius:4px;flex:none}
 
 /* ── Weekly boxes ─────────────────────────────────────────────────── */
 .wk{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px;margin-top:10px}
@@ -403,9 +439,11 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     <button class="b" onclick="refresh()" id="refreshBtn">&#8635; REFRESH POINTS</button>
     <button class="b g" onclick="go('data')">CHANGE SOURCE</button>
     <span class="src" id="srcTag">No data loaded yet</span>
+    <span class="sync hide" id="syncTag"></span>
   </div>
 </header>
 
+<div class="toast" id="toast"></div>
 <nav id="nav"></nav>
 <div id="globalWarn"></div>
 
@@ -464,26 +502,42 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 <!-- ══ GROUP 1-2-1 ══ -->
 <section id="v-groups" class="hide">
   <div class="panel"><h2>The Fortnightly Draw</h2>
-    <div class="note" style="margin:0 0 16px">Every two weeks, four players are thrown together —
-      <b>two from each squad</b> — and they have that fortnight to do their group 1-2-1 and post it in
-      the chapter's social media group. Do it and <b>every player in the group scores
-      <span id="gPts"></span></b>. Miss it and the group pays the fine.</div>
+    <div class="note" style="margin:0 0 16px">Every two weeks the chapter is split into small groups,
+      mixed across both squads, each led by the same <b>mentor</b> every round. They have that
+      fortnight to do their group 1-2-1 and post it in the chapter's social media group. Do it and
+      <b>every player in the group scores <span id="gPts"></span></b>. Miss it and the group pays the
+      fine.</div>
     <div class="drawbar">
       <button class="rollbtn" id="rollBtn" onclick="rollDraw()">&#127922; SHUFFLE THE GROUPS</button>
-      <div style="width:210px"><label>Round name</label>
+      <div style="width:150px"><label>Players per group</label>
+        <select id="groupSize" onchange="setGroupSize(this.value)">
+          <option value="3">up to 3</option><option value="4">up to 4</option>
+          <option value="5">up to 5</option><option value="6">up to 6</option></select></div>
+      <div style="width:200px"><label>Round name</label>
         <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
       <button class="b" onclick="saveDraw()" id="saveDrawBtn">SAVE THIS ROUND</button>
       <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
     </div>
+    <div class="note" id="drawShape" style="margin:0 0 16px"></div>
     <div id="drawWarn"></div>
     <div class="draw" id="draw"></div>
     <div class="note" id="drawNote"></div>
   </div>
 
+  <div class="panel"><h2>Mentors</h2>
+    <div class="note" style="margin:0 0 15px">Mentors are fixed. Each one leads the <b>same group
+      number every round</b> — the first mentor always leads Group 1 — and only the members
+      around them are reshuffled. Use the arrows to change who leads which group.</div>
+    <div id="mentorList"></div>
+    <div class="row" style="margin-top:12px">
+      <div style="flex:1;min-width:220px"><label>Add a mentor</label><select id="mentorPick"></select></div>
+      <button class="b" onclick="addMentor()">+ ADD MENTOR</button>
+    </div></div>
+
   <div class="panel"><h2>Saved Rounds</h2>
     <div id="savedRounds"></div></div>
 
-  <div class="panel"><h2>This Round, From The Sheet</h2>
+  <div class="panel"><h2>Mark Each Group</h2>
     <div id="roundStatus"></div></div>
 
   <div class="panel"><h2>The Fines Jar</h2>
@@ -556,9 +610,22 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
       <button class="b g" onclick="copyScoring()">COPY SCORING FOR SHEET</button>
       <button class="b g" onclick="resetRules()">RESET TO DEFAULTS</button>
     </div>
-    <div class="note"><b>These edits live only in this browser tab.</b> To make them stick for everyone,
-      hit <b>Copy Scoring For Sheet</b> and paste it into a <b>Scoring</b> tab. Once that tab exists it
-      defines the whole scoring list, and this page follows it.</div></div>
+    <div class="note">Changes here <b>save to the Scoring tab of the sheet</b> for everyone, as soon as
+      you make them — the badge at the top of the page says when they have landed. Once that tab
+      exists it defines the whole scoring list, and every copy of this page follows it.</div></div>
+
+  <div class="panel"><h2>Adjustments Agreed In The Room</h2>
+    <div class="note" style="margin:0 0 15px">For a points decision PALMS cannot show — a correction,
+      a one-off chapter bonus, a penalty agreed at a meeting. Always with a reason: a points change nobody
+      can explain is a row waiting to happen.</div>
+    <div id="adjList"></div>
+    <div class="row" style="margin-top:14px">
+      <div style="width:180px"><label>Squad</label><select id="adjTeam"></select></div>
+      <div style="flex:1;min-width:200px"><label>Reason</label>
+        <input id="adjReason" placeholder="e.g. Chapter challenge won at the AGM"></div>
+      <div style="width:110px"><label>Points</label><input id="adjPts" type="number" placeholder="150"></div>
+      <button class="b" onclick="addAdj()">+ ADD</button>
+    </div></div>
 
   <div class="panel"><h2>How Each One Is Counted</h2>
     <div id="settings"></div></div>
@@ -604,6 +671,9 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
 <!-- ══ DATA ══ -->
 <section id="v-data" class="hide">
+  <div class="panel"><h2>Saving</h2>
+    <div id="saveStatus"></div></div>
+
   <div class="panel"><h2>Option 1 &mdash; Read Straight From The Spreadsheet</h2>
     <div class="note" style="margin:0 0 16px">The normal way. Paste a link, hit Load, and
       <b>Refresh Points</b> at the top of the page re-reads it any time.</div>
@@ -616,7 +686,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
     <div class="row" style="margin-top:15px">
       <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
-        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Scoring, Adjustments, GameLog"></div>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Mentors, Scoring, Settings, Adjustments, GameLog"></div>
     </div>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
@@ -740,6 +810,22 @@ var DEFAULT_SHEET = '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg';
 var DEFAULT_TABS = '';         // captured from the form at start-up
 var AUTOLOAD = false;          // true while the page is loading its own default source
 
+/* The chapter's Apps Script /exec link. Once it is set here, everyone who
+   opens the page reads from it and — with the edit PIN — saves to it. Until
+   then the page reads the plain sheet and cannot save anything. */
+var DEFAULT_EXEC = '';
+
+/* Saving. The sheet is the shared record: every change made on this page
+   is written back to it, so the next person to open the board sees it.
+   Each section is one tab, saved whole, carrying a fingerprint of the tab
+   as it was read — a save against a tab someone else has since changed is
+   refused, never allowed to overwrite them. */
+var SYNC = { url: null, can: false, hashes: {}, dirty: {}, saving: '', timer: null,
+             last: null, error: '', note: '' };
+var SECTION_NAMES = { teams: 'roster', groups: 'group 1-2-1 rounds', mentors: 'mentors',
+                      scoring: 'scoring', settings: 'settings', adjustments: 'adjustments' };
+var MENTORS = [];              // mentor names, in group order — they anchor a group each
+
 function sheetUrl(id) { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; }
 function execUrl(id) { return 'https://script.google.com/macros/s/' + id + '/exec'; }
 
@@ -841,6 +927,7 @@ var CARRY = { 'Team 1': 0, 'Team 2': 0 };
 /* ── The only two judgement calls left ──────────────────────────────────
    Both are on the Scoring tab, both settle an argument rather than start
    one, and both are written down so nobody has to guess.                  */
+var SET_DEFAULT = null;       // captured at start-up, so a new source starts clean
 var SET = {
   lateBreaksPerfect: false,   // does an L on the PALMS sheet lose perfect attendance?
   tyfcbMode: 'auto',          // auto | slips | count — how a TYFCB column is read
@@ -861,6 +948,223 @@ var OOO = [
   'Add any adjustment the room agreed and logged for that squad.',
   'Add the points carried in from earlier months to get the season total.'
 ];
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SAVING
+
+   Every edit calls markDirty(section). A short pause later the section is
+   written to the sheet in full. Nothing here is clever: one section at a
+   time, a retry badge when it fails, and a plain sentence when it cannot
+   save at all. The badge at the top of the page is the single place that
+   tells you whether what you see is what everyone else will see.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var PIN_KEY = 'titans-cgc-pin';
+function getPin() { try { return window.localStorage.getItem(PIN_KEY) || ''; } catch (e) { return SYNC.pinMem || ''; } }
+function setPin(v) {
+  SYNC.pinMem = v;
+  try { if (v) window.localStorage.setItem(PIN_KEY, v); else window.localStorage.removeItem(PIN_KEY); } catch (e) {}
+}
+
+function markDirty(sec) {
+  if (!DATA) return;
+  SYNC.dirty[sec] = 1;
+  clearTimeout(SYNC.timer);
+  SYNC.timer = setTimeout(flushSaves, 900);
+  syncPill();
+}
+
+function flushSaves() {
+  clearTimeout(SYNC.timer);
+  if (!SYNC.url || !SYNC.can) { syncPill(); return; }
+  if (SYNC.saving) { SYNC.timer = setTimeout(flushSaves, 400); return; }
+  var sec = null, k;
+  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) { sec = k; break; }
+  if (!sec) { syncPill(); return; }
+  var pin = getPin();
+  /* Keep "wrong PIN" on the badge until someone tries again: a retry that
+     quietly relabels it "enter PIN" hides the one thing they need to know. */
+  if (!pin) { if (SYNC.error !== 'badpin') SYNC.error = 'needpin'; syncPill(); return; }
+
+  SYNC.saving = sec;
+  delete SYNC.dirty[sec];
+  syncPill();
+  sendSave({ pin: pin, section: sec, base: SYNC.hashes[sec], rows: sectionRows(sec) }, function (res) {
+    SYNC.saving = '';
+    if (res && res.ok) {
+      SYNC.hashes[sec] = res.hash;
+      SYNC.last = new Date();
+      SYNC.error = '';
+      afterSaved(sec);
+      if (!SYNC.dirty[sec]) flushSaves();
+      else { clearTimeout(SYNC.timer); SYNC.timer = setTimeout(flushSaves, 600); }
+    } else if (res && (res.code === 'badpin' || res.code === 'nopin')) {
+      SYNC.dirty[sec] = 1;
+      if (res.code === 'badpin') setPin('');
+      SYNC.error = res.code;
+    } else if (res && res.code === 'conflict') {
+      /* Someone else got there first. Their version wins; ours is lost, and
+         we say so rather than pretending. Re-read so the screen is honest. */
+      SYNC.error = '';
+      toast('<b>Someone else changed the ' + esc(SECTION_NAMES[sec] || sec) + '</b> since you opened the ' +
+        'page, so your last change there was not saved. Their version has been loaded — please redo it.',
+        'err', 9000);
+      loadExec(SYNC.url, true);
+    } else {
+      SYNC.dirty[sec] = 1;
+      SYNC.error = (res && res.error) || 'The save did not reach the sheet.';
+    }
+    syncPill();
+  });
+}
+
+/* POST is the normal route. Some browsers refuse a cross-site POST to
+   Google; if that happens a small save goes by the GET route instead, which
+   the script also answers. A big one cannot, and says so. */
+function sendSave(req, done) {
+  var body = JSON.stringify(req);
+  var answered = false;
+  function finish(r) { if (!answered) { answered = true; done(r); } }
+  function viaGet() {
+    var q = 'action=save&payload=' + encodeURIComponent(body);
+    if (q.length > 7500) {
+      finish({ ok: false, error: 'This browser would not send the save, and it is too big for the fallback route. ' +
+        'Try another browser, or use Copy For Sheet.' });
+      return;
+    }
+    jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + q + '&callback=__CB__',
+      finish, function (e) { finish({ ok: false, error: 'Could not reach the sheet: ' + e }); }, 20000);
+  }
+  if (!window.fetch) { viaGet(); return; }
+  try {
+    fetch(SYNC.url, { method: 'POST', body: body, redirect: 'follow',
+                      headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(function (r) { return r.text(); })
+      .then(function (t) { var o; try { o = JSON.parse(t); } catch (e) { o = null; }
+        if (o) finish(o); else viaGet(); })
+      ['catch'](function () { viaGet(); });
+  } catch (e) { viaGet(); }
+}
+
+/* What each section looks like as rows of the tab it is saved to. */
+function sectionRows(sec) {
+  var out = [], i, k;
+  if (sec === 'teams')
+    for (i = 0; i < ROSTER.length; i++) out.push([ROSTER[i].name, ROSTER[i].team || 'No squad']);
+  if (sec === 'groups')
+    for (i = 0; i < (DATA.groups || []).length; i++) {
+      var g = DATA.groups[i];
+      out.push([g.round, g.group, g.member, g.role || '', g.done || '', g.notes || '']);
+    }
+  if (sec === 'mentors')
+    for (i = 0; i < MENTORS.length; i++) out.push([MENTORS[i], i + 1]);
+  if (sec === 'scoring')
+    for (i = 0; i < RULES.length; i++) {
+      var R = RULES[i], src = R.src || {};
+      out.push([R.key, R.label, R.pts, src.kind || '', (src.cols || []).join(', ')]);
+    }
+  if (sec === 'settings') {
+    out.push(['groupSize', SET.groupSize]);
+    out.push(['penaltyAmount', SET.penaltyAmount]);
+    out.push(['penaltyPerMember', SET.penaltyPerMember ? 'yes' : 'no']);
+    out.push(['lateBreaksPerfect', SET.lateBreaksPerfect ? 'yes' : 'no']);
+    out.push(['tyfcbMode', SET.tyfcbMode]);
+    for (i = 0; i < TEAMS.length; i++) out.push(['carry: ' + TEAMS[i], CARRY[TEAMS[i]] || 0]);
+  }
+  if (sec === 'adjustments')
+    for (i = 0; i < (DATA.adjustments || []).length; i++) {
+      var a = DATA.adjustments[i];
+      out.push([a.month || '', a.team, a.reason || '', a.points === null ? '' : a.points]);
+    }
+  return out;
+}
+
+/* Once a section is in the sheet, what the page holds IS the sheet. */
+function afterSaved(sec) {
+  if (sec === 'teams') {
+    ROSTER_BASE = [];
+    for (var i = 0; i < ROSTER.length; i++) ROSTER_BASE.push({ name: ROSTER[i].name, team: ROSTER[i].team });
+    if (VIEW === 'roster') moveLog();
+  }
+}
+
+function syncPill() {
+  var el = $('syncTag'); if (!el) return;
+  var pending = [], k;
+  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) pending.push(SECTION_NAMES[k] || k);
+  var cls = 'sync', txt, act = '';
+  if (!DATA) { el.className = 'sync hide'; return; }
+  if (!SYNC.url) {
+    cls += pending.length ? ' bad' : ' off';
+    txt = pending.length ? '\u26A0 Not saved \u2014 view only' : 'View only';
+    act = "go('data')";
+  } else if (!SYNC.can || SYNC.error === 'nopin') {
+    cls += ' off'; txt = 'Saving is off in the script'; act = "go('data')";
+  } else if (SYNC.saving) {
+    cls += ' busy'; txt = 'Saving ' + (SECTION_NAMES[SYNC.saving] || SYNC.saving) + '\u2026';
+  } else if (SYNC.error === 'needpin' || SYNC.error === 'badpin') {
+    cls += pending.length ? ' bad' : ' off';
+    txt = (SYNC.error === 'badpin' ? 'Wrong PIN \u2014 ' : '') +
+      (pending.length ? 'Unsaved \u2014 tap to enter edit PIN' : 'View only \u2014 tap to edit');
+    act = 'askPin()';
+  } else if (SYNC.error) {
+    cls += ' bad'; txt = '\u26A0 Not saved \u2014 tap to retry'; act = 'flushSaves()';
+    el.title = SYNC.error;
+  } else if (pending.length) {
+    cls += ' busy'; txt = 'Saving soon\u2026';
+  } else {
+    cls += ' ok';
+    txt = '\u2713 Saved' + (SYNC.last ? ' ' + SYNC.last.toLocaleTimeString(undefined,
+      { hour: '2-digit', minute: '2-digit' }) : ' \u00b7 in sync with the sheet');
+  }
+  el.className = cls;
+  el.innerHTML = txt;
+  el.onclick = act ? new Function(act) : null;
+  el.style.cursor = act ? 'pointer' : 'default';
+  if (VIEW === 'data') saveStatusPanel();
+}
+
+function askPin() {
+  var v = window.prompt('Edit PIN\n\nAnyone can look at the board. Saving changes for everyone needs ' +
+    'the committee\'s edit PIN.', '');
+  if (v === null) return;
+  v = String(v).trim();
+  if (!v) return;
+  if (!SYNC.url) { setPin(v); syncPill(); return; }
+  jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + 'action=checkpin&pin=' +
+    encodeURIComponent(v) + '&callback=__CB__', function (res) {
+      if (res && res.ok) {
+        setPin(v); SYNC.error = '';
+        toast('PIN accepted. Changes on this device now save to the sheet for everyone.', 'ok');
+        flushSaves();
+      } else {
+        SYNC.error = res && res.code === 'nopin' ? 'nopin' : 'badpin';
+        toast(esc((res && res.error) || 'That PIN was not accepted.'), 'err');
+      }
+      syncPill();
+    }, function (e) { toast('Could not check the PIN: ' + esc(e), 'err'); }, 15000);
+}
+function forgetPin() {
+  setPin(''); SYNC.error = 'needpin';
+  toast('PIN forgotten on this device. It can still view the board, but not save.', 'ok');
+  syncPill();
+}
+
+var TOAST_T = null;
+function toast(html, kind, ms) {
+  var el = $('toast'); if (!el) return;
+  el.innerHTML = html;
+  el.className = 'toast show ' + (kind || '');
+  clearTimeout(TOAST_T);
+  TOAST_T = setTimeout(function () { el.className = 'toast'; }, ms || 4500);
+}
+
+/* Leaving with something unsaved should not be silent. */
+window.addEventListener('beforeunload', function (e) {
+  var k, n = 0;
+  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) n++;
+  if ((n || SYNC.saving) && SYNC.url && SYNC.can && getPin()) { e.preventDefault(); e.returnValue = ''; }
+});
 
 /* ── Small helpers ──────────────────────────────────────────────────── */
 function $(id) { return document.getElementById(id); }
@@ -1376,7 +1680,7 @@ function zipRead(buf, e) {
 function build(grids) {
   RAWTABS = grids;
   var pay = { ok: true, month: '', weeks: [], teams: [], training: [], adjustments: [],
-              groups: [], scoring: [], trainingMonths: [] };
+              groups: [], scoring: [], mentors: [], settings: [], trainingMonths: [] };
   var k, grid, kind, unread = [];
 
   for (k in grids) {
@@ -1395,6 +1699,8 @@ function build(grids) {
     else if (kind === 'adj')      pay.adjustments = pay.adjustments.concat(readAdjGrid(grid));
     else if (kind === 'groups')   pay.groups = pay.groups.concat(readGroupsGrid(grid));
     else if (kind === 'scoring')  pay.scoring = pay.scoring.concat(readScoringGrid(grid));
+    else if (kind === 'mentors')  pay.mentors = pay.mentors.concat(readMentorsGrid(grid));
+    else if (kind === 'settings') pay.settings = pay.settings.concat(readSettingsGrid(grid));
     else unread.push(k);
   }
   if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
@@ -1408,6 +1714,8 @@ function classify(name, grid) {
   var nm = norm(name);
   if (nm === 'teams' || nm === 'team') return 'teams';
   if (nm === 'scoring' || nm === 'points' || nm === 'point values') return 'scoring';
+  if (nm === 'mentors' || nm === 'mentor') return 'mentors';
+  if (nm === 'settings') return 'settings';
   if (nm === 'groups' || nm === 'group 121' || nm === 'group 1-2-1' || nm === 'pairings') return 'groups';
   if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
       nm === 'game log' || nm === 'log') return 'adj';
@@ -1418,6 +1726,8 @@ function classify(name, grid) {
      when it is called "Master list 1st week". */
   if (findWeekHeader(grid) !== -1) return 'week';
   if (findScoringHeader(grid) !== -1) return 'scoring';
+  if (findSettingsHeader(grid) !== -1) return 'settings';
+  if (findMentorsHeader(grid) !== -1) return 'mentors';
   if (findGroupsHeader(grid) !== -1) return 'groups';
   if (findAdjHeader(grid) !== -1) return 'adj';
   if (findTeamsHeader(grid) !== -1) return 'teams';
@@ -1698,6 +2008,70 @@ function readScoringGrid(grid) {
   return out;
 }
 
+/* ── Mentors tab ────────────────────────────────────────────────────────
+   Mentor | Order. The order is the group number they lead, round after
+   round — that is what keeps a mentor where they are while the members
+   around them are reshuffled.                                              */
+function findMentorsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r;
+  for (r = 0; r < limit; r++) if (has(headerCells(grid, r), 'mentor')) return r;
+  return -1;
+}
+function readMentorsGrid(grid) {
+  var hr = findMentorsHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), nc = -1, oc = -1, i, r, out = [];
+  for (i = 0; i < cells.length; i++) {
+    if (nc === -1 && cells[i].indexOf('mentor') !== -1) nc = i;
+    else if (oc === -1 && (cells[i].indexOf('order') !== -1 || cells[i].indexOf('group') !== -1)) oc = i;
+  }
+  for (r = hr + 1; r < grid.length; r++) {
+    var nm = String((grid[r] || [])[nc] == null ? '' : grid[r][nc]).trim();
+    if (!nm) continue;
+    out.push({ name: nm, order: oc === -1 ? r : num(grid[r][oc]) || r });
+  }
+  out.sort(function (a, b) { return a.order - b.order; });
+  return out.map(function (x) { return x.name; });
+}
+
+/* ── Settings tab ───────────────────────────────────────────────────────
+   Setting | Value. Every knob on the page that ought to be the same for
+   everybody: group size, the fine, points carried in.                     */
+function findSettingsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) { c = headerCells(grid, r); if (has(c, 'setting') && has(c, 'value')) return r; }
+  return -1;
+}
+function readSettingsGrid(grid) {
+  var hr = findSettingsHeader(grid);
+  if (hr === -1) return [];
+  var out = [], r;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [], k = String(row[0] == null ? '' : row[0]).trim();
+    if (k) out.push([k, row[1] == null ? '' : row[1]]);
+  }
+  return out;
+}
+function yesish(v) { return /^(y|yes|true|1|on)$/i.test(String(v).trim()); }
+
+/* Settings from the sheet on top of the shipped defaults — never on top of
+   whatever the last source left behind. */
+function applySettings(list) {
+  var k;
+  if (SET_DEFAULT) for (k in SET_DEFAULT) if (SET_DEFAULT.hasOwnProperty(k)) SET[k] = SET_DEFAULT[k];
+  CARRY = {};
+  for (var i = 0; i < (list || []).length; i++) {
+    var key = String(list[i][0]).trim(), v = list[i][1], lk = key.toLowerCase();
+    if (lk === 'groupsize') SET.groupSize = Math.max(2, Math.min(8, Math.round(num(v)) || 4));
+    else if (lk === 'penaltyamount') SET.penaltyAmount = num(v);
+    else if (lk === 'penaltypermember') SET.penaltyPerMember = yesish(v);
+    else if (lk === 'latebreaksperfect') SET.lateBreaksPerfect = yesish(v);
+    else if (lk === 'tyfcbmode' && /^(auto|slips|count)$/.test(String(v))) SET.tyfcbMode = String(v);
+    else if (lk.indexOf('carry:') === 0) CARRY[key.slice(6).trim()] = num(v);
+  }
+  rebuild('settings'); rebuild('carry');
+}
+
 /* ── Groups tab ─────────────────────────────────────────────────────────
    One row per player per round. `Done` carries the whole group's outcome,
    so it reads the same on all four rows:
@@ -1712,6 +2086,7 @@ var GRP_FIELDS = [
   { key: 'round',  heads: ['round', 'cycle', 'fortnight', 'period'] },
   { key: 'group',  heads: ['group no', 'group number', 'group', 'pod'] },
   { key: 'member', heads: ['member', 'player', 'name'] },
+  { key: 'role',   heads: ['role'] },
   { key: 'done',   heads: ['done', 'completed', 'complete', 'posted', 'status', 'outcome'] },
   { key: 'notes',  heads: ['notes', 'note', 'detail', 'details'] }
 ];
@@ -1747,7 +2122,8 @@ function readGroupsGrid(grid) {
     var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
     var who = g('member');
     if (!who || norm(who) === 'member' || norm(who) === 'total') continue;
-    out.push({ round: g('round'), group: g('group'), member: who, done: g('done'), notes: g('notes') });
+    out.push({ round: g('round'), group: g('group'), member: who, role: g('role'),
+               done: g('done'), notes: g('notes') });
   }
   return out;
 }
@@ -1817,7 +2193,11 @@ function readAdjGrid(grid) {
 function normalise(res) {
   var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
               training: res.training || [], trainingMonths: res.trainingMonths || [],
-              adjustments: [], groups: [], scoring: [] };
+              adjustments: [], groups: [], scoring: [], mentors: [], settings: [],
+              hashes: res.hashes || null, canSave: !!res.canSave };
+  function raw(r) { return r && r.headers && r.headers.length ? [r.headers].concat(r.rows || []) : null; }
+  if (raw(res.mentorsRaw)) pay.mentors = readMentorsGrid(raw(res.mentorsRaw));
+  if (raw(res.settingsRaw)) pay.settings = readSettingsGrid(raw(res.settingsRaw));
   if (res.scoringRaw && res.scoringRaw.headers)
     pay.scoring = readScoringGrid([res.scoringRaw.headers].concat(res.scoringRaw.rows || []));
   else pay.scoring = res.scoring || [];
@@ -1852,7 +2232,8 @@ function adopt(pay, sourceName, url) {
   rebuild('ruleEditor');
   ROSTER = [];
   var i, t;
-  for (i = 0; i < (pay.teams || []).length; i++) ROSTER.push({ name: pay.teams[i].name, team: pay.teams[i].team });
+  for (i = 0; i < (pay.teams || []).length; i++)
+    ROSTER.push({ name: pay.teams[i].name, team: benched(pay.teams[i].team) ? '' : pay.teams[i].team });
   if (!ROSTER.length) {
     for (t in DEFAULT_ROSTER) {
       if (!DEFAULT_ROSTER.hasOwnProperty(t)) continue;
@@ -1862,10 +2243,27 @@ function adopt(pay, sourceName, url) {
       'placeholder squads. Add a Teams tab with the real squad names and it takes over — the Roster ' +
       'board has a <b>Copy For Sheet</b> button that gives you exactly what to paste.');
   }
-  ROSTER_BASE = ROSTER.slice();
+  ROSTER_BASE = [];
+  for (i = 0; i < ROSTER.length; i++) ROSTER_BASE.push({ name: ROSTER[i].name, team: ROSTER[i].team });
   MOVES = [];
   TRAIN_MONTH = null;
+  applySettings(pay.settings || []);
+  MENTORS = (pay.mentors || []).slice();
+  DRAW = null;
   syncTeams();
+
+  /* Saving is possible only when the data came through the Apps Script —
+     that is the one route that can write. Anything else is a view. */
+  SYNC.url = (LAST && LAST.kind === 'exec') ? LAST.url : null;
+  SYNC.can = !!(SYNC.url && pay.canSave);
+  SYNC.hashes = pay.hashes || {};
+  SYNC.dirty = {};
+  SYNC.error = (SYNC.url && SYNC.can && !getPin()) ? 'needpin' : '';
+  if (SYNC.url && !pay.canSave)
+    PARSE_WARN.push('The Apps Script is connected but <b>saving is switched off</b> in it: set ' +
+      '<code>EDIT_PIN</code> in its CONFIG block and deploy it again. Until then changes made here are ' +
+      'not kept.');
+  syncPill();
 
   var bits = [];
   if (pay.weeks.length) bits.push(pay.weeks.length + ' weekly tab' + (pay.weeks.length === 1 ? '' : 's'));
@@ -1903,6 +2301,7 @@ function syncTeams() {
   rebuild('carry'); rebuild('teamNames');
 }
 function rebuild(id) { var e = $(id); if (e) e.dataset.built = ''; }
+function benched(t) { return /^(|no squad|none|left|left chapter|-|—)$/i.test(String(t == null ? '' : t).trim()); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    THE SCORING ENGINE
@@ -2016,6 +2415,7 @@ function compute() {
     }
     var G = rounds[rk][gk];
     G.members.push(gr.member);
+    if (norm(gr.role) === 'mentor') G.mentor = gr.member;
     if (gr.notes && !G.notes) G.notes = gr.notes;
     var st = doneState(gr.done);
     if (st !== null) {
@@ -2209,15 +2609,17 @@ function render() {
   if (VIEW === 'scoring') buildRules();
   buildOOO(); buildSchema(); buildGroupSchema(); buildScoreSchema();
   fillSelects(); fillTrainMonths();
+  if (VIEW === 'data') saveStatusPanel();
   if (!DATA) { $('globalWarn').innerHTML = ''; return; }
   var R = compute();
   showWarnings(R);
   if (VIEW === 'board') { versus(R); h2h(R); mvp(R); glance(R); chart(R); breakdown(R); }
   if (VIEW === 'squads') dossier(R);
   if (VIEW === 'players') memberTable(R);
-  if (VIEW === 'groups') { renderDraw(); renderSaved(); roundStatus(R); finesPanel(R); }
+  if (VIEW === 'groups') { renderDraw(); renderMentors(R); renderSaved(R); roundStatus(R); finesPanel(R); }
   if (VIEW === 'roster') { board(R); moveLog(); }
   if (VIEW === 'share') broadcast(R);
+  if (VIEW === 'scoring') renderAdj();
 }
 
 /* The notices matter — a TYFCB column misread as money is exactly the kind
@@ -2685,8 +3087,10 @@ function memberTable(R) {
    the record, which is what the Copy For Sheet button is for.
    ═══════════════════════════════════════════════════════════════════════ */
 
-var DRAW = null;        // [{ n, members:[{name,team}] }] — the current draw
+var DRAW = null;        // [{ n, members:[{name, team, mentor}] }] — the draw on screen
+var DRAW_ROUND = '';    // the saved round this draw was opened from, if any
 var ROLLING = false;
+var PICKED = null;      // { g, m } — a player tapped, waiting for a group to be tapped
 
 /* Fisher-Yates. A draw that is not properly random is worse than no draw
    at all, because people notice and stop believing it. */
@@ -2699,63 +3103,76 @@ function shuffled(arr) {
   return a;
 }
 
-/* Deal two from each squad into every group, then hand the leftovers round
-   one at a time. Nobody sits out: sitting out means missing the points
-   through no fault of your own. */
+/* Mentors who can actually lead a group this round: on the board and on a
+   squad. One who has left the chapter is skipped, not silently kept. */
+function liveMentors(R) {
+  var out = [], seen = {}, i, m;
+  for (i = 0; i < MENTORS.length; i++) {
+    m = R.members[norm(MENTORS[i])];
+    if (m && m.team && !seen[m.key]) { seen[m.key] = 1; out.push({ name: m.name, team: m.team, mentor: 1 }); }
+  }
+  return out;
+}
+
+/* How many groups a round needs: enough that nobody is over the size, and
+   never fewer than there are mentors to lead them. */
+function drawShape(R) {
+  var size = Math.max(2, SET.groupSize || 4);
+  var mentors = liveMentors(R), total = rostered(R).length;
+  var groups = Math.max(mentors.length, Math.ceil(total / size));
+  /* The smallest group size at which every group has a mentor. */
+  var fits = 0;
+  if (mentors.length) for (var s2 = 2; s2 <= 12; s2++) if (Math.ceil(total / s2) <= mentors.length) { fits = s2; break; }
+  return { size: size, mentors: mentors.length, total: total, groups: groups, mentorFits: fits };
+}
+
+/* The deal. Mentors sit where they always sit — group 1 is always the
+   first mentor's — and everyone else is dealt around them. Squads take
+   turns at the deck, and each player goes to whichever group is smallest,
+   then to whichever has fewest from their squad, then at random. That keeps
+   every group mixed and every group within one of the others in size,
+   without anyone going over the size you set. */
 function makeDraw(R) {
-  var pools = {}, i, ti;
-  for (ti = 0; ti < TEAMS.length; ti++) pools[TEAMS[ti]] = [];
-  var all = rostered(R);
-  for (i = 0; i < all.length; i++) if (pools[all[i].team]) pools[all[i].team].push(all[i].name);
-  for (ti = 0; ti < TEAMS.length; ti++) pools[TEAMS[ti]] = shuffled(pools[TEAMS[ti]]);
-
-  var per = Math.max(1, Math.floor(SET.groupSize / Math.max(1, TEAMS.length)));
-  var nGroups = 0;
-  for (ti = 0; ti < TEAMS.length; ti++)
-    nGroups = ti === 0 ? Math.floor(pools[TEAMS[ti]].length / per)
-                       : Math.min(nGroups, Math.floor(pools[TEAMS[ti]].length / per));
-  if (!isFinite(nGroups)) nGroups = 0;
-  if (nGroups < 1) {
-    /* Not enough on one squad to pair off. Rather than refuse, mix whoever
-       there is into groups of four — a short round still beats no round. */
-    var everyone = [];
-    for (ti = 0; ti < TEAMS.length; ti++)
-      for (i = 0; i < pools[TEAMS[ti]].length; i++)
-        everyone.push({ name: pools[TEAMS[ti]][i], team: TEAMS[ti] });
-    if (!everyone.length) return null;
-    var solo = [], gz;
-    for (i = 0; i < everyone.length; i++) {
-      if (i % SET.groupSize === 0) solo.push({ n: solo.length + 1, members: [] });
-      solo[solo.length - 1].members.push(everyone[i]);
-    }
-    for (gz = 0; gz < solo.length; gz++) solo[gz].members = shuffled(solo[gz].members);
-    return solo;
+  var shape = drawShape(R), size = shape.size, i, j, k;
+  if (!shape.total) return null;
+  var mentors = liveMentors(R), isM = {};
+  for (i = 0; i < mentors.length; i++) isM[norm(mentors[i].name)] = 1;
+  var all = rostered(R), by = {}, order = [];
+  for (i = 0; i < all.length; i++) {
+    if (isM[all[i].key]) continue;
+    var t = all[i].team;
+    if (!by[t]) { by[t] = []; order.push(t); }
+    by[t].push({ name: all[i].name, team: t });
+  }
+  for (i = 0; i < order.length; i++) by[order[i]] = shuffled(by[order[i]]);
+  order = shuffled(order);
+  var queue = [], row = 0, more = true;
+  while (more) {
+    more = false;
+    for (i = 0; i < order.length; i++) if (by[order[i]][row]) { queue.push(by[order[i]][row]); more = true; }
+    row++;
   }
 
-  var groups = [], g;
-  for (g = 0; g < nGroups; g++) groups.push({ n: g + 1, members: [] });
-  for (ti = 0; ti < TEAMS.length; ti++) {
-    var tn = TEAMS[ti], pool = pools[tn];
-    for (g = 0; g < nGroups; g++)
-      for (i = 0; i < per; i++) groups[g].members.push({ name: pool.shift(), team: tn });
-  }
-  /* Leftovers. Four is a hard ceiling, so they cannot be stuffed into the
-     existing groups: they form their own, mixed across the squads, and the
-     last one is simply short. Nobody sits out and nobody is in a five. */
-  var spare = [], rr = 0, most = 0;
-  for (ti = 0; ti < TEAMS.length; ti++) most = Math.max(most, pools[TEAMS[ti]].length);
-  for (rr = 0; rr < most; rr++)
-    for (ti = 0; ti < TEAMS.length; ti++)
-      if (pools[TEAMS[ti]][rr]) spare.push({ name: pools[TEAMS[ti]][rr], team: TEAMS[ti] });
-  for (i = 0; i < spare.length; i++) {
-    var last = groups[groups.length - 1];
-    if (!last || last.members.length >= SET.groupSize) {
-      last = { n: groups.length + 1, members: [] };
-      groups.push(last);
+  var groups = [];
+  for (i = 0; i < shape.groups; i++) groups.push({ n: i + 1, members: mentors[i] ? [mentors[i]] : [] });
+  for (i = 0; i < queue.length; i++) {
+    var m = queue[i], best = [], bestKey = null;
+    for (j = 0; j < groups.length; j++) {
+      var g = groups[j];
+      if (g.members.length >= size) continue;
+      var same = 0;
+      for (k = 0; k < g.members.length; k++) if (g.members[k].team === m.team) same++;
+      var key = g.members.length * 100 + same;
+      if (bestKey === null || key < bestKey) { bestKey = key; best = [g]; }
+      else if (key === bestKey) best.push(g);
     }
-    last.members.push(spare[i]);
+    if (!best.length) best = [groups[groups.length - 1]];   /* cannot happen: the shape has room */
+    best[Math.floor(Math.random() * best.length)].members.push(m);
   }
-  for (g = 0; g < groups.length; g++) groups[g].members = shuffled(groups[g].members);
+  for (i = 0; i < groups.length; i++) {
+    var gm = groups[i].members, head = (gm.length && gm[0].mentor) ? [gm[0]] : [];
+    groups[i].members = head.concat(shuffled(gm.slice(head.length)));
+  }
   return groups;
 }
 
@@ -2764,23 +3181,34 @@ function rollDraw() {
   var R = compute();
   var made = makeDraw(R);
   if (!made) {
-    $('drawWarn').innerHTML = '<div class="warn">There are not enough players on each squad to make ' +
-      'even one group of ' + SET.groupSize + '. Put people on both squads first, on the Roster tab.</div>';
+    $('drawWarn').innerHTML = '<div class="warn">Nobody is on a squad yet, so there is nobody to draw. ' +
+      'Put people on the squads first, on the Roster tab.</div>';
     $('draw').innerHTML = ''; return;
   }
   $('drawWarn').innerHTML = '';
   DRAW = made;
+  DRAW_ROUND = '';
+  PICKED = null;
+  if (!$('roundName').value.trim()) $('roundName').value = nextRoundName();
   spinUp(R, made);
+}
+
+/* A fortnight from today, written the way people write it. */
+function nextRoundName() {
+  var a = new Date(), b = new Date(a.getTime() + 13 * 86400000);
+  function f(d, withMonth) { return d.getDate() + (withMonth ? ' ' + d.toLocaleDateString('en-GB', { month: 'short' }) : ''); }
+  return a.getMonth() === b.getMonth() ? f(a, false) + '–' + f(b, true) : f(a, true) + ' – ' + f(b, true);
 }
 
 /* The wow: every slot cycles real names at speed, then the groups lock in
    one after another from the top. It is showmanship, but it is honest
-   showmanship — the answer was already decided before the spinning began. */
+   showmanship — the answer was already decided before the spinning began.
+   Mentors do not spin: they are not part of the draw. */
 function spinUp(R, groups) {
   ROLLING = true;
   var btn = $('rollBtn');
   btn.disabled = true;
-  btn.textContent = 'SHUFFLING\u2026';
+  btn.textContent = 'SHUFFLING…';
   $('copyDrawBtn').disabled = true;
   $('saveDrawBtn').disabled = true;
 
@@ -2788,29 +3216,31 @@ function spinUp(R, groups) {
      than each picking at random. Picking at random shows the same person in
      two slots at once, and a draw that looks broken while it spins is a
      draw people argue with when it stops. */
-  var pool = shuffled(rostered(R)), tick = 0;
+  var isM = {}, i, src = rostered(R), pool = [];
+  for (i = 0; i < MENTORS.length; i++) isM[norm(MENTORS[i])] = 1;
+  for (i = 0; i < src.length; i++) if (!isM[src[i].key]) pool.push(src[i]);
+  pool = shuffled(pool.length ? pool : src);
+  var tick = 0;
   renderDraw(true);
   var slots = document.querySelectorAll('#draw .slot');
   var spin = setInterval(function () {
     tick++;
-    for (var i = 0; i < slots.length; i++) {
-      if (slots[i].dataset.locked) continue;
-      var pick = pool[(i + tick) % pool.length];
-      if (pick) slots[i].innerHTML = '<span class="sq" style="background:' + color(pick.team) + '">' +
+    for (var s = 0; s < slots.length; s++) {
+      if (slots[s].dataset.locked) continue;
+      var pick = pool[(s + tick) % pool.length];
+      if (pick) slots[s].innerHTML = '<span class="sq" style="background:' + color(pick.team) + '">' +
         esc(shortSquad(pick.team)) + '</span>' + esc(pick.name);
     }
   }, 55);
 
-  var cards = document.querySelectorAll('#draw .gcard');
+  var cards = document.querySelectorAll('#draw .gcard.dg');
   var g = 0;
   var lock = setInterval(function () {
     if (g >= groups.length) {
       clearInterval(spin); clearInterval(lock);
       ROLLING = false;
       btn.disabled = false;
-      btn.innerHTML = '\uD83C\uDFB2 SHUFFLE AGAIN';
-      $('copyDrawBtn').disabled = false;
-      $('saveDrawBtn').disabled = false;
+      btn.innerHTML = '🎲 SHUFFLE AGAIN';
       renderDraw();
       return;
     }
@@ -2821,15 +3251,14 @@ function spinUp(R, groups) {
 
 function lockGroup(card, group) {
   if (!card) return;
-  card.className = 'gcard landed';
+  card.className = 'gcard dg landed';
   var slots = card.querySelectorAll('.slot'), i;
   for (i = 0; i < slots.length; i++) {
     var m = group.members[i];
     if (!m) continue;
     slots[i].dataset.locked = '1';
-    slots[i].className = 'slot lock';
-    slots[i].innerHTML = '<span class="sq" style="background:' + color(m.team) + '">' +
-      esc(shortSquad(m.team)) + '</span>' + esc(m.name);
+    slots[i].className = 'slot lock' + (m.mentor ? ' mentor' : '');
+    slots[i].innerHTML = slotInner(m);
   }
 }
 
@@ -2842,204 +3271,333 @@ function shortSquad(t) {
   for (i = 0; i < w.length; i++) if (w[i]) out += w[i].charAt(0);
   return (out.length > 1 ? out : s.slice(0, 6)).toUpperCase();
 }
+function slotInner(m) {
+  return (m.team ? '<span class="sq" style="background:' + color(m.team) + '">' + esc(shortSquad(m.team)) + '</span>' : '') +
+    '<span class="sn">' + esc(m.name) + '</span>' + (m.mentor ? '<span class="mtag">★ Mentor</span>' : '');
+}
+
+function setGroupSize(v) {
+  SET.groupSize = Math.max(2, Math.min(8, parseInt(v, 10) || 4));
+  markDirty('settings');
+  renderDraw();
+}
+
+/* A one-line account of what the next shuffle will produce, and the one
+   change that would give every group a mentor when it does not. */
+function shapeLine(R) {
+  var sh = drawShape(R);
+  if (!sh.total) return '';
+  var s = '<b>' + sh.total + '</b> players · <b>' + sh.mentors + '</b> mentor' + (sh.mentors === 1 ? '' : 's') +
+    ' · up to <b>' + sh.size + '</b> per group → <b>' + sh.groups + ' groups</b>';
+  if (sh.mentors && sh.groups > sh.mentors) {
+    var short = sh.groups - sh.mentors;
+    s += ', ' + short + ' without a mentor.';
+    if (sh.mentorFits && sh.mentorFits <= 8)
+      s += ' Set <b>' + sh.mentorFits + ' per group</b> and every group gets one.';
+  } else if (sh.mentors) s += ', one mentor each.';
+  else s += '. No mentors set — add them below and they will lead a group each, every round.';
+  return s;
+}
 
 function renderDraw(spinning) {
   $('gPts').textContent = n(rule('group121')) + ' points';
+  var gs = $('groupSize');
+  if (gs && String(gs.value) !== String(SET.groupSize)) gs.value = String(SET.groupSize);
+  var R = DATA ? compute() : null;
+  $('drawShape').innerHTML = R ? shapeLine(R) : '';
   if (!DRAW) {
-    $('draw').innerHTML = '<div class="note" style="margin:0">No draw yet. Hit ' +
-      '<b>Shuffle The Groups</b> and it will deal ' + SET.groupSize + ' players a group, ' +
-      (TEAMS.length === 2 ? 'two from each squad' : 'evenly from each squad') + '.</div>';
+    $('draw').innerHTML = '<div class="note" style="margin:0">No draw on screen. Hit ' +
+      '<b>Shuffle The Groups</b> for a new one, or open a saved round below to change it.</div>';
     $('drawNote').innerHTML = '';
     $('copyDrawBtn').disabled = true;
     $('saveDrawBtn').disabled = true;
     return;
   }
-  $('saveDrawBtn').disabled = false;
-  var h = '', i, j;
+  $('copyDrawBtn').disabled = !!spinning;
+  $('saveDrawBtn').disabled = !!spinning;
+  var h = '', i, j, size = SET.groupSize;
   for (i = 0; i < DRAW.length; i++) {
-    h += '<div class="gcard"><div class="gtop"><span class="gname">GROUP ' + DRAW[i].n + '</span>' +
-      '<span class="gtag wait">' + DRAW[i].members.length + ' players</span></div>';
-    for (j = 0; j < DRAW[i].members.length; j++) {
-      var m = DRAW[i].members[j];
-      h += spinning
-        ? '<div class="slot spin">&nbsp;</div>'
-        : '<div class="slot"><span class="sq" style="background:' + color(m.team) + '">' +
-          esc(shortSquad(m.team)) + '</span>' + esc(m.name) + '</div>';
+    var G = DRAW[i], squads = {}, nsq = 0;
+    for (j = 0; j < G.members.length; j++) if (!squads[G.members[j].team]) { squads[G.members[j].team] = 1; nsq++; }
+    var over = G.members.length > size, lone = nsq < 2 && TEAMS.length > 1 && G.members.length > 1;
+    var tag = over ? '<span class="gtag no">' + G.members.length + ' / ' + size + '</span>'
+            : lone ? '<span class="gtag no">one squad</span>'
+            : '<span class="gtag wait">' + G.members.length + ' player' + (G.members.length === 1 ? '' : 's') + '</span>';
+    h += '<div class="gcard dg' + (PICKED && PICKED.g !== i ? ' target' : '') + '" ' +
+      (spinning ? '' : 'ondragover="drawOver(event,this)" ondragleave="drawOff(this)" ' +
+        'ondrop="drawDrop(event,' + i + ',this)" onclick="drawTapGroup(' + i + ')"') + '>' +
+      '<div class="gtop"><span class="gname">GROUP ' + G.n + '</span>' + tag + '</div>';
+    for (j = 0; j < G.members.length; j++) {
+      var m = G.members[j], sel = PICKED && PICKED.g === i && PICKED.m === j;
+      if (m.mentor) {
+        h += '<div class="slot mentor" data-locked="1" title="Mentors stay put. Change them in the Mentors panel.">' +
+          slotInner(m) + '</div>';
+      } else if (spinning) {
+        h += '<div class="slot spin">&nbsp;</div>';
+      } else {
+        h += '<div class="slot move' + (sel ? ' sel' : '') + '" draggable="true" ' +
+          'ondragstart="drawDrag(event,' + i + ',' + j + ')" ' +
+          'onclick="event.stopPropagation();drawTap(' + i + ',' + j + ')">' + slotInner(m) + '</div>';
+      }
     }
     h += '</div>';
   }
+  if (!spinning)
+    h += '<div class="gcard newg' + (PICKED ? ' target' : '') + '" ondragover="drawOver(event,this)" ' +
+      'ondragleave="drawOff(this)" ondrop="drawDrop(event,-1,this)" onclick="drawTapGroup(-1)">' +
+      '<div class="gname" style="margin-bottom:8px">+ NEW GROUP</div>' +
+      '<div class="note" style="margin:0">Drop someone here to start another group.</div></div>';
   $('draw').innerHTML = h;
   if (spinning) { $('drawNote').innerHTML = ''; return; }
 
-  var rn = ($('roundName').value || '').trim();
-  $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0"><b>This draw lives only in ' +
-    'this browser tab.</b> Hit <b>Copy For Sheet</b> and paste it into a <b>Groups</b> tab, or it is ' +
-    'gone the moment anyone reloads the page — and nothing will score.' +
-    (rn ? '' : '<br><br>Give the round a name first (something like <b>1\u201314 Sept</b>) so the ' +
-     'sheet can tell this fortnight from the next one.') + '</div>';
+  var saved = DRAW_ROUND && norm(DRAW_ROUND) === norm($('roundName').value.trim());
+  $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0">' +
+    '<b>Drag a player to another group</b> to rebalance — or tap a player, then tap the group they ' +
+    'should go to. Mentors stay where they are. ' +
+    (saved ? 'This is the saved round <b>' + esc(DRAW_ROUND) + '</b>: hit <b>Save This Round</b> again to keep your changes.'
+           : 'Nothing counts until you hit <b>Save This Round</b>.') + '</div>';
 }
 
-/* ── Saved rounds ───────────────────────────────────────────────────────
-   A draw you cannot get back is a draw you have to run again, and running
-   it again gives different groups — which is exactly the argument nobody
-   wants. So a round can be saved and reopened.
-
-   This is the one thing on the page that is written to the browser, and it
-   is worth being blunt about what that means: it is saved on THIS computer,
-   in THIS browser, for whoever is sitting at it. It is not shared, it does
-   not reach anyone else, and clearing site data takes it with it. The sheet
-   is still the record — Copy For Sheet is what makes a round count.        */
-var SAVE_KEY = 'titans-cgc-rounds';
-
-function loadSaved() {
-  try {
-    var raw = window.localStorage.getItem(SAVE_KEY);
-    var got = raw ? JSON.parse(raw) : [];
-    return Object.prototype.toString.call(got) === '[object Array]' ? got : [];
-  } catch (e) { return []; }
+/* Moving people between groups: drag on a computer, tap-tap on a phone. */
+var DDRAG = null;
+function drawDrag(e, g, m) {
+  DDRAG = { g: g, m: m };
+  try { e.dataTransfer.setData('text/plain', g + ':' + m); e.dataTransfer.effectAllowed = 'move'; } catch (x) {}
 }
-function putSaved(list) {
-  try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(list)); return true; }
-  catch (e) { return false; }
+function drawOver(e, el) { e.preventDefault(); el.classList.add('over'); }
+function drawOff(el) { el.classList.remove('over'); }
+function drawDrop(e, to, el) {
+  e.preventDefault(); drawOff(el);
+  var src = DDRAG;
+  try { var d = e.dataTransfer.getData('text/plain').split(':');
+        if (d.length === 2) src = { g: +d[0], m: +d[1] }; } catch (x) {}
+  DDRAG = null;
+  if (src) moveInDraw(src.g, src.m, to);
+}
+function drawTap(g, m) {
+  if (PICKED && PICKED.g === g && PICKED.m === m) PICKED = null;
+  else if (PICKED && PICKED.g !== g) { moveInDraw(PICKED.g, PICKED.m, g); return; }
+  else PICKED = { g: g, m: m };
+  renderDraw();
+}
+function drawTapGroup(g) {
+  if (!PICKED) return;
+  if (PICKED.g === g) { PICKED = null; renderDraw(); return; }
+  moveInDraw(PICKED.g, PICKED.m, g);
+}
+function moveInDraw(fromG, fromM, toG) {
+  PICKED = null;
+  if (!DRAW || !DRAW[fromG] || !DRAW[fromG].members[fromM]) { renderDraw(); return; }
+  var who = DRAW[fromG].members[fromM];
+  if (who.mentor || fromG === toG) { renderDraw(); return; }
+  DRAW[fromG].members.splice(fromM, 1);
+  if (toG < 0 || !DRAW[toG]) DRAW.push({ n: DRAW.length + 1, members: [who] });
+  else DRAW[toG].members.push(who);
+  /* An emptied group goes, and the rest close up. Mentor groups can never
+     empty, so their numbers do not move. */
+  var kept = [], i;
+  for (i = 0; i < DRAW.length; i++) if (DRAW[i].members.length) kept.push(DRAW[i]);
+  for (i = 0; i < kept.length; i++) kept[i].n = i + 1;
+  DRAW = kept;
+  renderDraw();
 }
 
+/* ── Rounds live in the Groups tab of the sheet ─────────────────────────
+   Saving a round writes it there, so it is the same round for everyone who
+   opens the board, and it is what scores. Saving a round under a name that
+   already exists replaces it — that is how a round is corrected.          */
 function saveDraw() {
-  if (!DRAW) return;
+  if (!DRAW || !DATA) return;
   var rn = ($('roundName').value || '').trim();
   if (!rn) {
-    alert('Give the round a name first \u2014 something like "1\u201314 Sept". That is what you will ' +
-          'be looking for when you come back to it.');
+    alert('Give the round a name first — something like "' + nextRoundName() + '".');
     $('roundName').focus();
     return;
   }
-  var list = loadSaved(), i;
-  for (i = 0; i < list.length; i++)
-    if (norm(list[i].round) === norm(rn)) {
-      if (!confirm('A round called "' + rn + '" is already saved. Replace it?\n\nThe groups in it will ' +
-                   'be thrown away and these ones kept instead.')) return;
-      list.splice(i, 1);
-      break;
+  DATA.groups = DATA.groups || [];
+  var old = [], keep = [], i, j;
+  for (i = 0; i < DATA.groups.length; i++) (norm(DATA.groups[i].round) === norm(rn) ? old : keep).push(DATA.groups[i]);
+  if (old.length && norm(rn) !== norm(DRAW_ROUND) &&
+      !confirm('A round called "' + rn + '" is already saved. Replace it with these groups?')) return;
+  /* Replacing a round keeps each group's Done and Notes where the group
+     number still exists, so fixing a name mid-fortnight does not wipe out a
+     group that has already delivered. */
+  var was = {};
+  for (i = 0; i < old.length; i++) if (!was[old[i].group]) was[old[i].group] = old[i];
+  for (i = 0; i < DRAW.length; i++)
+    for (j = 0; j < DRAW[i].members.length; j++) {
+      var m = DRAW[i].members[j], prev = was[String(DRAW[i].n)] || {};
+      keep.push({ round: rn, group: String(DRAW[i].n), member: m.name, role: m.mentor ? 'Mentor' : '',
+                  done: prev.done || '', notes: prev.notes || '' });
     }
-  list.unshift({ round: rn, at: new Date().toISOString(),
-                 groups: DRAW.map(function (g) {
-                   return { n: g.n, members: g.members.map(function (m) {
-                     return { name: m.name, team: m.team }; }) };
-                 }) });
-  if (list.length > 40) list.length = 40;
-  if (!putSaved(list)) {
-    alert('This browser will not let the page save anything \u2014 private browsing, or site data is ' +
-          'blocked. Use Copy For Sheet instead: that is the record that actually matters.');
-    return;
-  }
-  renderSaved();
-  setStatus('Round saved in this browser. Copy For Sheet is still what makes it count.', 'ok', 'status');
-  $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0"><b>Saved as "' + esc(rn) +
-    '" on this computer.</b> That is a convenience, not the record \u2014 paste it into the ' +
-    '<b>Groups</b> tab with <b>Copy For Sheet</b> and it scores for everyone.</div>';
+  DATA.groups = keep;
+  DRAW_ROUND = rn;
+  markDirty('groups');
+  render();
+  toast(SYNC.url && SYNC.can
+    ? 'Round <b>' + esc(rn) + '</b> saved — ' + DRAW.length + ' groups, for everyone who opens the board.'
+    : 'Round <b>' + esc(rn) + '</b> is on this page, but this view cannot save. Copy For Sheet still works.',
+    SYNC.url && SYNC.can ? 'ok' : 'err');
 }
 
-function openSaved(i) {
-  var list = loadSaved(), rec = list[i];
-  if (!rec) return;
-  DRAW = rec.groups.map(function (g) {
-    return { n: g.n, members: g.members.slice() };
-  });
-  $('roundName').value = rec.round;
-  $('rollBtn').innerHTML = '\uD83C\uDFB2 SHUFFLE AGAIN';
+function openRound(rn) {
+  var R = compute(), rows = [], i, byG = {}, order = [];
+  for (i = 0; i < DATA.groups.length; i++) if (DATA.groups[i].round === rn) rows.push(DATA.groups[i]);
+  for (i = 0; i < rows.length; i++) {
+    var g = String(rows[i].group), mm = R.members[norm(rows[i].member)];
+    if (!byG[g]) { byG[g] = []; order.push(g); }
+    var who = { name: rows[i].member, team: mm && mm.team ? mm.team : '', mentor: norm(rows[i].role) === 'mentor' ? 1 : 0 };
+    if (who.mentor) byG[g].unshift(who); else byG[g].push(who);
+  }
+  DRAW = [];
+  for (i = 0; i < order.length; i++) DRAW.push({ n: +order[i] || i + 1, members: byG[order[i]] });
+  DRAW_ROUND = rn;
+  PICKED = null;
+  $('roundName').value = rn;
+  $('rollBtn').innerHTML = '🎲 SHUFFLE AGAIN';
   renderDraw();
   $('draw').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
-function dropSaved(i) {
-  var list = loadSaved(), rec = list[i];
-  if (!rec) return;
-  if (!confirm('Forget the saved round "' + rec.round + '"?\n\nIf it is already in your Groups tab it ' +
-               'keeps scoring \u2014 this only clears the copy held in this browser.')) return;
-  list.splice(i, 1);
-  putSaved(list);
-  renderSaved();
+
+function deleteRound(rn) {
+  if (!confirm('Delete the round "' + rn + '" for everyone?\n\nIts group 1-2-1 points and fines go with it.')) return;
+  var keep = [], i;
+  for (i = 0; i < DATA.groups.length; i++) if (DATA.groups[i].round !== rn) keep.push(DATA.groups[i]);
+  DATA.groups = keep;
+  if (norm(DRAW_ROUND) === norm(rn)) DRAW_ROUND = '';
+  markDirty('groups');
+  render();
 }
 
-function renderSaved() {
+function renderSaved(R) {
   var el = $('savedRounds'); if (!el) return;
-  var list = loadSaved(), i;
-  var caveat = '<div class="note" style="margin-top:16px">Saved rounds live in <b>this browser on this ' +
-    'computer</b> only. They are not shared with anyone and they do not score on their own \u2014 a ' +
-    'round counts when it is in the <b>Groups</b> tab of the sheet.</div>';
-  if (!list.length) {
-    el.innerHTML = '<div class="note" style="margin:0">Nothing saved yet. Shuffle a round, name it, and ' +
-      'hit <b>Save This Round</b> to be able to pull it back up later.</div>' + caveat;
+  if (!R.roundOrder.length) {
+    el.innerHTML = '<div class="note" style="margin:0">No rounds saved yet. Shuffle, name the round and hit ' +
+      '<b>Save This Round</b> — it goes into the <b>Groups</b> tab of the sheet, for everyone.</div>';
     return;
   }
   var h = '<div class="scroll"><table><thead><tr><th>Round</th><th>Groups</th><th>Players</th>' +
-    '<th>Saved</th><th></th></tr></thead><tbody>';
-  for (i = 0; i < list.length; i++) {
-    var rec = list[i], heads = 0, g;
-    for (g = 0; g < rec.groups.length; g++) heads += rec.groups[g].members.length;
-    h += '<tr><td class="nm">' + esc(rec.round) + '</td><td>' + rec.groups.length + '</td><td>' + heads +
-      '</td><td class="sub2">' + esc(whenText(rec.at)) + '</td>' +
-      '<td><button class="b g sm" onclick="openSaved(' + i + ')">OPEN</button> ' +
-      '<button class="b g sm" onclick="dropSaved(' + i + ')">FORGET</button></td></tr>';
+    '<th>Done</th><th>Missed</th><th></th></tr></thead><tbody>', r, i;
+  for (r = R.roundOrder.length - 1; r >= 0; r--) {
+    var rn = R.roundOrder[r], gn = 0, heads = 0, dn = 0, ms = 0;
+    for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) {
+      gn++; heads += R.groups[i].members.length;
+      if (R.groups[i].done === true) dn++; else if (R.groups[i].done === false) ms++;
+    }
+    h += '<tr><td class="nm">' + esc(rn) + '</td><td>' + gn + '</td><td>' + heads + '</td><td>' + dn +
+      '</td><td>' + ms + '</td><td style="white-space:nowrap">' +
+      '<button class="b g sm" onclick="openRound(ROUNDS[' + r + '])">OPEN</button> ' +
+      '<button class="b g sm" onclick="deleteRound(ROUNDS[' + r + '])">DELETE</button></td></tr>';
   }
-  el.innerHTML = h + '</tbody></table></div>' + caveat;
+  ROUNDS = R.roundOrder.slice();
+  el.innerHTML = h + '</tbody></table></div>';
 }
-
-function whenText(iso) {
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return 'unknown';
-  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' +
-         d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-}
+var ROUNDS = [];
 
 function copyDraw() {
   if (!DRAW) return;
-  var rn = ($('roundName').value || '').trim();
-  if (!rn) { setStatus('Name the round first.', 'err', 'status'); alert('Give the round a name first — something like "1–14 Sept".'); return; }
-  var out = 'Round\tGroup\tMember\tDone\tNotes\n', i, j;
+  var rn = ($('roundName').value || '').trim() || nextRoundName();
+  var out = 'Round\tGroup\tMember\tRole\tDone\tNotes\n', i, j;
   for (i = 0; i < DRAW.length; i++)
     for (j = 0; j < DRAW[i].members.length; j++)
-      out += rn + '\t' + DRAW[i].n + '\t' + DRAW[i].members[j].name + '\t\t\n';
-  copyText(out, 'Draw copied. Paste it into your Groups tab, then fill the Done column in when the ' +
-    'fortnight is up.');
+      out += rn + '\t' + DRAW[i].n + '\t' + DRAW[i].members[j].name + '\t' +
+        (DRAW[i].members[j].mentor ? 'Mentor' : '') + '\t\t\n';
+  copyText(out, 'Draw copied. Paste it into your Groups tab.');
+}
+
+/* ── Mentors ────────────────────────────────────────────────────────────
+   Five or six people who lead the same group every round. Their order here
+   is their group number; the draw deals everyone else around them.        */
+function renderMentors(R) {
+  var el = $('mentorList'); if (!el) return;
+  var h = '', i;
+  for (i = 0; i < MENTORS.length; i++) {
+    var m = R.members[norm(MENTORS[i])], ok = m && m.team;
+    h += '<div class="mrow' + (ok ? '' : ' gone') + '"><span class="mnum">G' + (i + 1) + '</span>' +
+      (ok ? '<span class="sq" style="background:' + color(m.team) + '">' + esc(shortSquad(m.team)) + '</span>' : '') +
+      '<span class="mname">' + esc(MENTORS[i]) + (ok ? '' : ' <i>— not on a squad, skipped in the draw</i>') + '</span>' +
+      '<button class="b g sm" title="Up" onclick="moveMentor(' + i + ',-1)"' + (i ? '' : ' disabled') + '>▲</button>' +
+      '<button class="b g sm" title="Down" onclick="moveMentor(' + i + ',1)"' + (i < MENTORS.length - 1 ? '' : ' disabled') + '>▼</button>' +
+      '<button class="b g sm" onclick="dropMentor(' + i + ')">REMOVE</button></div>';
+  }
+  el.innerHTML = h || '<div class="note" style="margin:0 0 12px">No mentors yet.</div>';
+  var sel = $('mentorPick'), isM = {}, all = rostered(R), opts = '<option value="">Choose a player…</option>';
+  for (i = 0; i < MENTORS.length; i++) isM[norm(MENTORS[i])] = 1;
+  all = all.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+  for (i = 0; i < all.length; i++) if (!isM[all[i].key])
+    opts += '<option value="' + esc(all[i].name) + '">' + esc(all[i].name) + ' · ' + esc(all[i].team) + '</option>';
+  if (sel.innerHTML !== opts) sel.innerHTML = opts;
+}
+function addMentor() {
+  var v = $('mentorPick').value;
+  if (!v) return;
+  for (var i = 0; i < MENTORS.length; i++) if (norm(MENTORS[i]) === norm(v)) return;
+  MENTORS.push(v);
+  markDirty('mentors');
+  render();
+}
+function dropMentor(i) {
+  MENTORS.splice(i, 1);
+  markDirty('mentors');
+  render();
+}
+function moveMentor(i, d) {
+  var j = i + d;
+  if (j < 0 || j >= MENTORS.length) return;
+  var t = MENTORS[i]; MENTORS[i] = MENTORS[j]; MENTORS[j] = t;
+  markDirty('mentors');
+  render();
 }
 
 /* ── What the sheet says about the rounds already run ───────────────── */
+var RG = [];
+function setDone(i, v) {
+  var G = RG[i]; if (!G) return;
+  for (var k = 0; k < DATA.groups.length; k++)
+    if (DATA.groups[k].round === G.round && String(DATA.groups[k].group) === String(G.group)) DATA.groups[k].done = v;
+  markDirty('groups');
+  render();
+}
 function roundStatus(R) {
   var el = $('roundStatus');
+  RG = R.groups;
   if (!R.groups.length) {
-    el.innerHTML = '<div class="note" style="margin:0">Nothing in a <b>Groups</b> tab yet. Once you ' +
-      'paste a draw in and start filling the <b>Done</b> column, every round shows up here with who ' +
-      'scored and who owes the jar.</div>';
+    el.innerHTML = '<div class="note" style="margin:0">No rounds yet. Save a draw above and it shows up ' +
+      'here, where you mark each group <b>Done</b> or <b>Missed</b> when the fortnight is up.</div>';
     return;
   }
   var h = '', r, i;
   for (r = R.roundOrder.length - 1; r >= 0; r--) {
-    var rn = R.roundOrder[r], gs = [];
-    for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) gs.push(R.groups[i]);
-    var done = 0, failed = 0, open = 0;
-    for (i = 0; i < gs.length; i++) {
-      if (gs[i].done === true) done++; else if (gs[i].done === false) failed++; else open++;
+    var rn = R.roundOrder[r], done = 0, failed = 0, open = 0;
+    for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) {
+      if (R.groups[i].done === true) done++; else if (R.groups[i].done === false) failed++; else open++;
     }
     h += '<h3 style="margin-top:' + (r === R.roundOrder.length - 1 ? '0' : '26px') + '">' + esc(rn) +
       ' &mdash; ' + done + ' done, ' + failed + ' missed' + (open ? ', ' + open + ' still running' : '') +
       '</h3><div class="draw">';
-    for (i = 0; i < gs.length; i++) {
-      var G = gs[i];
+    for (i = 0; i < R.groups.length; i++) {
+      var G = R.groups[i];
+      if (G.round !== rn) continue;
       var cls = G.done === true ? ' done' : (G.done === false ? ' failed' : '');
-      var tag = G.done === true ? '<span class="gtag ok">\u2713 DONE</span>'
+      var tag = G.done === true ? '<span class="gtag ok">✓ DONE</span>'
               : G.done === false ? '<span class="gtag no">MISSED</span>'
               : '<span class="gtag wait">RUNNING</span>';
       h += '<div class="gcard' + cls + '"><div class="gtop"><span class="gname">GROUP ' +
         esc(G.group) + '</span>' + tag + '</div>';
       for (var j = 0; j < G.members.length; j++) {
         var mm = R.members[norm(G.members[j])];
-        var tn = mm && mm.team ? mm.team : '';
-        h += '<div class="slot">' + (tn ? '<span class="sq" style="background:' + color(tn) + '">' +
-          esc(shortSquad(tn)) + '</span>' : '') + esc(G.members[j]) + '</div>';
+        h += '<div class="slot' + (G.mentor && norm(G.mentor) === norm(G.members[j]) ? ' mentor' : '') + '">' +
+          slotInner({ name: G.members[j], team: mm && mm.team ? mm.team : '',
+                      mentor: G.mentor && norm(G.mentor) === norm(G.members[j]) }) + '</div>';
       }
-      h += '<div class="note" style="margin-top:10px">' +
-        (G.done === true ? n(rule('group121')) + ' each, already in the scores above.'
+      h += '<div class="donebar">' +
+        '<button class="b sm' + (G.done === true ? '' : ' g') + '" onclick="setDone(' + i + ',\'yes\')">✓ DONE</button>' +
+        '<button class="b sm' + (G.done === false ? ' red' : ' g') + '" onclick="setDone(' + i + ',\'no\')">MISSED</button>' +
+        '<button class="b g sm" onclick="setDone(' + i + ',\'\')"' + (G.done === null ? ' disabled' : '') + '>RUNNING</button>' +
+        '</div><div class="note" style="margin-top:9px">' +
+        (G.done === true ? n(rule('group121')) + ' each, already in the scores.'
          : G.done === false ? 'Owes the jar.'
-         : 'Fill the <b>Done</b> column in the sheet when the fortnight is up.') +
+         : 'Mark it when the fortnight is up.') +
         (G.notes ? '<br>' + esc(G.notes) : '') + '</div></div>';
     }
     h += '</div>';
@@ -3047,14 +3605,86 @@ function roundStatus(R) {
   el.innerHTML = h;
 }
 
+/* ── The Saving panel on the DATA tab ───────────────────────────────── */
+function saveStatusPanel() {
+  var el = $('saveStatus'); if (!el) return;
+  var h, pin = getPin();
+  if (!SYNC.url) {
+    h = '<div class="warn soft" style="margin-top:0"><b>This page is not saving.</b> It is reading the ' +
+      'sheet through a plain link, which can only read. Anything changed here — the roster, the draw, ' +
+      'mentors, scoring — stays in this browser tab and is gone on reload.</div>' +
+      '<h3>To switch saving on (once, about five minutes)</h3><ol class="steps">' +
+      '<li>Open the chapter sheet → <b>Extensions → Apps Script</b>. Delete what is there and paste in ' +
+      '<code>TitansCGC.gs</code> from the project.</li>' +
+      '<li>In its CONFIG block set <code>EDIT_PIN</code> to something only the committee knows.</li>' +
+      '<li><b>Deploy → New deployment → Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>. ' +
+      'Approve the permission prompt.</li>' +
+      '<li>Paste the <code>/exec</code> link into Option 1 below and hit <b>Load Data</b>. The badge at the top ' +
+      'turns to <b>Saved</b>.</li>' +
+      '<li>Hit <b>Copy One-Click Link</b> and share <i>that</i> link — it opens straight onto the saving ' +
+      'version for everybody.</li></ol>';
+  } else if (!SYNC.can) {
+    h = '<div class="warn" style="margin-top:0"><b>Connected, but saving is switched off in the script.</b> ' +
+      'Set <code>EDIT_PIN</code> in its CONFIG block, then <b>Deploy → Manage deployments → edit → ' +
+      'New version</b>. Reading works in the meantime.</div>';
+  } else {
+    h = '<div class="note" style="margin-top:0"><b style="color:var(--green)">Connected to the sheet.</b> ' +
+      'Every change on this page is written back to it, so everyone who opens the board sees the same thing. ' +
+      'If two people change the same thing at once, the second is told and shown the first person\'s version ' +
+      '— nobody silently overwrites anybody.</div>' +
+      '<div class="row" style="margin-top:14px">' +
+      (pin ? '<span class="note" style="margin:0">This device has the edit PIN.</span>' +
+             '<button class="b g sm" onclick="forgetPin()">FORGET PIN ON THIS DEVICE</button>'
+           : '<span class="note" style="margin:0"><b>This device is view-only.</b></span>' +
+             '<button class="b sm" onclick="askPin()">ENTER EDIT PIN</button>') + '</div>' +
+      '<div class="hint">Use <b>Forget PIN</b> on a laptop that is plugged into the projector, so nobody in ' +
+      'the room can change the board from it.</div>';
+  }
+  el.innerHTML = h;
+}
+
+/* ── Adjustments editor ─────────────────────────────────────────────── */
+function renderAdj() {
+  var el = $('adjList'); if (!el || !DATA) return;
+  var list = DATA.adjustments || [], i, h;
+  var sel = $('adjTeam'), opts = '';
+  for (i = 0; i < TEAMS.length; i++) opts += '<option>' + esc(TEAMS[i]) + '</option>';
+  if (sel && sel.innerHTML !== opts) { var cur = sel.value; sel.innerHTML = opts; if (cur) sel.value = cur; }
+  if (!list.length) { el.innerHTML = '<div class="note" style="margin:0">None yet.</div>'; return; }
+  h = '<div class="scroll"><table><thead><tr><th>Squad</th><th>Reason</th><th>Points</th><th></th></tr></thead><tbody>';
+  for (i = 0; i < list.length; i++)
+    h += '<tr><td class="nm"><span class="dot" style="background:' + color(list[i].team) + '"></span>' +
+      esc(list[i].team) + '</td><td class="sub2">' + esc(list[i].reason || '—') + '</td><td class="' +
+      (list[i].points < 0 ? 'neg' : 'tot') + '">' + (list[i].points > 0 ? '+' : '') + n(list[i].points) +
+      '</td><td><button class="b g sm" onclick="dropAdj(' + i + ')">REMOVE</button></td></tr>';
+  el.innerHTML = h + '</tbody></table></div>';
+}
+function addAdj() {
+  var t = $('adjTeam').value, r = $('adjReason').value.trim(), p = $('adjPts').value;
+  if (!t || p === '' || isNaN(+p)) { toast('Pick a squad and put a number in <b>Points</b>.', 'err'); return; }
+  if (!r) { toast('Give it a reason — the next person to see it will ask.', 'err'); return; }
+  DATA.adjustments = DATA.adjustments || [];
+  DATA.adjustments.push({ month: (DATA.month || ''), team: t, reason: r, points: +p });
+  $('adjReason').value = ''; $('adjPts').value = '';
+  markDirty('adjustments');
+  render();
+}
+function dropAdj(i) {
+  var a = (DATA.adjustments || [])[i];
+  if (!a || !confirm('Remove "' + (a.reason || 'this adjustment') + '" (' + a.points + ') from ' + a.team + '?')) return;
+  DATA.adjustments.splice(i, 1);
+  markDirty('adjustments');
+  render();
+}
+
 function finesPanel(R) {
   var el = $('fines'), i;
   var per = SET.penaltyPerMember ? 'per player' : 'per group';
   var head = '<div class="row" style="margin-bottom:18px">' +
     '<div style="width:190px"><label>Fine for a missed group</label>' +
-    '<input type="number" value="' + SET.penaltyAmount + '" oninput="SET.penaltyAmount=+this.value||0;render()"></div>' +
+    '<input type="number" value="' + SET.penaltyAmount + '" onchange="SET.penaltyAmount=+this.value||0;markDirty(\'settings\');render()"></div>' +
     '<div style="width:230px"><label>Charged</label>' +
-    '<select onchange="SET.penaltyPerMember=(this.value===\'member\');render()">' +
+    '<select onchange="SET.penaltyPerMember=(this.value===\'member\');markDirty(\'settings\');render()">' +
     '<option value="group"' + (SET.penaltyPerMember ? '' : ' selected') + '>Once per group</option>' +
     '<option value="member"' + (SET.penaltyPerMember ? ' selected' : '') + '>By every player in it</option>' +
     '</select></div></div>';
@@ -3172,6 +3802,7 @@ function moveTo(idx, ti) {
     for (i = 0; i < ROSTER.length; i++)
       if (norm(ROSTER[i].name) === rec.key) { ROSTER[i].team = ''; break; }
     MOVES.push({ name: rec.name, from: rec.team, to: '' });
+    markDirty('teams');
     render();
     return;
   }
@@ -3181,6 +3812,7 @@ function moveTo(idx, ti) {
   for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === rec.key) { found = i; break; }
   if (found >= 0) ROSTER[found].team = to; else ROSTER.push({ name: rec.name, team: to });
   MOVES.push({ name: rec.name, from: rec.team, to: to });
+  markDirty('teams');
   render();
 }
 function undoMove() {
@@ -3193,20 +3825,34 @@ function undoMove() {
     else ROSTER[i].team = '';
     break;
   }
+  markDirty('teams');
   render();
 }
 function resetRoster() {
-  if (MOVES.length && !confirm('Throw away ' + MOVES.length + ' change(s) and go back to what the sheet says?')) return;
-  ROSTER = ROSTER_BASE.slice();
-  var i; for (i = 0; i < ROSTER.length; i++) ROSTER[i] = { name: ROSTER[i].name, team: ROSTER[i].team };
+  if (SYNC.dirty.teams || SYNC.saving === 'teams') {
+    if (!confirm('Throw away the roster changes that have not reached the sheet yet?')) return;
+  } else if (MOVES.length && !confirm('Go back to the roster as it was last saved?')) return;
+  ROSTER = [];
+  for (var i = 0; i < ROSTER_BASE.length; i++) ROSTER.push({ name: ROSTER_BASE[i].name, team: ROSTER_BASE[i].team });
   MOVES = [];
+  delete SYNC.dirty.teams;
+  syncPill();
   render();
 }
 function moveLog() {
   $('undoBtn').disabled = !MOVES.length;
-  if (!MOVES.length) { $('moveLog').innerHTML = ''; return; }
-  var h = '<div class="warn soft"><b>' + MOVES.length + ' unsaved change' + (MOVES.length === 1 ? '' : 's') +
-    '</b> — these only live in this browser tab until you paste them back into the sheet.<br><br>', i;
+  /* When the page can save, the badge at the top is the whole story. The
+     long list below is only for when these moves are going nowhere. */
+  var saving = SYNC.url && SYNC.can && getPin();
+  if (!MOVES.length || saving) { $('moveLog').innerHTML = ''; return; }
+  var why = !SYNC.url
+    ? 'this view is read-only, so they only live in this browser tab'
+    : (!SYNC.can ? 'saving is switched off in the Apps Script'
+                 : 'nobody on this device has entered the edit PIN yet');
+  var h = '<div class="warn soft"><b>' + MOVES.length + ' change' + (MOVES.length === 1 ? '' : 's') +
+    ' not saved</b> \u2014 ' + why + '. ' + (SYNC.url && SYNC.can
+      ? '<a href="#" onclick="askPin();return false">Enter the PIN</a> and they save straight away.'
+      : 'Copy For Sheet still works.') + '<br><br>', i;
   for (i = 0; i < MOVES.length; i++)
     h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no squad') + ' &rarr; ' +
       esc(MOVES[i].to || 'no squad') + '<br>';
@@ -3229,8 +3875,10 @@ function addMember() {
   ROSTER.push({ name: nm, team: t });
   MOVES.push({ name: nm, from: null, to: t });
   $('newName').value = '';
+  markDirty('teams');
   render();
-  setStatus('<b>' + esc(nm) + '</b> added to ' + esc(t) + '. Hit <b>Copy For Sheet</b> to make it stick.',
+  setStatus('<b>' + esc(nm) + '</b> added to ' + esc(t) + '.' +
+    (SYNC.url && SYNC.can ? ' Saving to the sheet.' : ' Not saved \u2014 this view is read-only.'),
     'ok', 'addStatus');
 }
 function renameTeam(i, newName) {
@@ -3244,6 +3892,7 @@ function renameTeam(i, newName) {
   COLORS[newName] = COLORS[old] || color(old);
   TEAMS[i] = newName;
   rebuild('carry'); rebuild('teamNames');
+  markDirty('teams'); markDirty('settings');
   render();
 }
 function copyRoster() {
@@ -3338,26 +3987,26 @@ function editRule(i, field, val) {
     for (z = 0; z < parts.length; z++) if (parts[z].trim()) out.push(parts[z].trim());
     R.src.cols = out;
   }
-  buildRulesTable(); render();
+  buildRulesTable(); markDirty('scoring'); render();
 }
 function addRule() {
   RULES.push({ key: 'custom' + (RULES.length + 1) + '_' + Math.floor(Math.random() * 9999),
     label: 'New scoring line', short: 'New line', pts: 10,
     src: { kind: 'week', cols: ['V'] }, unit: 'entry' });
-  rebuildEditor(); buildRulesTable(); render();
+  rebuildEditor(); buildRulesTable(); markDirty('scoring'); render();
 }
 function dropRule(i) {
   if (!RULES[i]) return;
   if (!confirm('Remove "' + RULES[i].label + '"? Every score that came from it goes with it.')) return;
   RULES.splice(i, 1);
-  rebuildEditor(); buildRulesTable(); render();
+  rebuildEditor(); buildRulesTable(); markDirty('scoring'); render();
 }
 function resetRules() {
   if (!confirm('Put the scoring back to the chapter slide, and throw away any line you have added?')) return;
   RULES = [];
   var i;
   for (i = 0; i < RULES_DEFAULT.length; i++) RULES.push(cloneRule(RULES_DEFAULT[i]));
-  rebuildEditor(); buildRulesTable(); render();
+  rebuildEditor(); buildRulesTable(); markDirty('scoring'); render();
 }
 function cloneRule(R) {
   var o = {}, k;
@@ -3387,12 +4036,12 @@ function buildSettings() {
   h += '<div><label style="display:flex;align-items:start;gap:2px;text-transform:none;letter-spacing:0;' +
     'font-family:Barlow,sans-serif;font-size:13.5px;color:var(--ink);line-height:1.65">' +
     '<input type="checkbox"' + (SET.lateBreaksPerfect ? ' checked' : '') +
-    ' onchange="SET.lateBreaksPerfect=this.checked;render()">' +
+    ' onchange="SET.lateBreaksPerfect=this.checked;markDirty(\'settings\');render()">' +
     '<span>Arriving <b>late</b> breaks perfect attendance. Off by default: only an <b>A</b> on the ' +
     'PALMS sheet costs the 50. A substitute still counts as present either way.</span></label></div>';
   h += '</div><div class="row" style="margin-top:18px">' +
     '<div style="width:320px"><label>How the TYFCB column is read</label>' +
-    '<select onchange="SET.tyfcbMode=this.value;render()">' +
+    '<select onchange="SET.tyfcbMode=this.value;markDirty(\'settings\');render()">' +
     '<option value="auto"' + (SET.tyfcbMode === 'auto' ? ' selected' : '') + '>Work it out for me</option>' +
     '<option value="slips"' + (SET.tyfcbMode === 'slips' ? ' selected' : '') + '>One TYFCB per player per week</option>' +
     '<option value="count"' + (SET.tyfcbMode === 'count' ? ' selected' : '') + '>The number in the cell is the count</option>' +
@@ -3424,7 +4073,7 @@ function buildCarry() {
   for (i = 0; i < TEAMS.length; i++)
     h += '<div><label><span class="dot" style="background:' + color(TEAMS[i]) + '"></span>' +
       esc(TEAMS[i]) + '</label><input type="number" value="' + (CARRY[TEAMS[i]] || 0) +
-      '" oninput="CARRY[\'' + q(TEAMS[i]) + '\']=+this.value||0;render()"></div>';
+      '" onchange="CARRY[\'' + q(TEAMS[i]) + '\']=+this.value||0;markDirty(\'settings\');render()"></div>';
   el.innerHTML = h; el.dataset.built = 1;
 }
 function buildTeamNames() {
@@ -3713,6 +4362,8 @@ function boot() {
   wireFiles();
   buildNav();
   DEFAULT_TABS = $('tabs').value;
+  SET_DEFAULT = {};
+  for (var sk in SET) if (SET.hasOwnProperty(sk)) SET_DEFAULT[sk] = SET[sk];
 
   /* The address bar chooses the source, shortest form first:
        (nothing)   the chapter's own sheet
@@ -3729,6 +4380,7 @@ function boot() {
   if (p.tabs) $('tabs').value = p.tabs;
 
   var src = p.src || (p.s ? sheetUrl(p.s) : '') || (p.e ? execUrl(p.e) : '');
+  if (!src && hash !== 'demo' && DEFAULT_EXEC) src = DEFAULT_EXEC;
   if (!src && hash !== 'demo' && DEFAULT_SHEET) src = sheetUrl(DEFAULT_SHEET);
 
   if (hash === 'demo') { go('board'); demo(); return; }
