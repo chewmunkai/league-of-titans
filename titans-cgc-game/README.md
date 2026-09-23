@@ -272,24 +272,32 @@ service, no new account, nothing that costs money. About five minutes, once:
 Then on each device that should be able to change things, tap the badge at the
 top and enter the PIN once.
 
-### How it behaves
+### How saving works
 
-- **The badge at the top is the truth.** `✓ Saved`, `Saving…`, `Unsaved — tap
-  to enter edit PIN`, `Not saved — tap to retry`, or `View only`.
-- **Everyone can look; only PIN-holders can change.** Put the board on the
-  projector from a device without the PIN (or hit **Forget PIN on this device**
-  on the DATA tab) and nobody in the room can alter it.
+- **Change anything, then press Save.** Moves, shuffles, mentors, scoring,
+  Done/Missed — they wait on screen for as long as you like. A bar pinned to
+  the bottom of every tab lists what is unsaved, with **💾 Save Changes** and
+  **Discard**. One Save covers every tab.
+- **The PIN is asked for when you press Save**, not before. Tick *Remember on
+  this device* and it is never asked again there; untick it on a shared or
+  projector laptop.
+- **Nothing reverts on its own.** When the board opens it shows the saved
+  numbers instantly, then loads the live sheet. While that is loading (a cold
+  Google script can take several seconds) the editing tabs are locked with a
+  "Connecting to the live sheet…" note, so nothing you do can be overwritten
+  when the live data arrives.
+- **The badge at the top is the truth.** `✓ Saved`, `● 2 unsaved — tap to save`,
+  `Saving…`, `⚠ Not saved — tap to retry`, or `View only`.
+- **Everyone can look; only PIN-holders can change.**
 - **Two people editing at once cannot overwrite each other.** Each save carries
-  a fingerprint of the tab as it was when the page read it. If someone else —
-  another committee member, or a hand edit in the sheet — has changed that tab
-  since, the save is refused, the page tells you so, and reloads their version
-  for you to redo your change on top of.
+  a fingerprint of the tab as it was when the page read it. If someone else
+  has saved that tab since, your save is refused, you are told, and their
+  version is loaded for you to redo your change on top of.
 - **What gets saved:** roster (Teams), rounds and Done/Missed (Groups),
   mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in and
   the attendance and TYFCB options (Settings), adjustments (Adjustments). PALMS
   and Training are never written to.
-- **Leaving with something unsaved** triggers the browser's "leave this page?"
-  warning.
+- **Leaving or refreshing with unsaved changes** asks first.
 - A name typed as a formula (`=…`) is stored as text, never run.
 
 ## Connecting your data

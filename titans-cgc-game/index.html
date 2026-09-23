@@ -52,9 +52,54 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(17px,4vw,36px);line-he
 .sync.busy{background:#fff6d9;color:#6b4d00}
 .sync.bad{background:var(--red);color:#fff;animation:rollpulse .5s infinite alternate}
 .sync.off{background:var(--paper2);color:var(--muted)}
+.sync.warn{background:var(--gold);color:#3a2b00;animation:rollpulse .6s infinite alternate}
+
+/* The save bar, pinned to the bottom of every tab. */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:40;transform:translateY(110%);
+  transition:transform .22s cubic-bezier(.2,.9,.3,1.1);background:var(--ink);color:#fff;
+  border-top:4px solid var(--gold);padding:12px 18px;display:flex;gap:14px;align-items:center;
+  justify-content:center;flex-wrap:wrap}
+.savebar.show{transform:none}
+.savebar.ok{border-top-color:var(--green)}
+.savebar.bad{border-top-color:var(--red)}
+.savebar.busy{border-top-color:var(--gold)}
+.sbmsg{font-size:14.5px;line-height:1.5;max-width:720px}
+.sbmsg b{color:var(--gold)}
+.savebar.ok .sbmsg b{color:#6be39a}
+.savebar.bad .sbmsg b{color:#ff8a8f}
+.sbhint{color:#b8bfd0;font-size:13px}
+.sbbtns{display:flex;gap:10px;flex:none}
+.savebar button.b{box-shadow:3px 3px 0 #000;border-color:#000}
+.savebar button.g{background:#fff}
+.savebar .savebtn{font-size:10px;padding:14px 18px;background:var(--gold)}
+body.has-savebar{padding-bottom:120px}
+body.has-savebar .toast{bottom:92px}
+
+/* The PIN box. */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(14,17,23,.55);display:flex;align-items:center;
+  justify-content:center;padding:16px}
+.modal.hide{display:none}
+.mbox{background:var(--paper);border:3px solid var(--ink);border-radius:14px;box-shadow:7px 7px 0 var(--ink);
+  padding:24px;width:100%;max-width:420px}
+.mtitle{font-family:'Press Start 2P',monospace;font-size:13px;margin-bottom:14px}
+.mbox p{font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:14px}
+.mbox input[type=password]{font-size:18px;letter-spacing:3px;padding:13px 14px}
+.chk{display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-top:12px;text-transform:none;letter-spacing:0;
+  font-family:'Barlow',sans-serif;font-size:13.5px;color:var(--ink);font-weight:500}
+.chk span{color:var(--muted);flex-basis:100%;padding-left:24px;font-size:12.5px}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+
+/* While the live sheet is loading, the editing tabs are locked. */
+.livebanner{display:none;background:#fff6d9;border:2px solid var(--gold-dk);border-radius:9px;
+  padding:11px 15px;font-size:13.5px;color:#6b4d00;margin-bottom:16px;line-height:1.55}
+body.loading-live .livebanner{display:block}
+body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-scoring{
+  pointer-events:none;opacity:.5;filter:grayscale(.35)}
+
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);max-width:min(620px,92vw);
   background:var(--ink);color:#fff;border-radius:10px;padding:14px 18px;font-size:14px;line-height:1.55;
   box-shadow:5px 5px 0 var(--red);z-index:50;transition:transform .25s cubic-bezier(.2,.9,.3,1.2)}
+.toast:not(.show){visibility:hidden;opacity:0}
 .toast.show{transform:translate(-50%,0)}
 .toast.ok{box-shadow:5px 5px 0 var(--green)}
 .toast b{color:var(--gold)}
@@ -445,6 +490,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
 <div class="toast" id="toast"></div>
 <nav id="nav"></nav>
+<div class="livebanner">⏳ <b>Connecting to the live sheet…</b> Have a look around — editing
+  unlocks in a few seconds, so nothing you change can be overwritten when it arrives.</div>
 <div id="globalWarn"></div>
 
 <!-- ══ SCOREBOARD ══ -->
@@ -515,7 +562,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
           <option value="5">up to 5</option><option value="6">up to 6</option></select></div>
       <div style="width:200px"><label>Round name</label>
         <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
-      <button class="b" onclick="saveDraw()" id="saveDrawBtn">SAVE THIS ROUND</button>
+      <button class="b" onclick="saveDraw()" id="saveDrawBtn">💾 SAVE ROUND</button>
       <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
     </div>
     <div class="note" id="drawShape" style="margin:0 0 16px"></div>
@@ -553,8 +600,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
   <div class="panel"><h2>Roster Board</h2>
     <div class="note" style="margin:0 0 15px">
       <b>Drag a name onto the other squad</b> to move them — the whole board recalculates straight away.
-      On a phone, use the small dropdown on each name instead. Nothing is written back to your sheet
-      until you hit <b>Copy For Sheet</b>.
+      On a phone, use the small dropdown on each name instead. Your changes wait for you — press
+      <b>Save Changes</b> at the bottom of the screen when you are done.
     </div>
     <div class="row" style="margin-bottom:17px">
       <button class="b" onclick="copyRoster()">COPY FOR SHEET</button>
@@ -610,9 +657,9 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
       <button class="b g" onclick="copyScoring()">COPY SCORING FOR SHEET</button>
       <button class="b g" onclick="resetRules()">RESET TO DEFAULTS</button>
     </div>
-    <div class="note">Changes here <b>save to the Scoring tab of the sheet</b> for everyone, as soon as
-      you make them — the badge at the top of the page says when they have landed. Once that tab
-      exists it defines the whole scoring list, and every copy of this page follows it.</div></div>
+    <div class="note">Press <b>Save Changes</b> at the bottom of the screen and these go into the
+      <b>Scoring</b> tab of the sheet, for everyone. Once that tab exists it defines the whole scoring
+      list, and every copy of this page follows it.</div></div>
 
   <div class="panel"><h2>Adjustments Agreed In The Room</h2>
     <div class="note" style="margin:0 0 15px">For a points decision PALMS cannot show — a correction,
@@ -780,6 +827,23 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 </section>
 
 </div>
+<div class="savebar" id="savebar"></div>
+
+<div class="modal hide" id="pinModal" onclick="if(event.target===this)closePin()">
+  <div class="mbox">
+    <div class="mtitle">🔒 EDIT PIN</div>
+    <p>Saving changes for everyone needs the committee’s edit PIN. You only need to enter it once on
+      this device.</p>
+    <input id="pinInput" type="password" autocomplete="current-password" placeholder="Enter the PIN"
+      onkeydown="if(event.key==='Enter')submitPin();if(event.key==='Escape')closePin()">
+    <label class="chk"><input type="checkbox" id="pinRemember" checked> Remember on this device
+      <span>(untick on a shared or projector laptop)</span></label>
+    <div class="status" id="pinStatus"></div>
+    <div class="mbtns"><button class="b g" onclick="closePin()">CANCEL</button>
+      <button class="b" id="pinGo" onclick="submitPin()">💾 SAVE</button></div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
    TITANS CGC GAME
@@ -952,39 +1016,79 @@ var OOO = [
 /* ═══════════════════════════════════════════════════════════════════════
    SAVING
 
-   Every edit calls markDirty(section). A short pause later the section is
-   written to the sheet in full. Nothing here is clever: one section at a
-   time, a retry badge when it fails, and a plain sentence when it cannot
-   save at all. The badge at the top of the page is the single place that
-   tells you whether what you see is what everyone else will see.
+   Every edit calls markDirty(section) and then WAITS — for as long as you
+   like — until someone presses Save. Nothing is written behind your back and
+   nothing is taken away behind your back. Save asks for the edit PIN the
+   first time on a device, then writes each changed section to the sheet in
+   full, one at a time. The bar pinned to the bottom of the page says what is
+   waiting; the badge at the top says whether the sheet has it.
    ═══════════════════════════════════════════════════════════════════════ */
 
 var PIN_KEY = 'titans-cgc-pin';
-function getPin() { try { return window.localStorage.getItem(PIN_KEY) || ''; } catch (e) { return SYNC.pinMem || ''; } }
-function setPin(v) {
+function getPin() {
+  var v = '';
+  try { v = window.localStorage.getItem(PIN_KEY) || ''; } catch (e) {}
+  return v || SYNC.pinMem || '';
+}
+function setPin(v, remember) {
   SYNC.pinMem = v;
-  try { if (v) window.localStorage.setItem(PIN_KEY, v); else window.localStorage.removeItem(PIN_KEY); } catch (e) {}
+  try {
+    if (v && remember !== false) window.localStorage.setItem(PIN_KEY, v);
+    else window.localStorage.removeItem(PIN_KEY);
+  } catch (e) {}
+}
+
+/* Everything waiting for the Save button, in words a person would use. */
+function pendingList() {
+  var out = [], k;
+  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) out.push(SECTION_NAMES[k] || k);
+  if (DRAW && DRAW_DIRTY) out.push('the new draw');
+  return out;
 }
 
 function markDirty(sec) {
   if (!DATA) return;
   SYNC.dirty[sec] = 1;
-  clearTimeout(SYNC.timer);
-  SYNC.timer = setTimeout(flushSaves, 900);
+  if (SYNC.phase === 'done' || SYNC.phase === 'error') SYNC.phase = '';
   syncPill();
 }
 
+/* The Save button, wherever it is pressed. An unsaved draw is put into the
+   round list first, so one Save covers everything on every tab. */
+function saveAll() {
+  if (!DATA) return;
+  if (LIVE_PENDING) { toast('Still connecting to the live sheet \u2014 one moment, then save.', 'err'); return; }
+  if (DRAW && DRAW_DIRTY && !commitDraw()) return;
+  if (!pendingList().length) {
+    toast('Nothing to save \u2014 the sheet already has everything.', 'ok');
+    SYNC.phase = ''; syncPill(); return;
+  }
+  if (!SYNC.url) {
+    SYNC.phase = 'error';
+    SYNC.error = 'This copy of the board is only showing saved numbers, so it cannot save. ' +
+      'Reload the page once it can reach the live sheet.';
+    syncPill(); return;
+  }
+  if (!SYNC.can) { SYNC.phase = 'error'; SYNC.error = pinOffText(); syncPill(); return; }
+  if (!getPin()) { openPin(saveAll); return; }
+  SYNC.phase = 'saving';
+  SYNC.error = '';
+  flushSaves();
+}
+function pinOffText() {
+  return 'Saving is switched off in the Apps Script: set EDIT_PIN in it and deploy a new version.';
+}
+
 function flushSaves() {
-  clearTimeout(SYNC.timer);
-  if (!SYNC.url || !SYNC.can) { syncPill(); return; }
-  if (SYNC.saving) { SYNC.timer = setTimeout(flushSaves, 400); return; }
+  if (!SYNC.url || !SYNC.can || SYNC.saving) { syncPill(); return; }
   var sec = null, k;
   for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) { sec = k; break; }
-  if (!sec) { syncPill(); return; }
+  if (!sec) {
+    if (SYNC.phase === 'saving') { SYNC.phase = 'done'; SYNC.last = new Date(); settleDone(); }
+    syncPill(); return;
+  }
   var pin = getPin();
-  /* Keep "wrong PIN" on the badge until someone tries again: a retry that
-     quietly relabels it "enter PIN" hides the one thing they need to know. */
-  if (!pin) { if (SYNC.error !== 'badpin') SYNC.error = 'needpin'; syncPill(); return; }
+  if (!pin) { SYNC.phase = ''; syncPill(); openPin(saveAll); return; }
 
   SYNC.saving = sec;
   delete SYNC.dirty[sec];
@@ -993,29 +1097,72 @@ function flushSaves() {
     SYNC.saving = '';
     if (res && res.ok) {
       SYNC.hashes[sec] = res.hash;
-      SYNC.last = new Date();
-      SYNC.error = '';
       afterSaved(sec);
-      if (!SYNC.dirty[sec]) flushSaves();
-      else { clearTimeout(SYNC.timer); SYNC.timer = setTimeout(flushSaves, 600); }
-    } else if (res && (res.code === 'badpin' || res.code === 'nopin')) {
-      SYNC.dirty[sec] = 1;
-      if (res.code === 'badpin') setPin('');
-      SYNC.error = res.code;
-    } else if (res && res.code === 'conflict') {
+      flushSaves();
+      return;
+    }
+    SYNC.dirty[sec] = 1;
+    if (res && res.code === 'badpin') {
+      setPin('');
+      SYNC.phase = '';
+      syncPill();
+      openPin(saveAll, 'That PIN was not right. Try again.');
+      return;
+    }
+    if (res && res.code === 'conflict') {
       /* Someone else got there first. Their version wins; ours is lost, and
          we say so rather than pretending. Re-read so the screen is honest. */
-      SYNC.error = '';
-      toast('<b>Someone else changed the ' + esc(SECTION_NAMES[sec] || sec) + '</b> since you opened the ' +
-        'page, so your last change there was not saved. Their version has been loaded — please redo it.',
-        'err', 9000);
+      delete SYNC.dirty[sec];
+      SYNC.phase = '';
+      toast('<b>Someone else saved the ' + esc(SECTION_NAMES[sec] || sec) + '</b> while you were ' +
+        'working, so your change there was not saved. Their version is now on screen \u2014 please ' +
+        'redo your change and save again.', 'err', 10000);
       loadExec(SYNC.url, true);
-    } else {
-      SYNC.dirty[sec] = 1;
-      SYNC.error = (res && res.error) || 'The save did not reach the sheet.';
+      return;
     }
+    SYNC.phase = 'error';
+    SYNC.error = (res && res.code === 'nopin') ? pinOffText()
+      : ((res && res.error) || 'The save did not reach the sheet.');
     syncPill();
   });
+}
+var DONE_T = null;
+function settleDone() {
+  clearTimeout(DONE_T);
+  DONE_T = setTimeout(function () { if (SYNC.phase === 'done') { SYNC.phase = ''; syncPill(); } }, 3500);
+}
+
+/* Throw the unsaved changes away and show what the sheet has. */
+function discardChanges() {
+  var list = pendingList();
+  if (list.length && !confirm('Throw away your unsaved changes (' + list.join(', ') + ') and go back to ' +
+      'what is in the sheet?')) return;
+  SYNC.dirty = {}; SYNC.phase = ''; SYNC.error = '';
+  DRAW = null; DRAW_DIRTY = false;
+  if (SYNC.url) loadExec(SYNC.url, true);
+  else if (LAST && LAST.kind === 'snapshot') useSnapshot('');
+  else if (LAST && LAST.kind === 'demo') demo();
+  else if (LAST && LAST.kind === 'sheet') loadSheet(LAST.id, true);
+  else render();
+}
+
+/* ── While the live sheet is still loading, nothing can be edited ───────
+   The page shows the saved month instantly and swaps in the live sheet when
+   Google answers, which can take a while. Anything changed in between would
+   be swept away by the swap, so the editing tabs stay locked until then.   */
+var LIVE_PENDING = false, LIVE_T = null;
+function liveStart() {
+  LIVE_PENDING = true;
+  document.body.classList.add('loading-live');
+  clearTimeout(LIVE_T);
+  LIVE_T = setTimeout(liveDone, 50000);
+  syncPill();
+}
+function liveDone() {
+  LIVE_PENDING = false;
+  clearTimeout(LIVE_T);
+  document.body.classList.remove('loading-live');
+  syncPill();
 }
 
 /* POST is the normal route. Some browsers refuse a cross-site POST to
@@ -1090,62 +1237,99 @@ function afterSaved(sec) {
 
 function syncPill() {
   var el = $('syncTag'); if (!el) return;
-  var pending = [], k;
-  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) pending.push(SECTION_NAMES[k] || k);
-  var cls = 'sync', txt, act = '';
-  if (!DATA) { el.className = 'sync hide'; return; }
-  if (!SYNC.url) {
-    cls += pending.length ? ' bad' : ' off';
-    txt = pending.length ? '\u26A0 Not saved \u2014 view only' : 'View only';
-    act = "go('data')";
-  } else if (!SYNC.can || SYNC.error === 'nopin') {
-    cls += ' off'; txt = 'Saving is off in the script'; act = "go('data')";
-  } else if (SYNC.saving) {
-    cls += ' busy'; txt = 'Saving ' + (SECTION_NAMES[SYNC.saving] || SYNC.saving) + '\u2026';
-  } else if (SYNC.error === 'needpin' || SYNC.error === 'badpin') {
-    cls += pending.length ? ' bad' : ' off';
-    txt = (SYNC.error === 'badpin' ? 'Wrong PIN \u2014 ' : '') +
-      (pending.length ? 'Unsaved \u2014 tap to enter edit PIN' : 'View only \u2014 tap to edit');
-    act = 'askPin()';
-  } else if (SYNC.error) {
-    cls += ' bad'; txt = '\u26A0 Not saved \u2014 tap to retry'; act = 'flushSaves()';
-    el.title = SYNC.error;
-  } else if (pending.length) {
-    cls += ' busy'; txt = 'Saving soon\u2026';
-  } else {
+  var pending = pendingList(), cls = 'sync', txt, act = '';
+  if (!DATA) { el.className = 'sync hide'; saveBar(pending); return; }
+  if (LIVE_PENDING) { cls += ' busy'; txt = 'Connecting to the sheet\u2026'; }
+  else if (SYNC.saving) { cls += ' busy'; txt = 'Saving\u2026'; }
+  else if (SYNC.phase === 'error') { cls += ' bad'; txt = '\u26A0 Not saved \u2014 tap to retry'; act = 'saveAll()'; }
+  else if (pending.length) { cls += ' warn'; txt = '\u25CF ' + pending.length + ' unsaved \u2014 tap to save'; act = 'saveAll()'; }
+  else if (!SYNC.url) { cls += ' off'; txt = 'View only'; act = "go('data')"; }
+  else if (!SYNC.can) { cls += ' off'; txt = 'Saving is off in the script'; act = "go('data')"; }
+  else {
     cls += ' ok';
     txt = '\u2713 Saved' + (SYNC.last ? ' ' + SYNC.last.toLocaleTimeString(undefined,
-      { hour: '2-digit', minute: '2-digit' }) : ' \u00b7 in sync with the sheet');
+      { hour: '2-digit', minute: '2-digit' }) : ' \u00b7 in sync');
   }
   el.className = cls;
   el.innerHTML = txt;
+  el.title = SYNC.phase === 'error' ? SYNC.error : '';
   el.onclick = act ? new Function(act) : null;
   el.style.cursor = act ? 'pointer' : 'default';
+  saveBar(pending);
   if (VIEW === 'data') saveStatusPanel();
 }
 
-function askPin() {
-  var v = window.prompt('Edit PIN\n\nAnyone can look at the board. Saving changes for everyone needs ' +
-    'the committee\'s edit PIN.', '');
-  if (v === null) return;
-  v = String(v).trim();
-  if (!v) return;
-  if (!SYNC.url) { setPin(v); syncPill(); return; }
+/* The bar pinned to the bottom of the screen. It appears the moment there is
+   something to save and stays until it is saved or thrown away. */
+function saveBar(pending) {
+  var bar = $('savebar'); if (!bar) return;
+  var show = DATA && (pending.length || SYNC.saving || SYNC.phase === 'done' || SYNC.phase === 'error');
+  if (!show) { bar.className = 'savebar'; document.body.classList.remove('has-savebar'); return; }
+  document.body.classList.add('has-savebar');
+  var msg, btns = '', kind = '';
+  if (SYNC.saving || SYNC.phase === 'saving') {
+    kind = 'busy';
+    msg = '<b>Saving to the sheet\u2026</b> ' + esc(SECTION_NAMES[SYNC.saving] || '');
+  } else if (SYNC.phase === 'done') {
+    kind = 'ok';
+    msg = '<b>\u2713 Saved.</b> Everyone who opens the board now sees your changes.';
+  } else if (SYNC.phase === 'error') {
+    kind = 'bad';
+    msg = '<b>\u26A0 Not saved.</b> ' + esc(SYNC.error || '');
+    btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>' +
+      (SYNC.url && SYNC.can ? '<button class="b" onclick="saveAll()">TRY AGAIN</button>' : '');
+  } else if (!SYNC.url) {
+    kind = 'bad';
+    msg = '<b>' + pending.length + ' change' + (pending.length === 1 ? '' : 's') + ' that cannot be saved</b> \u2014 ' +
+      'this copy of the board is only showing saved numbers. Reload once it can reach the live sheet.';
+    btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>';
+  } else {
+    msg = '<b>Unsaved changes:</b> ' + esc(pending.join(', ')) + '.' +
+      (getPin() ? '' : ' <span class="sbhint">You will be asked for the edit PIN.</span>');
+    btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>' +
+      '<button class="b savebtn" onclick="saveAll()">\uD83D\uDCBE SAVE CHANGES</button>';
+  }
+  bar.className = 'savebar show ' + kind;
+  bar.innerHTML = '<div class="sbmsg">' + msg + '</div><div class="sbbtns">' + btns + '</div>';
+}
+
+/* The edit PIN box. Asked for at the moment of saving, never before. */
+var PIN_CB = null;
+function openPin(cb, msg) {
+  PIN_CB = cb || null;
+  $('pinModal').className = 'modal';
+  $('pinInput').value = '';
+  setStatus(msg ? esc(msg) : '', msg ? 'err' : '', 'pinStatus');
+  $('pinGo').disabled = false;
+  setTimeout(function () { $('pinInput').focus(); }, 30);
+}
+function closePin() { $('pinModal').className = 'modal hide'; PIN_CB = null; syncPill(); }
+function submitPin() {
+  var v = String($('pinInput').value || '').trim(), keep = $('pinRemember').checked;
+  if (!v) { setStatus('Type the PIN first.', 'err', 'pinStatus'); return; }
+  if (!SYNC.url) { setPin(v, keep); var c0 = PIN_CB; closePin(); if (c0) c0(); return; }
+  $('pinGo').disabled = true;
+  setStatus('Checking\u2026', 'busy', 'pinStatus');
   jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + 'action=checkpin&pin=' +
     encodeURIComponent(v) + '&callback=__CB__', function (res) {
+      $('pinGo').disabled = false;
       if (res && res.ok) {
-        setPin(v); SYNC.error = '';
-        toast('PIN accepted. Changes on this device now save to the sheet for everyone.', 'ok');
-        flushSaves();
+        setPin(v, keep);
+        var cb = PIN_CB; PIN_CB = null;
+        $('pinModal').className = 'modal hide';
+        if (cb) cb(); else { toast('PIN accepted. This device can now save changes.', 'ok'); syncPill(); }
       } else {
-        SYNC.error = res && res.code === 'nopin' ? 'nopin' : 'badpin';
-        toast(esc((res && res.error) || 'That PIN was not accepted.'), 'err');
+        setStatus(esc(res && res.code === 'nopin' ? pinOffText() : 'That PIN is not right. Try again.'), 'err', 'pinStatus');
+        $('pinInput').select();
       }
-      syncPill();
-    }, function (e) { toast('Could not check the PIN: ' + esc(e), 'err'); }, 15000);
+    }, function (e) {
+      $('pinGo').disabled = false;
+      setStatus('Could not reach the sheet to check it: ' + esc(e), 'err', 'pinStatus');
+    }, 20000);
 }
+function askPin() { openPin(pendingList().length ? saveAll : null); }
 function forgetPin() {
-  setPin(''); SYNC.error = 'needpin';
+  setPin(''); SYNC.pinMem = '';
   toast('PIN forgotten on this device. It can still view the board, but not save.', 'ok');
   syncPill();
 }
@@ -1163,7 +1347,7 @@ function toast(html, kind, ms) {
 window.addEventListener('beforeunload', function (e) {
   var k, n = 0;
   for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) n++;
-  if ((n || SYNC.saving) && SYNC.url && SYNC.can && getPin()) { e.preventDefault(); e.returnValue = ''; }
+  if (pendingList().length || SYNC.saving) { e.preventDefault(); e.returnValue = ''; }
 });
 
 /* ── Small helpers ──────────────────────────────────────────────────── */
@@ -1251,6 +1435,7 @@ function load() {
 }
 
 function useSnapshot(why) {
+  if (why) liveDone();
   if (!SNAPSHOT) return false;
   busy(0);
   PARSE_WARN = [why
@@ -1273,6 +1458,9 @@ function refresh() {
     return;
   }
   if (!LAST) { go('data'); setStatus('Pick a source first, then Refresh will keep re-reading it.', 'err'); return; }
+  var unsaved = pendingList();
+  if (unsaved.length && !confirm('You have unsaved changes (' + unsaved.join(', ') + '). Refreshing throws ' +
+      'them away. Refresh anyway?')) return;
   AUTOLOAD = false;
   if (LAST.kind === 'exec') loadExec(LAST.url, true);
   else if (LAST.kind === 'sheet') loadSheet(LAST.id, true);
@@ -1299,6 +1487,7 @@ function loadExec(url, quiet) {
   jsonp(full, function (res) {
     busy(0);
     if (!res || res.ok === false) {
+      liveDone();
       setStatus('The script answered with an error: ' + esc(res && res.error ? res.error : 'unknown') + '.', 'err');
       if (res && res.tabs) $('warnbox').innerHTML = '<div class="warn">Tabs it can see: ' + esc(res.tabs.join(' / ')) + '</div>';
       srcTag('Load failed');
@@ -1310,9 +1499,10 @@ function loadExec(url, quiet) {
     busy(0);
     setStatus('Could not read it — ' + esc(err) + '. Check the deployment is set to ' +
       '<b>Execute as: Me</b> and <b>Who has access: Anyone</b>.', 'err');
+    liveDone();
     if (AUTOLOAD && useSnapshot('The Apps Script link did not answer.')) return;
     srcTag('Load failed');
-  });
+  }, 45000);   /* a cold Apps Script can take a while; give it time before falling back */
 }
 
 /* ── (b) Plain Google Sheet link, one named tab at a time ───────────── */
@@ -2224,6 +2414,8 @@ function normalise(res) {
 /* ── Take a payload live ────────────────────────────────────────────── */
 function adopt(pay, sourceName, url) {
   DATA = pay;
+  DATA.groups = DATA.groups || [];
+  DATA.adjustments = DATA.adjustments || [];
   /* A Scoring tab replaces the list outright rather than merging with it:
      a half-applied scoring change is worse than either version of it. */
   RULES = [];
@@ -2258,7 +2450,9 @@ function adopt(pay, sourceName, url) {
   SYNC.can = !!(SYNC.url && pay.canSave);
   SYNC.hashes = pay.hashes || {};
   SYNC.dirty = {};
-  SYNC.error = (SYNC.url && SYNC.can && !getPin()) ? 'needpin' : '';
+  SYNC.error = '';
+  SYNC.phase = '';
+  DRAW_DIRTY = false;
   if (SYNC.url && !pay.canSave)
     PARSE_WARN.push('The Apps Script is connected but <b>saving is switched off</b> in it: set ' +
       '<code>EDIT_PIN</code> in its CONFIG block and deploy it again. Until then changes made here are ' +
@@ -2270,6 +2464,7 @@ function adopt(pay, sourceName, url) {
   if (ROSTER.length) bits.push(ROSTER.length + ' players');
   if (TEAMS.length) bits.push(TEAMS.length + ' squads');
   if (pay.adjustments.length) bits.push(pay.adjustments.length + ' adjustment' + (pay.adjustments.length === 1 ? '' : 's'));
+  if (sourceName !== 'Saved snapshot') liveDone();
   srcTag('<b>' + esc(sourceName) + '</b> &middot; ' + (bits.join(' &middot; ') || 'nothing found'),
          (sourceName === 'Demo data' || sourceName === 'Saved snapshot') ? 'demo' : 'live');
   setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
@@ -3089,6 +3284,7 @@ function memberTable(R) {
 
 var DRAW = null;        // [{ n, members:[{name, team, mentor}] }] — the draw on screen
 var DRAW_ROUND = '';    // the saved round this draw was opened from, if any
+var DRAW_DIRTY = false; // the draw on screen differs from what is saved
 var ROLLING = false;
 var PICKED = null;      // { g, m } — a player tapped, waiting for a group to be tapped
 
@@ -3188,6 +3384,7 @@ function rollDraw() {
   $('drawWarn').innerHTML = '';
   DRAW = made;
   DRAW_ROUND = '';
+  DRAW_DIRTY = true;
   PICKED = null;
   if (!$('roundName').value.trim()) $('roundName').value = nextRoundName();
   spinUp(R, made);
@@ -3242,6 +3439,7 @@ function spinUp(R, groups) {
       btn.disabled = false;
       btn.innerHTML = '🎲 SHUFFLE AGAIN';
       renderDraw();
+      syncPill();
       return;
     }
     lockGroup(cards[g], groups[g]);
@@ -3354,8 +3552,8 @@ function renderDraw(spinning) {
   $('drawNote').innerHTML = '<div class="warn soft" style="margin-top:0">' +
     '<b>Drag a player to another group</b> to rebalance — or tap a player, then tap the group they ' +
     'should go to. Mentors stay where they are. ' +
-    (saved ? 'This is the saved round <b>' + esc(DRAW_ROUND) + '</b>: hit <b>Save This Round</b> again to keep your changes.'
-           : 'Nothing counts until you hit <b>Save This Round</b>.') + '</div>';
+    (DRAW_DIRTY ? 'Not saved yet \u2014 hit <b>Save Round</b>, or <b>Save Changes</b> at the bottom.'
+                : (saved ? 'This is the saved round <b>' + esc(DRAW_ROUND) + '</b>.' : '')) + '</div>';
 }
 
 /* Moving people between groups: drag on a computer, tap-tap on a phone. */
@@ -3399,6 +3597,8 @@ function moveInDraw(fromG, fromM, toG) {
   for (i = 0; i < DRAW.length; i++) if (DRAW[i].members.length) kept.push(DRAW[i]);
   for (i = 0; i < kept.length; i++) kept[i].n = i + 1;
   DRAW = kept;
+  DRAW_DIRTY = true;
+  syncPill();
   renderDraw();
 }
 
@@ -3406,7 +3606,7 @@ function moveInDraw(fromG, fromM, toG) {
    Saving a round writes it there, so it is the same round for everyone who
    opens the board, and it is what scores. Saving a round under a name that
    already exists replaces it — that is how a round is corrected.          */
-function saveDraw() {
+function commitDraw() {
   if (!DRAW || !DATA) return;
   var rn = ($('roundName').value || '').trim();
   if (!rn) {
@@ -3418,7 +3618,7 @@ function saveDraw() {
   var old = [], keep = [], i, j;
   for (i = 0; i < DATA.groups.length; i++) (norm(DATA.groups[i].round) === norm(rn) ? old : keep).push(DATA.groups[i]);
   if (old.length && norm(rn) !== norm(DRAW_ROUND) &&
-      !confirm('A round called "' + rn + '" is already saved. Replace it with these groups?')) return;
+      !confirm('A round called "' + rn + '" is already saved. Replace it with these groups?')) return false;
   /* Replacing a round keeps each group's Done and Notes where the group
      number still exists, so fixing a name mid-fortnight does not wipe out a
      group that has already delivered. */
@@ -3432,13 +3632,14 @@ function saveDraw() {
     }
   DATA.groups = keep;
   DRAW_ROUND = rn;
+  DRAW_DIRTY = false;
   markDirty('groups');
   render();
-  toast(SYNC.url && SYNC.can
-    ? 'Round <b>' + esc(rn) + '</b> saved — ' + DRAW.length + ' groups, for everyone who opens the board.'
-    : 'Round <b>' + esc(rn) + '</b> is on this page, but this view cannot save. Copy For Sheet still works.',
-    SYNC.url && SYNC.can ? 'ok' : 'err');
+  return true;
 }
+
+/* The Save Round button is the same Save as everywhere else. */
+function saveDraw() { if (DRAW && !DRAW_DIRTY && DRAW_ROUND) { toast('This round is already saved.', 'ok'); return; } saveAll(); }
 
 function openRound(rn) {
   var R = compute(), rows = [], i, byG = {}, order = [];
@@ -3452,6 +3653,7 @@ function openRound(rn) {
   DRAW = [];
   for (i = 0; i < order.length; i++) DRAW.push({ n: +order[i] || i + 1, members: byG[order[i]] });
   DRAW_ROUND = rn;
+  DRAW_DIRTY = false;
   PICKED = null;
   $('roundName').value = rn;
   $('rollBtn').innerHTML = '🎲 SHUFFLE AGAIN';
@@ -3629,7 +3831,8 @@ function saveStatusPanel() {
       'New version</b>. Reading works in the meantime.</div>';
   } else {
     h = '<div class="note" style="margin-top:0"><b style="color:var(--green)">Connected to the sheet.</b> ' +
-      'Every change on this page is written back to it, so everyone who opens the board sees the same thing. ' +
+      'Press <b>Save Changes</b> and what you changed is written back to it, so everyone who opens the board ' +
+      'sees the same thing. ' +
       'If two people change the same thing at once, the second is told and shown the first person\'s version ' +
       '— nobody silently overwrites anybody.</div>' +
       '<div class="row" style="margin-top:14px">' +
@@ -3840,23 +4043,10 @@ function resetRoster() {
   render();
 }
 function moveLog() {
+  /* The save bar at the bottom says what is unsaved and why; this only
+     keeps Undo honest. */
   $('undoBtn').disabled = !MOVES.length;
-  /* When the page can save, the badge at the top is the whole story. The
-     long list below is only for when these moves are going nowhere. */
-  var saving = SYNC.url && SYNC.can && getPin();
-  if (!MOVES.length || saving) { $('moveLog').innerHTML = ''; return; }
-  var why = !SYNC.url
-    ? 'this view is read-only, so they only live in this browser tab'
-    : (!SYNC.can ? 'saving is switched off in the Apps Script'
-                 : 'nobody on this device has entered the edit PIN yet');
-  var h = '<div class="warn soft"><b>' + MOVES.length + ' change' + (MOVES.length === 1 ? '' : 's') +
-    ' not saved</b> \u2014 ' + why + '. ' + (SYNC.url && SYNC.can
-      ? '<a href="#" onclick="askPin();return false">Enter the PIN</a> and they save straight away.'
-      : 'Copy For Sheet still works.') + '<br><br>', i;
-  for (i = 0; i < MOVES.length; i++)
-    h += '&bull; ' + esc(MOVES[i].name) + ': ' + esc(MOVES[i].from || 'no squad') + ' &rarr; ' +
-      esc(MOVES[i].to || 'no squad') + '<br>';
-  $('moveLog').innerHTML = h + '</div>';
+  $('moveLog').innerHTML = '';
 }
 function jumpAdd() {
   var el = $('addPanel');
@@ -3878,7 +4068,7 @@ function addMember() {
   markDirty('teams');
   render();
   setStatus('<b>' + esc(nm) + '</b> added to ' + esc(t) + '.' +
-    (SYNC.url && SYNC.can ? ' Saving to the sheet.' : ' Not saved \u2014 this view is read-only.'),
+    (SYNC.url && SYNC.can ? ' Press <b>Save Changes</b> at the bottom to keep it.' : ' Not saved \u2014 this view is read-only.'),
     'ok', 'addStatus');
 }
 function renameTeam(i, newName) {
@@ -4392,6 +4582,7 @@ function boot() {
        quietly replace it if the live read succeeds. */
     if (SNAPSHOT) useSnapshot('');
     AUTOLOAD = true;
+    liveStart();
     load();
     return;
   }
