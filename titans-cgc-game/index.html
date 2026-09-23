@@ -813,7 +813,7 @@ var AUTOLOAD = false;          // true while the page is loading its own default
 /* The chapter's Apps Script /exec link. Once it is set here, everyone who
    opens the page reads from it and — with the edit PIN — saves to it. Until
    then the page reads the plain sheet and cannot save anything. */
-var DEFAULT_EXEC = '';
+var DEFAULT_EXEC = 'https://script.google.com/macros/s/AKfycbx7FFVMg76mSgjtdeN0dvgRjQ1zIfK8U_KjXdid5UyCO_9ZwGq1-eYr2rcQa-cxemJS/exec';
 
 /* Saving. The sheet is the shared record: every change made on this page
    is written back to it, so the next person to open the board sees it.
@@ -4268,7 +4268,7 @@ function copyBookmark() {
   var u = $('url').value.trim(), base = location.origin + location.pathname, hash = '';
   var mExec = u.match(/\/macros\/s\/([^\/]+)\//);
   var mSheet = u.match(/\/spreadsheets\/d\/([^\/]+)/);
-  if (mExec) hash = '#e=' + mExec[1];
+  if (mExec) hash = (DEFAULT_EXEC.indexOf(mExec[1]) !== -1) ? '' : '#e=' + mExec[1];
   else if (mSheet) hash = (mSheet[1] === DEFAULT_SHEET) ? '' : '#s=' + mSheet[1];
   else if (u) hash = '#src=' + encodeURIComponent(u);
   var tabs = $('tabs').value.trim();
