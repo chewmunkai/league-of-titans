@@ -36,7 +36,7 @@ const need = ['<title>Titans CGC Game</title>', 'fonts.googleapis.com', 'var SNA
               'function compute()', 'id="versus"', 'id="mvpHero"', 'function useSnapshot',
               'id="rulesTable"', 'function readAdjGrid', 'id="draw"',
               'function makeDraw', 'function readGroupsGrid', 'function flushSaves',
-              'function renderMentors', 'id="syncTag"'];
+              'function renderMentors', 'id="syncTag"', 'function sectionDiff', 'function renderScores'];
 const missing = need.filter(t => out.indexOf(t) === -1);
 if (missing.length) { console.error('content missing: ' + missing.join(', ')); process.exit(1); }
 

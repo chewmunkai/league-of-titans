@@ -5,7 +5,8 @@
  *
  * This script does NO scoring. It hands the raw rows over, and writes back
  * only the tabs the dashboard owns: Teams, Groups, Mentors, Scoring,
- * Settings and Adjustments. It never touches a PALMS tab or Training.
+ * Settings, Adjustments and Manual Scores. It never touches a PALMS tab or
+ * Training.
  *
  * The sheet is the shared record. Anyone with the dashboard link can READ
  * it; SAVING needs the edit PIN below, so the board can be put up in front
@@ -28,6 +29,12 @@
  * Re-deploy (Manage deployments → edit → New version) only if you change
  * THIS file — including a change to EDIT_PIN. Changing point values, the
  * roster or the draw never needs a redeploy: that is what saving is for.
+ *
+ * Updating from an older copy of this file? Paste this one over it, keep
+ * your EDIT_PIN, and deploy a New version of the SAME deployment (Manage
+ * deployments → pencil → Version: New version). A brand-new deployment
+ * gets a new /exec link, and the dashboard would still be talking to the
+ * old one.
  * ────────────────────────────────────────────────────────────────
  */
 
@@ -62,6 +69,8 @@ var CONFIG = {
   // Everything the dashboard lets you tune: group size, the fine, points
   // carried in. One row per setting.
   SETTINGS_TAB: 'Settings',
+  // Points typed in by hand for one player: Name | Item | Score.
+  SCORES_TAB: 'Manual Scores',
 
   // Saving is refused until this is set. Anyone who has it can change the
   // roster, the draw and the scoring for everybody, so treat it like a
@@ -125,6 +134,10 @@ function reply(obj, cb) {
 }
 
 function handleAction(p) {
+  // What each saveable tab looks like right now, as a fingerprint. Cheap,
+  // needs no PIN, and is how an open dashboard notices that somebody else
+  // has saved something since it last looked.
+  if (p.action === 'hashes') return { ok: true, api: API_VERSION, hashes: allHashes() };
   if (p.action === 'checkpin') {
     if (!CONFIG.EDIT_PIN) return { ok: false, code: 'nopin', error: pinOffMessage() };
     return String(p.pin || '') === String(CONFIG.EDIT_PIN)
@@ -140,18 +153,56 @@ function handleAction(p) {
 }
 
 // ── Saving ───────────────────────────────────────────────────────
-// Each section the dashboard can save is one whole tab, written in full.
-// Whole-tab writes are what make the conflict check below possible: the
-// page says "I last saw the tab like THIS", and if it has moved on since,
-// the save is refused and the page re-reads it.
+// Every section the dashboard can save is one tab. A save does NOT send the
+// whole tab: it sends only the rows that person changed ("put") and the rows
+// they removed ("del"), each named by a key — the player for Teams, the
+// round + player for Groups, a hidden ID for Adjustments and Manual Scores.
+// The script takes the lock, reads the tab as it is NOW, applies just those
+// rows to it and writes it back.
+//
+// That is what lets several people keep the board open at once. Somebody
+// marking Group 2 done no longer wipes out somebody else marking Group 3
+// done a minute earlier: both rows survive. Only when two people change the
+// very same row does the later save win — for that one row.
 
+var API_VERSION = 2;
+
+// headers: how the tab is written. heads: words that find each column when
+// the tab is read, so a tab somebody built by hand in another order still
+// reads right. must: the columns that have to be there for a row to count as
+// the heading row. key: the columns that name a row. id: a hidden ID column
+// that names a row instead, when it is filled in. text: columns kept as
+// plain text, so "September 2026" is not turned into a date.
 var SECTIONS = {
-  teams:       { headers: ['Member Name', 'Team'] },
-  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'] },
-  mentors:     { headers: ['Mentor', 'Order'] },
-  scoring:     { headers: ['Key', 'Name', 'Points', 'Source', 'Columns'] },
-  settings:    { headers: ['Setting', 'Value'] },
-  adjustments: { headers: ['Month', 'Team', 'Reason', 'Points'] }
+  teams:       { headers: ['Member Name', 'Team'],
+                 heads: [['member', 'name', 'player'], ['team', 'squad']],
+                 must: [0, 1], key: [0] },
+  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'],
+                 heads: [['round', 'cycle', 'fortnight', 'period'], ['group', 'pod'],
+                         ['member', 'player', 'name'], ['role'],
+                         ['done', 'completed', 'complete', 'posted', 'status', 'outcome'],
+                         ['notes', 'note', 'detail']],
+                 must: [1, 2], key: [0, 2], text: [0] },
+  mentors:     { headers: ['Mentor', 'Order'],
+                 heads: [['mentor'], ['order', 'group']],
+                 must: [0], key: [0] },
+  scoring:     { headers: ['Key', 'Name', 'Points', 'Source', 'Columns'],
+                 heads: [['key', 'id'], ['name', 'label', 'activity'], ['points', 'pts', 'score'],
+                         ['source', 'counted from', 'from'], ['columns', 'column', 'which']],
+                 must: [1, 2], key: [0], keyFallback: 1 },
+  settings:    { headers: ['Setting', 'Value'],
+                 heads: [['setting'], ['value']],
+                 must: [0, 1], key: [0] },
+  adjustments: { headers: ['Month', 'Team', 'Reason', 'Points', 'ID'],
+                 heads: [['month'], ['team', 'squad'],
+                         ['reason', 'why', 'notes', 'note', 'detail', 'type'],
+                         ['points', 'pts', 'score'], ['id']],
+                 not: { 1: ['target'] },
+                 must: [1], key: [0, 1, 2, 3], id: 4, text: [0] },
+  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID'],
+                 heads: [['name', 'member', 'player'], ['item', 'activity', 'what', 'reason'],
+                         ['score', 'points', 'pts'], ['added', 'date', 'when'], ['id']],
+                 must: [0, 2], key: [0, 1, 2, 3], id: 4, text: [3] }
 };
 
 // The tab a section is read from right now…
@@ -161,6 +212,7 @@ function readTabName(section) {
   if (section === 'mentors') return CONFIG.MENTORS_TAB;
   if (section === 'scoring') return CONFIG.SCORING_TAB;
   if (section === 'settings') return CONFIG.SETTINGS_TAB;
+  if (section === 'scores') return CONFIG.SCORES_TAB;
   if (section === 'adjustments') {
     var ss = book();
     for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++)
@@ -187,15 +239,23 @@ function handleSave(req) {
     return { ok: false, code: 'badpin', error: 'That edit PIN is not right.' };
   var sec = SECTIONS[req.section];
   if (!sec) return { ok: false, code: 'bad', error: 'There is no section called ' + req.section + '.' };
-  if (Object.prototype.toString.call(req.rows) !== '[object Array]')
+  var isArr = function (x) { return Object.prototype.toString.call(x) === '[object Array]'; };
+  if (!req.ops && !isArr(req.rows))
     return { ok: false, code: 'bad', error: 'That save had no rows in it.' };
+  if (req.ops && (!isArr(req.ops.put || []) || !isArr(req.ops.del || [])))
+    return { ok: false, code: 'bad', error: 'Could not read that save request.' };
 
   // One writer at a time. Two committee members saving in the same second
   // must not interleave half of each other's tab.
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(15000))
+  if (!lock.tryLock(20000))
     return { ok: false, code: 'busy', error: 'Someone else is saving right now. Try again in a moment.' };
   try {
+    if (req.ops) return applyOps(req.section, req.ops);
+
+    // An older copy of the dashboard, still open in somebody's browser,
+    // sends the whole tab with a fingerprint of how it looked. Refuse it if
+    // the tab has moved on since, exactly as before.
     var now = hashTab(readTabName(req.section));
     if (req.base !== undefined && req.base !== null && String(req.base) !== now)
       return { ok: false, code: 'conflict', hash: now,
@@ -207,13 +267,182 @@ function handleSave(req) {
       for (j = 0; j < width; j++) row.push(cell(src[j]));
       rows.push(row);
     }
-    writeTab(writeTabName(req.section), rows);
+    writeTab(writeTabName(req.section), rows, sec.text);
     SpreadsheetApp.flush();
     return { ok: true, section: req.section, rows: rows.length - 1,
              hash: hashTab(readTabName(req.section)) };
   } finally {
     lock.releaseLock();
   }
+}
+
+// Put the changed rows into the tab as it stands now. Called with the lock held.
+function applyOps(section, ops) {
+  var def = SECTIONS[section], cur = readSection(section), i, j;
+  if (cur.error) return { ok: false, code: 'bad', error: cur.error };
+  var P = ops.put || [], D = ops.del || [];
+  if (P.length > 5000 || D.length > 5000)
+    return { ok: false, code: 'bad', error: 'That save is too big to be right.' };
+
+  var del = {}, put = [], putAt = {};
+  for (i = 0; i < D.length; i++) del['$' + String(D[i])] = 1;
+  for (i = 0; i < P.length; i++) {
+    var src = (P[i] && P[i].r) || [], row = [];
+    for (j = 0; j < def.headers.length; j++) row.push(src[j] === undefined || src[j] === null ? '' : src[j]);
+    putAt['$' + String(P[i] && P[i].k)] = put.length;
+    put.push({ row: row, used: false });
+  }
+
+  // A page that was running on its built-in defaults (no Teams, Scoring or
+  // Settings tab yet) sends its whole list as a seed. It is only used if the
+  // tab is STILL empty; if somebody else created it meanwhile, the changed
+  // rows go onto theirs like any other save.
+  var seed = ops.seed;
+  if (!cur.rows.length && Object.prototype.toString.call(seed) === '[object Array]' && seed.length) {
+    P = []; D = []; put = []; putAt = {};
+    for (i = 0; i < seed.length && i < 5000; i++) {
+      var srow = [];
+      for (j = 0; j < def.headers.length; j++) srow.push(seed[i] && seed[i][j] !== undefined && seed[i][j] !== null ? seed[i][j] : '');
+      put.push({ row: srow, used: false });
+    }
+  }
+
+  var keys = rowKeys(section, cur.rows), out = [], changed = 0;
+  for (i = 0; i < cur.rows.length; i++) {
+    var k = '$' + keys[i];
+    if (del[k]) { changed++; continue; }
+    if (putAt.hasOwnProperty(k)) {
+      var p = put[putAt[k]];
+      if (!p.used) { out.push(p.row); p.used = true; changed++; }
+      continue;
+    }
+    out.push(cur.rows[i]);
+  }
+  for (i = 0; i < put.length; i++) if (!put[i].used) { out.push(put[i].row); changed++; }
+  if (section === 'groups') out = tidyGroups(out);
+
+  if (changed) {
+    var rows = [def.headers];
+    for (i = 0; i < out.length; i++) rows.push(out[i].map(cell));
+    writeTab(writeTabName(section), rows, def.text);
+    SpreadsheetApp.flush();
+  }
+  // Hand back the tab exactly as it now stands — everyone's rows, not just
+  // this person's — so the page that saved is up to date as well.
+  var now = readSection(section);
+  return { ok: true, api: API_VERSION, section: section, changed: changed,
+           headers: def.headers, rows: now.rows, hash: hashTab(readTabName(section)) };
+}
+
+// A section's tab, read by heading into the order it is written in.
+function readSection(section) {
+  var def = SECTIONS[section], name = readTabName(section);
+  var sheet = name ? book().getSheetByName(name) : null;
+  var out = { tab: name, exists: !!sheet, rows: [] };
+  if (!sheet) return out;
+  var grid = sheet.getDataRange().getValues(), tz = sheetTz(), r, c;
+  var filled = false;
+  for (r = 0; r < grid.length && !filled; r++)
+    for (c = 0; c < grid[r].length; c++) if (grid[r][c] !== '' && grid[r][c] !== null) { filled = true; break; }
+  if (!filled) return out;
+
+  var hr = -1, map = null;
+  for (r = 0; r < Math.min(grid.length, 10) && hr === -1; r++) {
+    var m = mapHeads(grid[r], def), hits = 0, used = 0, all = true;
+    for (c = 0; c < m.length; c++) if (m[c] !== -1) hits++;
+    for (c = 0; c < def.must.length; c++) if (m[def.must[c]] === -1) all = false;
+    for (c = 0; c < grid[r].length; c++) if (String(grid[r][c]).trim()) used++;
+    if (all && hits >= Math.min(2, used)) { hr = r; map = m; }
+  }
+  // An old GameLog this board cannot make sense of is left exactly where it
+  // is; saving starts a clean Adjustments tab beside it, as it always has.
+  if (hr === -1 && name !== writeTabName(section)) return { tab: name, exists: false, rows: [] };
+  if (hr === -1) {
+    out.error = 'The ' + name + ' tab has something in it this board cannot read. It needs a heading ' +
+      'row of ' + def.headers.join(' | ') + '. Fix the headings (or rename that tab), then save again.';
+    return out;
+  }
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = [], any = false;
+    for (c = 0; c < def.headers.length; c++) {
+      var v = map[c] === -1 ? '' : canon(grid[r][map[c]], tz);
+      if (v !== '') any = true;
+      row.push(v);
+    }
+    if (any) out.rows.push(row);
+  }
+  return out;
+}
+
+// Which column holds each field, by heading. -1 where the tab has none.
+function mapHeads(cells, def) {
+  var low = cells.map(function (x) { return String(x).trim().toLowerCase(); }), map = [], taken = {};
+  for (var f = 0; f < def.heads.length; f++) {
+    map[f] = -1;
+    for (var j = 0; j < low.length && map[f] === -1; j++) {
+      if (!low[j] || taken[j]) continue;
+      var skip = false, nots = (def.not && def.not[f]) || [];
+      for (var n = 0; n < nots.length; n++) if (low[j].indexOf(nots[n]) !== -1) skip = true;
+      if (skip) continue;
+      for (var a = 0; a < def.heads[f].length; a++) {
+        var w = def.heads[f][a];
+        if (low[j] === w || (w.length > 2 && low[j].indexOf(w) !== -1)) { map[f] = j; taken[j] = 1; break; }
+      }
+    }
+  }
+  return map;
+}
+
+// One cell as the dashboard sees it: dates as yyyy-MM-dd in the sheet's
+// own time zone, text trimmed, numbers left as numbers.
+var TZ_ = null;
+function sheetTz() { return TZ_ || (TZ_ = book().getSpreadsheetTimeZone()); }
+function canon(v, tz) {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) return Utilities.formatDate(v, tz || sheetTz(), 'yyyy-MM-dd');
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  return String(v).trim();
+}
+
+// The name of every row. The dashboard works these out the same way, which
+// is how a "put" from the page lands on the right row here. Two rows that
+// would share a name are told apart by a #2, #3 on the later ones.
+function keyPart(v) { return String(v === null || v === undefined ? '' : v).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function slugKey(v) { return keyPart(v).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function rowKeys(section, rows) {
+  var def = SECTIONS[section], seen = {}, out = [], i, c;
+  for (i = 0; i < rows.length; i++) {
+    var row = rows[i] || [], k;
+    if (def.id !== undefined && keyPart(row[def.id])) k = 'id:' + keyPart(row[def.id]);
+    else if (def.keyFallback !== undefined && !keyPart(row[def.key[0]])) k = slugKey(row[def.keyFallback]);
+    else {
+      var parts = [];
+      for (c = 0; c < def.key.length; c++) parts.push(keyPart(row[def.key[c]]));
+      k = parts.join('|');
+    }
+    seen['$' + k] = (seen['$' + k] || 0) + 1;
+    if (seen['$' + k] > 1) k += '#' + seen['$' + k];
+    out.push(k);
+  }
+  return out;
+}
+
+// Keep the Groups tab readable: each round together, groups in number
+// order, the mentor at the top of their group.
+function tidyGroups(rows) {
+  var first = {}, n = 0;
+  rows.forEach(function (r) { var k = '$' + keyPart(r[0]); if (!first.hasOwnProperty(k)) first[k] = n++; });
+  function grp(v) { var x = Number(v); return isNaN(x) || String(v).trim() === '' ? null : x; }
+  return rows.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
+    var d = first['$' + keyPart(a.r[0])] - first['$' + keyPart(b.r[0])];
+    if (d) return d;
+    var ga = grp(a.r[1]), gb = grp(b.r[1]);
+    if (ga !== null && gb !== null && ga !== gb) return ga - gb;
+    if ((ga === null) !== (gb === null)) return ga === null ? 1 : -1;
+    if (ga === null && keyPart(a.r[1]) !== keyPart(b.r[1])) return keyPart(a.r[1]) < keyPart(b.r[1]) ? -1 : 1;
+    var ma = keyPart(a.r[3]) === 'mentor' ? 0 : 1, mb = keyPart(b.r[3]) === 'mentor' ? 0 : 1;
+    return (ma - mb) || (a.i - b.i);
+  }).map(function (x) { return x.r; });
 }
 
 // A value on its way into a cell. Numbers stay numbers; text is kept as
@@ -228,12 +457,22 @@ function cell(v) {
   return s;
 }
 
-function writeTab(name, rows) {
+// Write over the old rows first and only then clear whatever is left below
+// or to the right, so somebody reading the tab mid-save never catches it
+// empty.
+function writeTab(name, rows, textCols) {
   var ss = book();
   var sheet = ss.getSheetByName(name) || ss.insertSheet(name);
-  sheet.clearContents();
-  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
-  sheet.getRange(1, 1, 1, rows[0].length).setFontWeight('bold');
+  var width = rows[0].length, oldRows = sheet.getLastRow(), oldCols = sheet.getLastColumn(), i;
+  if (textCols && rows.length > 1)
+    for (i = 0; i < textCols.length; i++)
+      sheet.getRange(2, textCols[i] + 1, rows.length - 1, 1).setNumberFormat('@');
+  sheet.getRange(1, 1, rows.length, width).setValues(rows);
+  if (oldRows > rows.length)
+    sheet.getRange(rows.length + 1, 1, oldRows - rows.length, Math.max(width, oldCols)).clearContent();
+  if (oldCols > width)
+    sheet.getRange(1, width + 1, Math.max(oldRows, rows.length), oldCols - width).clearContent();
+  sheet.getRange(1, 1, 1, width).setFontWeight('bold');
   sheet.setFrozenRows(1);
 }
 
@@ -254,9 +493,14 @@ function allHashes() {
 // ── Payload ──────────────────────────────────────────────────────
 
 function buildPayload() {
+  // Fingerprints first, rows second. If a save lands in between, the page
+  // gets new rows under an old fingerprint and simply refreshes once more —
+  // never the other way round, which would hide somebody's save.
+  var hashes = allHashes();
   var training = readTraining();
   return {
     ok: true,
+    api: API_VERSION,
     generatedAt: new Date().toISOString(),
     month: training.month,
     trainingMonths: training.months,
@@ -271,10 +515,10 @@ function buildPayload() {
     scoringRaw: readTabRaw(CONFIG.SCORING_TAB, ['points', 'pts']),
     mentorsRaw: readTabRaw(CONFIG.MENTORS_TAB, ['mentor']),
     settingsRaw: readTabRaw(CONFIG.SETTINGS_TAB, ['setting']),
-    // A fingerprint of each saveable tab as it stands. The dashboard sends
-    // it back with a save, and a save against a tab that has changed since
-    // is refused rather than silently overwriting someone else's work.
-    hashes: allHashes(),
+    scoresRaw: readTabRaw(CONFIG.SCORES_TAB, ['score', 'points']),
+    // A fingerprint of each saveable tab as it stands. The dashboard checks
+    // these every so often and refreshes itself when somebody else has saved.
+    hashes: hashes,
     canSave: !!CONFIG.EDIT_PIN,
     warnings: []
   };
@@ -332,6 +576,7 @@ function isExcluded(name) {
     if (n === CONFIG.ADJUSTMENT_TABS[a].toLowerCase()) return true;
   if (n === CONFIG.GROUPS_TAB.toLowerCase()) return true;
   if (n === CONFIG.SCORING_TAB.toLowerCase()) return true;
+  if (n === CONFIG.SCORES_TAB.toLowerCase()) return true;
   if (n === CONFIG.TRAINING_TAB.toLowerCase()) return true;
   for (var i = 0; i < CONFIG.EXCLUDE_TABS.length; i++) {
     if (n.indexOf(CONFIG.EXCLUDE_TABS[i].toLowerCase()) !== -1) return true;
@@ -465,9 +710,7 @@ function readTabRaw(tabName, mustHave) {
   var headers = grid[hr].map(function (c) { return String(c).trim(); });
   var rows = [];
   for (var i = hr + 1; i < grid.length; i++) {
-    var row = grid[i].map(function (c) {
-      return (c instanceof Date) ? Utilities.formatDate(c, Session.getScriptTimeZone(), 'yyyy-MM-dd') : c;
-    });
+    var row = grid[i].map(function (c) { return (c instanceof Date) ? canon(c) : c; });
     var blank = row.every(function (c) { return c === '' || c === null; });
     if (!blank) rows.push(row);
   }
@@ -493,9 +736,7 @@ function readGroupsRaw() {
   var headers = grid[hr].map(function (c) { return String(c).trim(); });
   var rows = [];
   for (var i = hr + 1; i < grid.length; i++) {
-    var row = grid[i].map(function (c) {
-      return (c instanceof Date) ? Utilities.formatDate(c, Session.getScriptTimeZone(), 'yyyy-MM-dd') : c;
-    });
+    var row = grid[i].map(function (c) { return (c instanceof Date) ? canon(c) : c; });
     var blank = row.every(function (c) { return c === '' || c === null; });
     if (!blank) rows.push(row);
   }
@@ -531,9 +772,7 @@ function readAdjustmentsRaw() {
   var headers = grid[hr].map(function (c) { return String(c).trim(); });
   var rows = [];
   for (var i = hr + 1; i < grid.length; i++) {
-    var row = grid[i].map(function (c) {
-      return (c instanceof Date) ? Utilities.formatDate(c, Session.getScriptTimeZone(), 'yyyy-MM-dd') : c;
-    });
+    var row = grid[i].map(function (c) { return (c instanceof Date) ? canon(c) : c; });
     var blank = row.every(function (c) { return c === '' || c === null; });
     if (!blank) rows.push(row);
   }

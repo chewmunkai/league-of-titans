@@ -44,6 +44,8 @@ Straight off the chapter slide, in the slide's own order:
 
 The first six are counted straight out of the PALMS tabs — nobody has to
 remember to claim anything. The seventh comes off the fortnightly draw, below.
+Anything the sheet cannot see goes in by hand on the **MANUAL SCORES** tab —
+see [Manual scores](#manual-scores).
 
 ### Adding your own scoring lines
 
@@ -100,6 +102,38 @@ treated as money, and each week a player has business in it scores **one**
 TYFCB. When that happens the page says so out loud at the top, rather than
 quietly producing a number nobody can explain. There is a dropdown on the
 SCORING tab to override it either way.
+
+---
+
+## Manual scores
+
+For points the sheet cannot see: a visitor missed off PALMS, a bonus the room
+gave one person, a correction. Open the **MANUAL SCORES** tab and add a line:
+
+```
+Name | Item | Score
+```
+
+- **Name** — who. The box offers the roster as you type, and a unique part of
+  a name is enough (`alex` → Alex Ang). A name that is not on the roster, or
+  that could be two people, is refused rather than scoring for nobody.
+- **Item** — what it was for. Free text; the box suggests the scoring lines,
+  and picking one fills in its points for you.
+- **Score** — the points. A minus number takes points away.
+
+To add a batch, paste lines into **Paste several at once** — `Name | Item |
+Score`, one per line, with a pipe, a tab or a comma between them, so rows copied
+straight out of a spreadsheet go in as they are. Lines that cannot go in stay in
+the box with the reason.
+
+A manual score counts for that **player** — so it shows on the Players table,
+in Player of the Month, and in the squad's total and audit trail, line by line.
+That is the difference from an **Adjustment**, which is for a whole squad.
+
+They save to a **Manual Scores** tab: `Name | Item | Score | Added | ID`. The
+board fills in **Added** (the date) and **ID** (a tag that lets two people add
+and remove lines at the same time). A row typed straight into the sheet can
+leave both blank.
 
 ---
 
@@ -211,9 +245,10 @@ after each step — so a disputed score traces line by line back to raw activity
 1. Score every player from the weekly PALMS tabs and the training tab.
 2. Award the group 1-2-1 points to every player whose fortnightly foursome got
    it done and posted.
-3. Roll each player up into their squad, activity by activity.
-4. Add any adjustment the room agreed and logged for that squad.
-5. Add the points carried in from earlier months to get the season total.
+3. Add any manual scores typed in for a player (Name | Item | Score).
+4. Roll each player up into their squad, activity by activity.
+5. Add any adjustment the room agreed and logged for that squad.
+6. Add the points carried in from earlier months to get the season total.
 
 Both squads start this game on **zero**. The carry-in boxes on the SCORING tab
 are there for when a month closes and you roll the totals forward.
@@ -272,6 +307,18 @@ service, no new account, nothing that costs money. About five minutes, once:
 Then on each device that should be able to change things, tap the badge at the
 top and enter the PIN once.
 
+### Updating the script
+
+When `TitansCGC.gs` changes in this repo, paste the new one over the old one
+in the sheet's Apps Script (keep your `EDIT_PIN`), then **Deploy → Manage
+deployments → pencil → Version: New version → Deploy**. Edit the *existing*
+deployment — a brand-new deployment gets a new `/exec` link and the board would
+still be talking to the old one.
+
+Until the script is updated the board still works and still saves, but it says
+so at the top of the page, two people saving the same tab close together get
+the old "someone else saved first" refusal, and manual scores cannot be saved.
+
 ### How saving works
 
 - **Change anything, then press Save.** Moves, shuffles, mentors, scoring,
@@ -289,14 +336,24 @@ top and enter the PIN once.
 - **The badge at the top is the truth.** `✓ Saved`, `● 2 unsaved — tap to save`,
   `Saving…`, `⚠ Not saved — tap to retry`, or `View only`.
 - **Everyone can look; only PIN-holders can change.**
-- **Two people editing at once cannot overwrite each other.** Each save carries
-  a fingerprint of the tab as it was when the page read it. If someone else
-  has saved that tab since, your save is refused, you are told, and their
-  version is loaded for you to redo your change on top of.
+- **Several people can edit and save at once.** A save does not send the whole
+  tab — only the rows *you* changed or removed. The script takes a lock, reads
+  the tab as it is at that moment, lays your rows onto it and writes it back.
+  So one person marking Group 2 done and another marking Group 3 missed both
+  keep their change, and so do two people adding manual scores, moving
+  different players or editing different scoring lines. Only when two people
+  change the **very same row** does the later save win — for that one row.
+- **Open boards keep themselves up to date.** While the page is on screen it
+  checks about once a minute (and whenever you come back to the tab) whether
+  anybody has saved. If you have nothing unsaved, it quietly reloads the sheet
+  and says so. If you *do* have unsaved changes it leaves them alone and just
+  tells you — your Save is added to theirs, not written over it.
+- **A save that is sent twice is harmless.** If the answer from Google is lost
+  and the page retries, the rows are already there and nothing doubles up.
 - **What gets saved:** roster (Teams), rounds and Done/Missed (Groups),
   mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in and
-  the attendance and TYFCB options (Settings), adjustments (Adjustments). PALMS
-  and Training are never written to.
+  the attendance and TYFCB options (Settings), adjustments (Adjustments),
+  manual scores (Manual Scores). PALMS and Training are never written to.
 - **Leaving or refreshing with unsaved changes** asks first.
 - A name typed as a formula (`=…`) is stored as text, never run.
 
@@ -360,9 +417,11 @@ button will tell you to upload the newer export instead.
 | `Scoring` | Optional. Your own scoring lines. If it exists it defines the whole list. |
 | `Training` | A `Name` column plus one column per month. It reads every month and uses the rightmost one, whether or not it is filled in yet. Change it with the month picker on the DATA tab. |
 | `Adjustments` | Optional. See below. |
+| `Manual Scores` | Optional. `Name \| Item \| Score` (plus `Added` and `ID`, filled in by the board). Made for you the first time a manual score is saved. |
 
-`templates/Teams.csv`, `templates/Groups.csv`, `templates/Scoring.csv` and
-`templates/Adjustments.csv` are ready to paste into cell A1.
+`templates/Teams.csv`, `templates/Groups.csv`, `templates/Scoring.csv`,
+`templates/Adjustments.csv` and `templates/ManualScores.csv` are ready to paste
+into cell A1.
 
 ### Adjustments
 
@@ -371,9 +430,11 @@ room — a correction, a one-off chapter bonus, a penalty agreed at a meeting �
 those go here, in plain points, with a reason attached.
 
 ```
-Month | Team | Reason | Points
+Month | Team | Reason | Points | ID
 ```
 
+`ID` is filled in by the board for rows it adds, so two people can add and
+remove adjustments at once; rows typed in by hand can leave it blank.
 Column **order does not matter** — the engine reads the headings, not the
 positions, and ignores headings it does not recognise. An old `GameLog` tab
 still reads correctly, so nothing has to be renamed to upgrade.
@@ -409,7 +470,8 @@ squad, an adjustment for a squad that does not exist, an adjustment with no
 points on it, a training column nobody has filled in, a TYFCB column that holds
 money rather than counts, a group whose rows disagree about whether it was done,
 a name in the Groups tab that is in no PALMS tab, or a sheet that names more
-than two squads, or a scoring line pointed at a source that does not exist.
+than two squads, or a scoring line pointed at a source that does not exist, or
+a manual score for a name the board does not know.
 
 On the scoreboard those notices are folded into a single chip so they do not
 shout over a board being shown to a room; tap it to read them, and they open by

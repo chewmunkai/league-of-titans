@@ -93,7 +93,7 @@ body.has-savebar .toast{bottom:92px}
 .livebanner{display:none;background:#fff6d9;border:2px solid var(--gold-dk);border-radius:9px;
   padding:11px 15px;font-size:13.5px;color:#6b4d00;margin-bottom:16px;line-height:1.55}
 body.loading-live .livebanner{display:block}
-body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-scoring{
+body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-scoring,body.loading-live #v-manual{
   pointer-events:none;opacity:.5;filter:grayscale(.35)}
 
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);max-width:min(620px,92vw);
@@ -512,8 +512,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     </div>
     <h3>Best in each category</h3>
     <div class="catgrid" id="mvpCats"></div>
-    <div class="note">Ranked on points earned this month. Squad adjustments go to the squad, not to one
-      person, so they are not counted here.</div></div>
+    <div class="note">Ranked on points earned this month, manual scores included. Squad adjustments go to
+      the squad, not to one person, so they are not counted here.</div></div>
 
   <div class="panel"><h2>At A Glance</h2><div class="cards" id="glance"></div></div>
 
@@ -544,6 +544,40 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     </div>
     <div class="note">Click any column heading to sort by it.</div>
     <div class="scroll" style="margin-top:15px"><table id="members"></table></div></div>
+</section>
+
+<!-- ══ MANUAL SCORES ══ -->
+<section id="v-manual" class="hide">
+  <div class="panel"><h2>Manual Scores</h2>
+    <div class="note" style="margin:0 0 16px">For points the sheet cannot see &mdash; a visitor missed off
+      PALMS, a bonus the room gave one person, a correction. Each line is <b>Name | Item | Score</b>: who,
+      what it was for, and the points (a minus number takes points away). It counts for that player and
+      for whichever squad they are on, and shows up line by line in the squad's audit trail.</div>
+    <div class="row">
+      <div style="flex:1;min-width:190px"><label>Name</label>
+        <input id="msName" list="msNames" placeholder="Start typing a name&hellip;" autocomplete="off"></div>
+      <div style="flex:1.3;min-width:200px"><label>Item</label>
+        <input id="msItem" list="msItems" placeholder="e.g. Visitor missed off PALMS" autocomplete="off"
+          oninput="scoreHint()"></div>
+      <div style="width:110px"><label>Score</label>
+        <input id="msScore" type="number" placeholder="100" onkeydown="if(event.key==='Enter')addScore()"></div>
+      <button class="b" onclick="addScore()">+ ADD</button>
+    </div>
+    <datalist id="msNames"></datalist><datalist id="msItems"></datalist>
+    <div class="status" id="msStatus"></div>
+
+    <h3>Paste several at once</h3>
+    <div class="note" style="margin:0 0 10px">One per line, <code>Name | Item | Score</code>. A tab or a comma
+      between them works too, so rows copied straight out of a spreadsheet go in as they are.</div>
+    <textarea id="msBulk" style="min-height:110px" placeholder="Alex Ang | Visitor missed off PALMS | 100
+Sharon Lee | Ran the chapter training | 50"></textarea>
+    <div class="row" style="margin-top:12px"><button class="b g" onclick="addScoresBulk()">ADD THESE LINES</button></div>
+  </div>
+
+  <div class="panel"><h2>Logged So Far</h2>
+    <div id="msList"></div>
+    <div class="note">Press <b>Save Changes</b> at the bottom of the screen and these go into the
+      <b>Manual Scores</b> tab of the sheet, for everyone.</div></div>
 </section>
 
 <!-- ══ GROUP 1-2-1 ══ -->
@@ -733,7 +767,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
     <div class="row" style="margin-top:15px">
       <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
-        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Mentors, Scoring, Settings, Adjustments, GameLog"></div>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Mentors, Scoring, Settings, Adjustments, GameLog, Manual Scores"></div>
     </div>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
@@ -775,6 +809,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
           <option value="auto">Work it out for me</option>
           <option value="Teams">Teams tab</option>
           <option value="Adjustments">Adjustments tab</option>
+          <option value="Manual Scores">Manual Scores tab</option>
           <option value="Training">Training tab</option>
           <option value="week">A weekly PALMS tab</option></select></div>
       <div style="flex:1;min-width:150px"><label>Name it (weekly tabs only)</label>
@@ -798,6 +833,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
       <li><b>Training</b> — a <code>Name</code> column plus one column per month.</li>
       <li><b>Adjustments</b> — optional. Only for a points decision made in the room that the PALMS
         sheet cannot show. See the columns below.</li>
+      <li><b>Manual Scores</b> — optional. <code>Name | Item | Score</code>, points added by hand for one
+        player. Made for you the first time one is saved from the <b>Manual Scores</b> tab.</li>
     </ol>
     <h3>Scoring columns</h3>
     <div class="scroll"><table id="scoreSchema"></table></div>
@@ -881,13 +918,35 @@ var DEFAULT_EXEC = 'https://script.google.com/macros/s/AKfycbx7FFVMg76mSgjtdeN0d
 
 /* Saving. The sheet is the shared record: every change made on this page
    is written back to it, so the next person to open the board sees it.
-   Each section is one tab, saved whole, carrying a fingerprint of the tab
-   as it was read — a save against a tab someone else has since changed is
-   refused, never allowed to overwrite them. */
-var SYNC = { url: null, can: false, hashes: {}, dirty: {}, saving: '', timer: null,
-             last: null, error: '', note: '' };
+   Each section is one tab. A save sends only the rows this page changed,
+   and the script lays them onto the tab as it stands at that moment — so
+   two people saving different rows at once both keep their work.
+
+   base    what each tab looked like when this page last read or saved it,
+           in the same shape sectionRows() makes; the diff against it is
+           exactly what this person changed
+   hashes  a fingerprint of each tab, used to notice somebody else's save
+   api     2 = the script merges row by row; 0 = an older script that can
+           only take a whole tab, kept working until it is redeployed
+   seed    sections the sheet has no tab for yet, so the page is running on
+           its own defaults; the first save sends the whole list with it  */
+var SYNC = { url: null, can: false, api: 0, hashes: {}, base: {}, seed: {}, dirty: {}, saving: '',
+             last: null, error: '', stale: [] };
 var SECTION_NAMES = { teams: 'roster', groups: 'group 1-2-1 rounds', mentors: 'mentors',
-                      scoring: 'scoring', settings: 'settings', adjustments: 'adjustments' };
+                      scoring: 'scoring', settings: 'settings', adjustments: 'adjustments',
+                      scores: 'manual scores' };
+/* How each tab is laid out and how a row in it is named. The Apps Script
+   holds the same table; the two have to agree for a changed row to land on
+   the right row in the sheet. */
+var SECTION_DEF = {
+  teams:       { headers: ['Member Name', 'Team'], key: [0] },
+  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'], key: [0, 2] },
+  mentors:     { headers: ['Mentor', 'Order'], key: [0] },
+  scoring:     { headers: ['Key', 'Name', 'Points', 'Source', 'Columns'], key: [0], keyFallback: 1 },
+  settings:    { headers: ['Setting', 'Value'], key: [0] },
+  adjustments: { headers: ['Month', 'Team', 'Reason', 'Points', 'ID'], key: [0, 1, 2, 3], id: 4 },
+  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID'], key: [0, 1, 2, 3], id: 4 }
+};
 var MENTORS = [];              // mentor names, in group order — they anchor a group each
 
 function sheetUrl(id) { return 'https://docs.google.com/spreadsheets/d/' + id + '/edit'; }
@@ -1008,6 +1067,7 @@ var SET = {
 var OOO = [
   'Score every player from the weekly PALMS tabs and the training tab.',
   'Award the group 1-2-1 points to every player whose fortnightly foursome got it done and posted.',
+  'Add any manual scores typed in for a player (Name | Item | Score).',
   'Roll each player up into their squad, activity by activity.',
   'Add any adjustment the room agreed and logged for that squad.',
   'Add the points carried in from earlier months to get the season total.'
@@ -1019,9 +1079,16 @@ var OOO = [
    Every edit calls markDirty(section) and then WAITS — for as long as you
    like — until someone presses Save. Nothing is written behind your back and
    nothing is taken away behind your back. Save asks for the edit PIN the
-   first time on a device, then writes each changed section to the sheet in
-   full, one at a time. The bar pinned to the bottom of the page says what is
-   waiting; the badge at the top says whether the sheet has it.
+   first time on a device, then sends each changed section to the sheet, one
+   at a time. The bar pinned to the bottom of the page says what is waiting;
+   the badge at the top says whether the sheet has it.
+
+   What is sent is only the rows this person changed, worked out against
+   what the page last read. The script applies them to the tab as it is at
+   that moment, so several people — or one person with two tabs open — can
+   save at once without anybody's work being thrown away. Only the very same
+   row changed in two places at once is a contest, and the later save takes
+   that one row.
    ═══════════════════════════════════════════════════════════════════════ */
 
 var PIN_KEY = 'titans-cgc-pin';
@@ -1057,10 +1124,10 @@ function markDirty(sec) {
    round list first, so one Save covers everything on every tab. */
 function saveAll() {
   if (!DATA) return;
-  if (LIVE_PENDING) { toast('Still connecting to the live sheet \u2014 one moment, then save.', 'err'); return; }
+  if (LIVE_PENDING) { toast('Still connecting to the live sheet — one moment, then save.', 'err'); return; }
   if (DRAW && DRAW_DIRTY && !commitDraw()) return;
   if (!pendingList().length) {
-    toast('Nothing to save \u2014 the sheet already has everything.', 'ok');
+    toast('Nothing to save — the sheet already has everything.', 'ok');
     SYNC.phase = ''; syncPill(); return;
   }
   if (!SYNC.url) {
@@ -1078,54 +1145,114 @@ function saveAll() {
 function pinOffText() {
   return 'Saving is switched off in the Apps Script: set EDIT_PIN in it and deploy a new version.';
 }
+function oldScriptText() {
+  return 'Manual scores need the updated Apps Script. Paste the new TitansCGC.gs into the sheet’s ' +
+    'Apps Script and deploy a new version of the same deployment — everything else saves fine meanwhile.';
+}
 
 function flushSaves() {
   if (!SYNC.url || !SYNC.can || SYNC.saving) { syncPill(); return; }
   var sec = null, k;
-  for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k)) { sec = k; break; }
+  for (k in SYNC.dirty) {
+    if (!SYNC.dirty.hasOwnProperty(k)) continue;
+    /* An older script has never heard of manual scores; save the rest. */
+    if (k === 'scores' && SYNC.api < 2) continue;
+    sec = k; break;
+  }
   if (!sec) {
-    if (SYNC.phase === 'saving') { SYNC.phase = 'done'; SYNC.last = new Date(); settleDone(); }
+    if (SYNC.dirty.scores && SYNC.api < 2) {
+      SYNC.phase = 'error'; SYNC.error = oldScriptText(); syncPill(); return;
+    }
+    if (SYNC.phase === 'saving') { SYNC.phase = 'done'; SYNC.last = new Date(); settleDone(); pollSoon(); }
     syncPill(); return;
   }
   var pin = getPin();
   if (!pin) { SYNC.phase = ''; syncPill(); openPin(saveAll); return; }
+  if (SYNC.api < 2) { saveWholeTab(sec, pin); return; }
 
+  var d = sectionDiff(sec);
+  delete SYNC.dirty[sec];
+  if (!d.put.length && !d.del.length) {
+    /* Changed and changed back again: there is nothing to tell the sheet. */
+    SYNC.base[sec] = d.rows;
+    flushSaves();
+    return;
+  }
+  SYNC.saving = sec;
+  syncPill();
+  var ops = { put: d.put, del: d.del };
+  if (SYNC.seed[sec]) ops.seed = d.rows;
+  sendSave({ pin: pin, section: sec, ops: ops }, function (res) {
+    SYNC.saving = '';
+    if (res && res.ok) {
+      if (res.hash !== undefined) SYNC.hashes[sec] = res.hash;
+      delete SYNC.seed[sec];
+      if (SYNC.dirty[sec] || !res.rows) {
+        /* Edited again while this save was on its way. Keep those edits on
+           screen; the next save sends just them. */
+        SYNC.base[sec] = d.rows;
+      } else {
+        /* The script hands back the tab as it now stands — including
+           anything somebody else saved in the meantime. Take it. */
+        takeSection(sec, res.headers, res.rows);
+        SYNC.base[sec] = sectionRows(sec);
+      }
+      afterSaved(sec);
+      render();
+      flushSaves();
+      return;
+    }
+    SYNC.dirty[sec] = 1;
+    saveFailed(sec, res);
+  });
+}
+
+/* The old route, for a script that has not been redeployed yet: the whole
+   tab, refused if anybody has touched it since this page read it. */
+function saveWholeTab(sec, pin) {
   SYNC.saving = sec;
   delete SYNC.dirty[sec];
   syncPill();
-  sendSave({ pin: pin, section: sec, base: SYNC.hashes[sec], rows: sectionRows(sec) }, function (res) {
+  var rows = sectionRows(sec);
+  sendSave({ pin: pin, section: sec, base: SYNC.hashes[sec], rows: rows }, function (res) {
     SYNC.saving = '';
     if (res && res.ok) {
       SYNC.hashes[sec] = res.hash;
+      SYNC.base[sec] = rows;
       afterSaved(sec);
       flushSaves();
       return;
     }
     SYNC.dirty[sec] = 1;
-    if (res && res.code === 'badpin') {
-      setPin('');
-      SYNC.phase = '';
-      syncPill();
-      openPin(saveAll, 'That PIN was not right. Try again.');
-      return;
-    }
-    if (res && res.code === 'conflict') {
-      /* Someone else got there first. Their version wins; ours is lost, and
-         we say so rather than pretending. Re-read so the screen is honest. */
-      delete SYNC.dirty[sec];
-      SYNC.phase = '';
-      toast('<b>Someone else saved the ' + esc(SECTION_NAMES[sec] || sec) + '</b> while you were ' +
-        'working, so your change there was not saved. Their version is now on screen \u2014 please ' +
-        'redo your change and save again.', 'err', 10000);
-      loadExec(SYNC.url, true);
-      return;
-    }
-    SYNC.phase = 'error';
-    SYNC.error = (res && res.code === 'nopin') ? pinOffText()
-      : ((res && res.error) || 'The save did not reach the sheet.');
-    syncPill();
+    saveFailed(sec, res);
   });
 }
+
+function saveFailed(sec, res) {
+  if (res && res.code === 'badpin') {
+    setPin('');
+    SYNC.phase = '';
+    syncPill();
+    openPin(saveAll, 'That PIN was not right. Try again.');
+    return;
+  }
+  if (res && res.code === 'conflict') {
+    /* Only an older script says this. Someone else got there first; their
+       version wins and the screen is re-read so it is honest. */
+    delete SYNC.dirty[sec];
+    SYNC.phase = '';
+    toast('<b>Someone else saved the ' + esc(SECTION_NAMES[sec] || sec) + '</b> while you were ' +
+      'working, so your change there was not saved. Their version is now on screen — please ' +
+      'redo your change and save again. (Updating the Apps Script stops this happening.)', 'err', 10000);
+    loadExec(SYNC.url, true);
+    return;
+  }
+  SYNC.phase = 'error';
+  SYNC.error = (res && res.code === 'nopin') ? pinOffText()
+    : ((res && res.error) || 'The save did not reach the sheet.');
+  syncPill();
+}
+
 var DONE_T = null;
 function settleDone() {
   clearTimeout(DONE_T);
@@ -1166,8 +1293,9 @@ function liveDone() {
 }
 
 /* POST is the normal route. Some browsers refuse a cross-site POST to
-   Google; if that happens a small save goes by the GET route instead, which
-   the script also answers. A big one cannot, and says so. */
+   Google; if that happens the save goes by the GET route instead, which the
+   script also answers. Sending the same changed rows twice is harmless —
+   the second time they are already there. */
 function sendSave(req, done) {
   var body = JSON.stringify(req);
   var answered = false;
@@ -1176,11 +1304,11 @@ function sendSave(req, done) {
     var q = 'action=save&payload=' + encodeURIComponent(body);
     if (q.length > 7500) {
       finish({ ok: false, error: 'This browser would not send the save, and it is too big for the fallback route. ' +
-        'Try another browser, or use Copy For Sheet.' });
+        'Try another browser, or save a few changes at a time.' });
       return;
     }
     jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + q + '&callback=__CB__',
-      finish, function (e) { finish({ ok: false, error: 'Could not reach the sheet: ' + e }); }, 20000);
+      finish, function (e) { finish({ ok: false, error: 'Could not reach the sheet: ' + e }); }, 30000);
   }
   if (!window.fetch) { viaGet(); return; }
   try {
@@ -1195,7 +1323,7 @@ function sendSave(req, done) {
 
 /* What each section looks like as rows of the tab it is saved to. */
 function sectionRows(sec) {
-  var out = [], i, k;
+  var out = [], i;
   if (sec === 'teams')
     for (i = 0; i < ROSTER.length; i++) out.push([ROSTER[i].name, ROSTER[i].team || 'No squad']);
   if (sec === 'groups')
@@ -1221,9 +1349,91 @@ function sectionRows(sec) {
   if (sec === 'adjustments')
     for (i = 0; i < (DATA.adjustments || []).length; i++) {
       var a = DATA.adjustments[i];
-      out.push([a.month || '', a.team, a.reason || '', a.points === null ? '' : a.points]);
+      out.push([a.month || '', a.team, a.reason || '', a.points === null ? '' : a.points, a.id || '']);
+    }
+  if (sec === 'scores')
+    for (i = 0; i < (DATA.scores || []).length; i++) {
+      var sc = DATA.scores[i];
+      out.push([sc.name, sc.item || '', sc.score === null ? '' : sc.score, sc.added || '', sc.id || '']);
     }
   return out;
+}
+
+/* ── Which rows changed ─────────────────────────────────────────────────
+   Every row has a name (its key). The same rules are in the Apps Script, so
+   "put the row called X" lands on row X in the sheet, whatever else has
+   happened to the tab since this page read it.                            */
+function keyPart(v) { return String(v == null ? '' : v).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function slugKey(v) { return keyPart(v).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function rowKeys(sec, rows) {
+  var def = SECTION_DEF[sec], seen = {}, out = [], i, c;
+  for (i = 0; i < rows.length; i++) {
+    var row = rows[i] || [], k;
+    if (def.id !== undefined && keyPart(row[def.id])) k = 'id:' + keyPart(row[def.id]);
+    else if (def.keyFallback !== undefined && !keyPart(row[def.key[0]])) k = slugKey(row[def.keyFallback]);
+    else {
+      var parts = [];
+      for (c = 0; c < def.key.length; c++) parts.push(keyPart(row[def.key[c]]));
+      k = parts.join('|');
+    }
+    seen['$' + k] = (seen['$' + k] || 0) + 1;
+    if (seen['$' + k] > 1) k += '#' + seen['$' + k];
+    out.push(k);
+  }
+  return out;
+}
+function rowSig(row) {
+  var out = [], i;
+  for (i = 0; i < row.length; i++) out.push(String(row[i] == null ? '' : row[i]).trim());
+  return out.join('\u0001');
+}
+/* put: rows that are new or different. del: rows that have gone. */
+function sectionDiff(sec) {
+  var base = SYNC.base[sec] || [], cur = sectionRows(sec);
+  var bk = rowKeys(sec, base), ck = rowKeys(sec, cur), was = {}, now = {}, put = [], del = [], i;
+  for (i = 0; i < base.length; i++) was['$' + bk[i]] = base[i];
+  for (i = 0; i < cur.length; i++) {
+    now['$' + ck[i]] = 1;
+    var old = was['$' + ck[i]];
+    if (!old || rowSig(old) !== rowSig(cur[i])) put.push({ k: ck[i], r: cur[i] });
+  }
+  for (i = 0; i < base.length; i++) if (!now['$' + bk[i]]) del.push(bk[i]);
+  return { put: put, del: del, rows: cur };
+}
+/* What the sheet has, as this page last saw it. Where the sheet has no tab
+   yet and the page is running on its built-in defaults, the defaults count
+   as what the sheet has — and the first save carries the whole list as a
+   seed, which the script uses only if the tab is still empty by then. */
+function takeBases(pay) {
+  var b = {}, k;
+  for (k in SECTION_DEF) if (SECTION_DEF.hasOwnProperty(k)) b[k] = sectionRows(k);
+  SYNC.seed = {};
+  if (!(pay.teams || []).length) SYNC.seed.teams = 1;
+  if (!(pay.scoring || []).length) SYNC.seed.scoring = 1;
+  if (!(pay.settings || []).length) SYNC.seed.settings = 1;
+  return b;
+}
+/* A section's rows, straight back from the script, put on screen. */
+function takeSection(sec, headers, rows) {
+  var grid = [headers || SECTION_DEF[sec].headers].concat(rows || []), i;
+  if (sec === 'teams') {
+    var list = readTeamsGrid(grid);
+    ROSTER = [];
+    for (i = 0; i < list.length; i++) ROSTER.push({ name: list[i].name, team: benched(list[i].team) ? '' : list[i].team });
+    syncTeams();
+  } else if (sec === 'groups') DATA.groups = readGroupsGrid(grid);
+  else if (sec === 'mentors') MENTORS = readMentorsGrid(grid);
+  else if (sec === 'scoring') {
+    var sc = readScoringGrid(grid);
+    if (sc.length) { RULES = []; for (i = 0; i < sc.length; i++) RULES.push(cloneRule(sc[i])); }
+    rebuild('ruleEditor');
+  }
+  else if (sec === 'settings') { applySettings(readSettingsGrid(grid)); syncTeams(); }
+  else if (sec === 'adjustments') { DATA.adjustments = readAdjGrid(grid); syncTeams(); }
+  else if (sec === 'scores') DATA.scores = readScoresGrid(grid);
+}
+function newId() {
+  return new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
 /* Once a section is in the sheet, what the page holds IS the sheet. */
@@ -1235,20 +1445,70 @@ function afterSaved(sec) {
   }
 }
 
+/* ── Keeping up with everybody else ─────────────────────────────────────
+   While the page is on screen it asks the script every 45 seconds for a
+   fingerprint of each tab — cheap, no PIN, no PALMS reading. If somebody
+   else has saved since, and nothing here is waiting to be saved, the page
+   quietly re-reads the sheet. If something here IS waiting, it just says
+   so: Save will lay this person's rows on top of theirs.                  */
+var POLL_MS = 45000, POLL_T = null, POLL_BUSY = false, POLL_LAST = 0, BG_LOADING = false;
+function pollArm() {
+  clearInterval(POLL_T);
+  POLL_T = (SYNC.url && SYNC.api >= 2) ? setInterval(function () { pollNow(false); }, POLL_MS) : null;
+}
+function pollNow(force) {
+  if (!SYNC.url || SYNC.api < 2 || POLL_BUSY || BG_LOADING || LIVE_PENDING || document.hidden) return;
+  var at = new Date().getTime();
+  if (!force && at - POLL_LAST < 15000) return;
+  POLL_LAST = at;
+  POLL_BUSY = true;
+  jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + 'action=hashes&callback=__CB__', function (res) {
+    POLL_BUSY = false;
+    if (!res || !res.ok || !res.hashes) return;
+    var changed = othersSaved(res.hashes);
+    if (!changed.length) { if (SYNC.stale.length) { SYNC.stale = []; syncPill(); } return; }
+    if (quietOK()) { BG_LOADING = true; loadExec(SYNC.url, true, true); }
+    else { SYNC.stale = changed; syncPill(); }
+  }, function () { POLL_BUSY = false; }, 20000);
+}
+function pollSoon() { setTimeout(function () { pollNow(true); }, 1500); }
+/* Sections whose tab no longer matches what this page last read or saved. */
+function othersSaved(hashes) {
+  var out = [], k;
+  for (k in hashes) {
+    if (!hashes.hasOwnProperty(k) || !SECTION_NAMES[k] || SYNC.saving === k) continue;
+    if (String(hashes[k] || '') !== String(SYNC.hashes[k] || '')) out.push(k);
+  }
+  return out;
+}
+/* Safe to swap the sheet in under somebody's feet? Only when nothing is
+   waiting to be saved and they are not halfway through doing something. */
+function quietOK() {
+  if (!LAST || LAST.kind !== 'exec') return false;
+  if (pendingList().length || SYNC.saving || SYNC.phase === 'saving' || SYNC.phase === 'error') return false;
+  if (ROLLING || PICKED || DRAGGING !== -1) return false;
+  if ($('pinModal').className.indexOf('hide') === -1) return false;
+  var a = document.activeElement, tag = a && a.tagName;
+  return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+}
+document.addEventListener('visibilitychange', function () { if (!document.hidden) pollNow(false); });
+window.addEventListener('focus', function () { pollNow(false); });
+
 function syncPill() {
   var el = $('syncTag'); if (!el) return;
   var pending = pendingList(), cls = 'sync', txt, act = '';
   if (!DATA) { el.className = 'sync hide'; saveBar(pending); return; }
-  if (LIVE_PENDING) { cls += ' busy'; txt = 'Connecting to the sheet\u2026'; }
-  else if (SYNC.saving) { cls += ' busy'; txt = 'Saving\u2026'; }
-  else if (SYNC.phase === 'error') { cls += ' bad'; txt = '\u26A0 Not saved \u2014 tap to retry'; act = 'saveAll()'; }
-  else if (pending.length) { cls += ' warn'; txt = '\u25CF ' + pending.length + ' unsaved \u2014 tap to save'; act = 'saveAll()'; }
+  if (LIVE_PENDING) { cls += ' busy'; txt = 'Connecting to the sheet…'; }
+  else if (SYNC.saving) { cls += ' busy'; txt = 'Saving…'; }
+  else if (SYNC.phase === 'error') { cls += ' bad'; txt = '⚠ Not saved — tap to retry'; act = 'saveAll()'; }
+  else if (pending.length) { cls += ' warn'; txt = '● ' + pending.length + ' unsaved — tap to save'; act = 'saveAll()'; }
   else if (!SYNC.url) { cls += ' off'; txt = 'View only'; act = "go('data')"; }
   else if (!SYNC.can) { cls += ' off'; txt = 'Saving is off in the script'; act = "go('data')"; }
+  else if (BG_LOADING) { cls += ' busy'; txt = '↻ Updating…'; }
   else {
     cls += ' ok';
-    txt = '\u2713 Saved' + (SYNC.last ? ' ' + SYNC.last.toLocaleTimeString(undefined,
-      { hour: '2-digit', minute: '2-digit' }) : ' \u00b7 in sync');
+    txt = '✓ Saved' + (SYNC.last ? ' ' + SYNC.last.toLocaleTimeString(undefined,
+      { hour: '2-digit', minute: '2-digit' }) : ' · in sync');
   }
   el.className = cls;
   el.innerHTML = txt;
@@ -1269,25 +1529,29 @@ function saveBar(pending) {
   var msg, btns = '', kind = '';
   if (SYNC.saving || SYNC.phase === 'saving') {
     kind = 'busy';
-    msg = '<b>Saving to the sheet\u2026</b> ' + esc(SECTION_NAMES[SYNC.saving] || '');
+    msg = '<b>Saving to the sheet…</b> ' + esc(SECTION_NAMES[SYNC.saving] || '');
   } else if (SYNC.phase === 'done') {
     kind = 'ok';
-    msg = '<b>\u2713 Saved.</b> Everyone who opens the board now sees your changes.';
+    msg = '<b>✓ Saved.</b> Everyone who opens the board now sees your changes.';
   } else if (SYNC.phase === 'error') {
     kind = 'bad';
-    msg = '<b>\u26A0 Not saved.</b> ' + esc(SYNC.error || '');
+    msg = '<b>⚠ Not saved.</b> ' + esc(SYNC.error || '');
     btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>' +
       (SYNC.url && SYNC.can ? '<button class="b" onclick="saveAll()">TRY AGAIN</button>' : '');
   } else if (!SYNC.url) {
     kind = 'bad';
-    msg = '<b>' + pending.length + ' change' + (pending.length === 1 ? '' : 's') + ' that cannot be saved</b> \u2014 ' +
+    msg = '<b>' + pending.length + ' change' + (pending.length === 1 ? '' : 's') + ' that cannot be saved</b> — ' +
       'this copy of the board is only showing saved numbers. Reload once it can reach the live sheet.';
     btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>';
   } else {
+    var others = [], i;
+    for (i = 0; i < SYNC.stale.length; i++) others.push(SECTION_NAMES[SYNC.stale[i]] || SYNC.stale[i]);
     msg = '<b>Unsaved changes:</b> ' + esc(pending.join(', ')) + '.' +
+      (others.length && SYNC.api >= 2 ? ' <span class="sbhint">Somebody else has saved the ' + esc(others.join(', ')) +
+        ' since — your save is added to theirs, not written over it.</span>' : '') +
       (getPin() ? '' : ' <span class="sbhint">You will be asked for the edit PIN.</span>');
     btns = '<button class="b g" onclick="discardChanges()">DISCARD</button>' +
-      '<button class="b savebtn" onclick="saveAll()">\uD83D\uDCBE SAVE CHANGES</button>';
+      '<button class="b savebtn" onclick="saveAll()">💾 SAVE CHANGES</button>';
   }
   bar.className = 'savebar show ' + kind;
   bar.innerHTML = '<div class="sbmsg">' + msg + '</div><div class="sbbtns">' + btns + '</div>';
@@ -1478,13 +1742,31 @@ function busy(on) {
 }
 
 /* ── (a) Apps Script web app ────────────────────────────────────────── */
-function loadExec(url, quiet) {
-  PARSE_WARN = [];
-  busy(1);
-  if (!quiet) setStatus('Reading your sheet through Apps Script…', 'busy');
-  srcTag('Reading…');
+/* bg: a quiet re-read because somebody else saved. No spinner, no status
+   line, and it is dropped on the floor if this person has started changing
+   something in the meantime — their edit matters more than the refresh. */
+function loadExec(url, quiet, bg) {
+  if (!bg) {
+    PARSE_WARN = [];
+    busy(1);
+    if (!quiet) setStatus('Reading your sheet through Apps Script…', 'busy');
+    srcTag('Reading…');
+  }
+  syncPill();
   var full = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=__CB__';
   jsonp(full, function (res) {
+    if (bg) {
+      BG_LOADING = false;
+      if (!res || res.ok === false || !quietOK()) {
+        if (res && res.hashes) SYNC.stale = othersSaved(res.hashes);
+        syncPill();
+        return;
+      }
+      PARSE_WARN = [];
+      adopt(normalise(res), 'Apps Script', url, true);
+      toast('↻ Updated — somebody else saved changes, and they are on screen now.', 'ok', 3500);
+      return;
+    }
     busy(0);
     if (!res || res.ok === false) {
       liveDone();
@@ -1496,6 +1778,7 @@ function loadExec(url, quiet) {
     LAST = { kind: 'exec', url: url };
     adopt(normalise(res), 'Apps Script', url);
   }, function (err) {
+    if (bg) { BG_LOADING = false; syncPill(); return; }
     busy(0);
     setStatus('Could not read it — ' + esc(err) + '. Check the deployment is set to ' +
       '<b>Execute as: Me</b> and <b>Who has access: Anyone</b>.', 'err');
@@ -1870,7 +2153,7 @@ function zipRead(buf, e) {
 function build(grids) {
   RAWTABS = grids;
   var pay = { ok: true, month: '', weeks: [], teams: [], training: [], adjustments: [],
-              groups: [], scoring: [], mentors: [], settings: [], trainingMonths: [] };
+              groups: [], scoring: [], mentors: [], settings: [], scores: [], trainingMonths: [] };
   var k, grid, kind, unread = [];
 
   for (k in grids) {
@@ -1891,6 +2174,7 @@ function build(grids) {
     else if (kind === 'scoring')  pay.scoring = pay.scoring.concat(readScoringGrid(grid));
     else if (kind === 'mentors')  pay.mentors = pay.mentors.concat(readMentorsGrid(grid));
     else if (kind === 'settings') pay.settings = pay.settings.concat(readSettingsGrid(grid));
+    else if (kind === 'scores')   pay.scores = pay.scores.concat(readScoresGrid(grid));
     else unread.push(k);
   }
   if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
@@ -1906,6 +2190,7 @@ function classify(name, grid) {
   if (nm === 'scoring' || nm === 'points' || nm === 'point values') return 'scoring';
   if (nm === 'mentors' || nm === 'mentor') return 'mentors';
   if (nm === 'settings') return 'settings';
+  if (nm === 'manual scores' || nm === 'manual score' || nm === 'manual' || nm === 'scores') return 'scores';
   if (nm === 'groups' || nm === 'group 121' || nm === 'group 1-2-1' || nm === 'pairings') return 'groups';
   if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
       nm === 'game log' || nm === 'log') return 'adj';
@@ -1915,6 +2200,7 @@ function classify(name, grid) {
   /* Shape beats name. A tab with First Name and RGI is a meeting week even
      when it is called "Master list 1st week". */
   if (findWeekHeader(grid) !== -1) return 'week';
+  if (findScoresHeader(grid, true) !== -1) return 'scores';
   if (findScoringHeader(grid) !== -1) return 'scoring';
   if (findSettingsHeader(grid) !== -1) return 'settings';
   if (findMentorsHeader(grid) !== -1) return 'mentors';
@@ -2338,7 +2624,8 @@ var ADJ_FIELDS = [
   { key: 'month',  heads: ['month'] },
   { key: 'team',   heads: ['team', 'squad'], not: ['target'] },
   { key: 'reason', heads: ['reason', 'why', 'notes', 'note', 'detail', 'details', 'type'] },
-  { key: 'points', heads: ['points', 'pts', 'score'] }
+  { key: 'points', heads: ['points', 'pts', 'score'] },
+  { key: 'id',     heads: ['id'], exact: 1 }
 ];
 function findAdjHeader(grid) {
   var limit = Math.min(grid.length, 10), r, c;
@@ -2362,7 +2649,7 @@ function readAdjGrid(grid) {
       if (f.not) { for (hh = 0; hh < f.not.length; hh++) if (cells[j].indexOf(f.not[hh]) !== -1) skip = 1; }
       if (skip) continue;
       for (hh = 0; hh < f.heads.length; hh++)
-        if (cells[j] === f.heads[hh] || cells[j].indexOf(f.heads[hh]) !== -1) { map[f.key] = j; break; }
+        if (cells[j] === f.heads[hh] || (!f.exact && cells[j].indexOf(f.heads[hh]) !== -1)) { map[f.key] = j; break; }
     }
   }
   if (map.team == null) return [];
@@ -2373,8 +2660,61 @@ function readAdjGrid(grid) {
     var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
     var team = g('team');
     if (!team || norm(team) === 'team' || norm(team) === 'total') continue;
-    out.push({ month: g('month'), team: team, reason: g('reason'),
+    out.push({ month: g('month'), team: team, reason: g('reason'), id: g('id'),
                points: map.points == null ? null : (g('points') === '' ? null : num(row[map.points])) });
+  }
+  return out;
+}
+
+/* ── Manual Scores tab ──────────────────────────────────────────────────
+   Name | Item | Score. Points typed in by hand for ONE player — a visitor
+   PALMS missed, a bonus the room gave somebody, a correction. They count
+   for that player, and so for whichever squad the player is on. Added and
+   ID are filled in by the board: when it was logged, and a tag that lets
+   two people add and remove lines at the same time without trampling each
+   other.                                                                  */
+var SCORE_FIELDS = [
+  { key: 'name',  heads: ['name', 'member', 'player'] },
+  { key: 'item',  heads: ['item', 'activity', 'what', 'reason'] },
+  { key: 'score', heads: ['score', 'points', 'pts'] },
+  { key: 'added', heads: ['added', 'date', 'when'] },
+  { key: 'id',    heads: ['id'], exact: 1 }
+];
+/* strict: only a tab that says Item is taken for one when guessing from its shape. */
+function findScoresHeader(grid, strict) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (!has(c, 'score') && !has(c, 'points') && !has(c, 'pts')) continue;
+    if (!has(c, 'name') && !has(c, 'member') && !has(c, 'player')) continue;
+    if (strict && !has(c, 'item')) continue;
+    return r;
+  }
+  return -1;
+}
+function readScoresGrid(grid) {
+  var hr = findScoresHeader(grid);
+  if (hr === -1) return [];
+  var cells = headerCells(grid, hr), map = {}, taken = {}, i, j, hh, f;
+  for (i = 0; i < SCORE_FIELDS.length; i++) {
+    f = SCORE_FIELDS[i];
+    for (j = 0; j < cells.length && map[f.key] == null; j++) {
+      if (!cells[j] || taken[j]) continue;
+      for (hh = 0; hh < f.heads.length; hh++)
+        if (cells[j] === f.heads[hh] || (!f.exact && cells[j].indexOf(f.heads[hh]) !== -1)) {
+          map[f.key] = j; taken[j] = 1; break;
+        }
+    }
+  }
+  if (map.name == null || map.score == null) return [];
+  var out = [], r;
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var who = g('name');
+    if (!who || norm(who) === 'name' || norm(who) === 'total') continue;
+    out.push({ name: who, item: g('item'), added: g('added'), id: g('id'),
+               score: g('score') === '' ? null : num(row[map.score]) });
   }
   return out;
 }
@@ -2383,11 +2723,12 @@ function readAdjGrid(grid) {
 function normalise(res) {
   var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
               training: res.training || [], trainingMonths: res.trainingMonths || [],
-              adjustments: [], groups: [], scoring: [], mentors: [], settings: [],
-              hashes: res.hashes || null, canSave: !!res.canSave };
+              adjustments: [], groups: [], scoring: [], mentors: [], settings: [], scores: [],
+              hashes: res.hashes || null, canSave: !!res.canSave, api: num(res.api) };
   function raw(r) { return r && r.headers && r.headers.length ? [r.headers].concat(r.rows || []) : null; }
   if (raw(res.mentorsRaw)) pay.mentors = readMentorsGrid(raw(res.mentorsRaw));
   if (raw(res.settingsRaw)) pay.settings = readSettingsGrid(raw(res.settingsRaw));
+  if (raw(res.scoresRaw)) pay.scores = readScoresGrid(raw(res.scoresRaw));
   if (res.scoringRaw && res.scoringRaw.headers)
     pay.scoring = readScoringGrid([res.scoringRaw.headers].concat(res.scoringRaw.rows || []));
   else pay.scoring = res.scoring || [];
@@ -2412,10 +2753,15 @@ function normalise(res) {
 }
 
 /* ── Take a payload live ────────────────────────────────────────────── */
-function adopt(pay, sourceName, url) {
+/* bg: a quiet refresh because somebody else saved. It stays on the same tab
+   and keeps what this person was looking at — the month picked, the draw on
+   screen — rather than behaving like a fresh load. */
+function adopt(pay, sourceName, url, bg) {
+  var keepDraw = bg ? { draw: DRAW, round: DRAW_ROUND, month: TRAIN_MONTH } : null;
   DATA = pay;
   DATA.groups = DATA.groups || [];
   DATA.adjustments = DATA.adjustments || [];
+  DATA.scores = DATA.scores || [];
   /* A Scoring tab replaces the list outright rather than merging with it:
      a half-applied scoring change is worse than either version of it. */
   RULES = [];
@@ -2438,25 +2784,35 @@ function adopt(pay, sourceName, url) {
   ROSTER_BASE = [];
   for (i = 0; i < ROSTER.length; i++) ROSTER_BASE.push({ name: ROSTER[i].name, team: ROSTER[i].team });
   MOVES = [];
-  TRAIN_MONTH = null;
+  TRAIN_MONTH = keepDraw ? keepDraw.month : null;
   applySettings(pay.settings || []);
   MENTORS = (pay.mentors || []).slice();
-  DRAW = null;
+  DRAW = keepDraw ? keepDraw.draw : null;
+  DRAW_ROUND = keepDraw ? keepDraw.round : '';
   syncTeams();
 
   /* Saving is possible only when the data came through the Apps Script —
      that is the one route that can write. Anything else is a view. */
   SYNC.url = (LAST && LAST.kind === 'exec') ? LAST.url : null;
   SYNC.can = !!(SYNC.url && pay.canSave);
+  SYNC.api = SYNC.url ? (pay.api || 0) : 0;
   SYNC.hashes = pay.hashes || {};
+  SYNC.base = takeBases(pay);
   SYNC.dirty = {};
+  SYNC.stale = [];
   SYNC.error = '';
   SYNC.phase = '';
   DRAW_DIRTY = false;
+  pollArm();
   if (SYNC.url && !pay.canSave)
     PARSE_WARN.push('The Apps Script is connected but <b>saving is switched off</b> in it: set ' +
       '<code>EDIT_PIN</code> in its CONFIG block and deploy it again. Until then changes made here are ' +
       'not kept.');
+  if (SYNC.url && pay.canSave && SYNC.api < 2)
+    PARSE_WARN.push('The Apps Script behind this board is an <b>older version</b>. It still saves, but if ' +
+      'two people save the same tab close together the second one is turned away, and it cannot save ' +
+      '<b>manual scores</b>. Paste the new <code>TitansCGC.gs</code> into the sheet\u2019s Apps Script and ' +
+      'deploy a new version of the same deployment (Manage deployments \u2192 edit \u2192 New version).');
   syncPill();
 
   var bits = [];
@@ -2464,12 +2820,13 @@ function adopt(pay, sourceName, url) {
   if (ROSTER.length) bits.push(ROSTER.length + ' players');
   if (TEAMS.length) bits.push(TEAMS.length + ' squads');
   if (pay.adjustments.length) bits.push(pay.adjustments.length + ' adjustment' + (pay.adjustments.length === 1 ? '' : 's'));
+  if (DATA.scores.length) bits.push(DATA.scores.length + ' manual score' + (DATA.scores.length === 1 ? '' : 's'));
   if (sourceName !== 'Saved snapshot') liveDone();
   srcTag('<b>' + esc(sourceName) + '</b> &middot; ' + (bits.join(' &middot; ') || 'nothing found'),
          (sourceName === 'Demo data' || sourceName === 'Saved snapshot') ? 'demo' : 'live');
-  setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
+  if (!bg) setStatus('Loaded ' + (bits.join(', ') || 'nothing usable') + '.', 'ok');
   checkData();
-  if (VIEW === 'data') go('board'); else render();
+  if (bg || VIEW !== 'data') render(); else go('board');
 }
 
 /* Squads come from the sheet, not from this file. Anything the sheet names
@@ -2555,7 +2912,7 @@ function compute() {
     var key = norm(name);
     if (!members[key]) members[key] = { name: name, key: key, team: teamOf[key] || null,
       c: {}, p: {}, absent: 0, late: 0, weeks: 0, group121: 0,
-      training: trainOf[key] || 0, byWeek: {}, rounds: [] };
+      training: trainOf[key] || 0, byWeek: {}, rounds: [], handPts: 0, handList: [] };
     return members[key];
   }
   for (i = 0; i < ROSTER.length; i++) slot(ROSTER[i].name);
@@ -2644,6 +3001,29 @@ function compute() {
     }
   }
 
+  /* ── Manual scores: points typed in by hand for one player ─────────
+     Only for somebody the board already knows — a name it has never seen
+     would score for nobody, so it is flagged instead of quietly lost. */
+  for (i = 0; i < (DATA.scores || []).length; i++) {
+    var ms = DATA.scores[i], msk = norm(ms.name);
+    if (!msk) continue;
+    if (!members[msk]) {
+      warn('A manual score is logged for <b>' + esc(ms.name) + '</b> (' + esc(ms.item || 'no item') + '), ' +
+           'who is not in the sheet at all, so it was not counted. Check the spelling against the Roster.');
+      continue;
+    }
+    if (ms.score === null || ms.score === undefined || isNaN(ms.score)) {
+      warn('The manual score for <b>' + esc(ms.name) + '</b> (' + esc(ms.item || 'no item') + ') has no ' +
+           'number in it, so it was ignored. Put a number in the Score column.');
+      continue;
+    }
+    if (!members[msk].team)
+      warn('<b>' + esc(ms.name) + '</b> has a manual score of ' + n(ms.score) + ' but is not on a squad, so ' +
+           'it counts for nobody until they are put on one.');
+    members[msk].handPts += ms.score;
+    members[msk].handList.push(ms);
+  }
+
   for (k in members) {
     if (!members.hasOwnProperty(k)) continue;
     var m2 = members[k], ri2, R3;
@@ -2663,13 +3043,14 @@ function compute() {
          those in step with the counts rather than computing them twice. */
       m2[R3.key] = m2.c[R3.key];
     }
+    m2.total += m2.handPts;
   }
 
   /* ── Step 2: roll players up into their squad ────────────────────── */
   var teams = {};
   function ts(name) {
     if (!teams[name]) {
-      var T0 = { name: name, manual: 0, activity: 0, monthTotal: 0, fines: 0,
+      var T0 = { name: name, manual: 0, activity: 0, monthTotal: 0, fines: 0, handPts: 0, handList: [],
         carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {}, audit: [], counts: {} }, z;
       for (z = 0; z < RULES.length; z++) { T0[RULES[z].key] = 0; T0.counts[RULES[z].key] = 0; }
       teams[name] = T0;
@@ -2688,6 +3069,8 @@ function compute() {
       t[rk2] = (t[rk2] || 0) + (m3.p[rk2] || 0);
       t.counts[rk2] = (t.counts[rk2] || 0) + (m3.c[rk2] || 0);
     }
+    t.handPts += m3.handPts;
+    for (z2 = 0; z2 < m3.handList.length; z2++) t.handList.push({ who: m3.name, s: m3.handList[z2] });
     t.members.push(m3);
     for (var wn in m3.byWeek) if (m3.byWeek.hasOwnProperty(wn)) t.byWeek[wn] = (t.byWeek[wn] || 0) + m3.byWeek[wn];
   }
@@ -2732,6 +3115,14 @@ function compute() {
       log(R2.short, unit + ' at ' + n(R2.pts) + ' each.', val, val > 0 ? 'hit' : '');
     }
     T.activity = run;
+
+    if (T.handList.length) {
+      var hBits = [];
+      for (j = 0; j < T.handList.length; j++)
+        hBits.push(T.handList[j].who + ': ' + (T.handList[j].s.item || 'no item given') + ' ' +
+                   (T.handList[j].s.score >= 0 ? '+' : '') + n(T.handList[j].s.score));
+      log('Manual scores', hBits.join(', ') + '.', T.handPts, T.handPts >= 0 ? 'hit' : 'cut');
+    }
 
     var adjs = adjBy[T.name] || [], adjSum = 0, adjBits = [];
     for (j = 0; j < adjs.length; j++) {
@@ -2781,7 +3172,7 @@ function trainMonth() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 var VIEWS = [['board', 'SCOREBOARD'], ['squads', 'SQUADS'], ['players', 'PLAYERS'],
-             ['groups', 'GROUP 1-2-1'], ['roster', 'ROSTER'], ['scoring', 'SCORING'],
+             ['manual', 'MANUAL SCORES'], ['groups', 'GROUP 1-2-1'], ['roster', 'ROSTER'], ['scoring', 'SCORING'],
              ['share', 'BROADCAST'], ['data', 'DATA']];
 
 function go(v) {
@@ -2815,6 +3206,7 @@ function render() {
   if (VIEW === 'roster') { board(R); moveLog(); }
   if (VIEW === 'share') broadcast(R);
   if (VIEW === 'scoring') renderAdj();
+  if (VIEW === 'manual') renderScores(R);
 }
 
 /* The notices matter — a TYFCB column misread as money is exactly the kind
@@ -2824,9 +3216,10 @@ function render() {
 var WARN_OPEN = false;
 function toggleWarn() { WARN_OPEN = !WARN_OPEN; render(); }
 function showWarnings(R) {
-  var all = PARSE_WARN.concat(R.warnings);
+  var all = [], seen = {}, i, raw = PARSE_WARN.concat(R.warnings);
+  for (i = 0; i < raw.length; i++) if (!seen['$' + raw[i]]) { seen['$' + raw[i]] = 1; all.push(raw[i]); }
   if (!all.length) { $('globalWarn').innerHTML = ''; return; }
-  var working = (VIEW === 'data' || VIEW === 'scoring' || VIEW === 'roster');
+  var working = (VIEW === 'data' || VIEW === 'scoring' || VIEW === 'roster' || VIEW === 'manual');
   var open = WARN_OPEN || working;
   var head = '<button class="warntab" onclick="toggleWarn()">' +
     (open ? '\u25be' : '\u25b8') + ' ' + all.length + ' notice' + (all.length === 1 ? '' : 's') +
@@ -2946,10 +3339,12 @@ function h2h(R) {
   if (T.length === 2) {
     var a = T[0], b = T[1], max = 1;
     for (i = 0; i < RULES.length; i++) max = Math.max(max, a[RULES[i].key] || 0, b[RULES[i].key] || 0);
+    if (a.handPts || b.handPts) max = Math.max(max, Math.abs(a.handPts), Math.abs(b.handPts));
     if (a.manual || b.manual) max = Math.max(max, Math.abs(a.manual), Math.abs(b.manual));
     var h = '<div class="h2hhead"><div>' + esc(a.name) + '</div><div>Activity</div><div>' +
             esc(b.name) + '</div></div><div class="h2h">';
     var rows = RULES.slice();
+    if (a.handPts || b.handPts) rows.push({ key: 'handPts', short: 'Manual scores', pts: null, why: 'added by hand' });
     if (a.manual || b.manual) rows.push({ key: 'manual', short: 'Adjustments', pts: null });
     for (i = 0; i < rows.length; i++) {
       var key = rows[i].key, av = a[key] || 0, bv = b[key] || 0;
@@ -2957,7 +3352,7 @@ function h2h(R) {
         '<div class="h2hbar l">' + (av ? '<i style="width:' + (Math.abs(av) / max * 100) +
         '%;background:' + color(a.name) + '">' + n(av) + '</i>' : '') + '</div>' +
         '<div class="h2hlab"><div class="hl">' + esc(rows[i].short) + '</div>' +
-        '<div class="hp">' + (rows[i].pts === null ? 'agreed in the room' : n(rows[i].pts) + ' each') +
+        '<div class="hp">' + (rows[i].pts === null ? (rows[i].why || 'agreed in the room') : n(rows[i].pts) + ' each') +
         '</div></div>' +
         '<div class="h2hbar r">' + (bv ? '<i style="width:' + (Math.abs(bv) / max * 100) +
         '%;background:' + color(b.name) + '">' + n(bv) + '</i>' : '') + '</div></div>';
@@ -3006,6 +3401,7 @@ function mvp(R) {
   if (top.tyfcb) bits.push(top.tyfcb + ' TYFCB');
   if (top.training) bits.push(top.training + ' training session' + (top.training === 1 ? '' : 's'));
   if (top.perfect) bits.push('perfect attendance');
+  if (top.handPts) bits.push((top.handPts > 0 ? '+' : '') + n(top.handPts) + ' added by hand');
   var second = all[1], lead = second ? top.total - second.total : 0;
 
   $('mvpHero').innerHTML =
@@ -3133,15 +3529,17 @@ function chart(R) {
     lh += '<span><span class="dot" style="background:' + color(R.teams[i].name) + '"></span>' +
           esc(R.teams[i].name) + '</span>';
   lh += '<span style="font-style:italic">Weekly pace counts visitors, referrals, 1-2-1s and TYFCB. ' +
-        'Training and perfect attendance are monthly, so they sit outside this chart.</span>';
+        'Training, perfect attendance and manual scores belong to no one week, so they sit outside this chart.</span>';
   $('legend').innerHTML = lh;
 }
 
 /* ── Breakdown table ────────────────────────────────────────────────── */
 function breakdown(R) {
   var h = '<thead><tr><th>Squad</th>', i, c;
+  var hand = 0;
+  for (i = 0; i < R.teams.length; i++) if (R.teams[i].handList.length) hand = 1;
   for (c = 0; c < RULES.length; c++) h += '<th>' + esc(RULES[c].short) + '</th>';
-  h += '<th>Adjust.</th><th>Month</th><th>Season</th></tr></thead><tbody>';
+  h += (hand ? '<th>Manual</th>' : '') + '<th>Adjust.</th><th>Month</th><th>Season</th></tr></thead><tbody>';
   for (i = 0; i < R.teams.length; i++) {
     var t = R.teams[i];
     h += '<tr><td class="nm"><span class="dot" style="background:' + color(t.name) + '"></span>' +
@@ -3150,6 +3548,7 @@ function breakdown(R) {
       var v = t[RULES[c].key] || 0;
       h += '<td' + (v < 0 ? ' class="neg"' : '') + '>' + n(v) + '</td>';
     }
+    if (hand) h += '<td' + (t.handPts < 0 ? ' class="neg"' : '') + '>' + n(t.handPts) + '</td>';
     h += '<td' + (t.manual < 0 ? ' class="neg"' : '') + '>' + (t.manual ? (t.manual > 0 ? '+' : '') + n(t.manual) : '0') + '</td>' +
          '<td' + (t.monthTotal < 0 ? ' class="neg"' : '') + '>' + n(t.monthTotal) + '</td>' +
          '<td class="tot" style="color:' + color(t.name) + '">' + n(t.grand) + '</td></tr>';
@@ -3179,8 +3578,9 @@ function dossier(R) {
   for (i = 0; i < R.teams.length; i++) if (R.teams[i].name === name) t = R.teams[i];
   if (!t) { $('dossier').innerHTML = ''; return; }
   var above = R.teams[t.rank - 2], below = R.teams[t.rank], col = color(t.name);
-  var cats = RULES.concat([{ key: 'manual', short: 'Adjustments' }]);
-  var maxc = 1;
+  var cats = RULES.concat([{ key: 'handPts', short: 'Manual scores' }, { key: 'manual', short: 'Adjustments' }]);
+  var maxc = 1, hand = handCol(R);
+  t.counts.handPts = t.handList.length;
   for (i = 0; i < cats.length; i++) maxc = Math.max(maxc, Math.abs(t[cats[i].key] || 0));
 
   var h = '<div class="panel" style="border-top:9px solid ' + col + '"><h2>' + esc(t.name) + '</h2>';
@@ -3195,7 +3595,7 @@ function dossier(R) {
   h += '<h3>Where the points came from</h3>';
   for (i = 0; i < cats.length; i++) {
     var v = t[cats[i].key] || 0, cnt = t.counts ? t.counts[cats[i].key] : null;
-    if (!v && cats[i].key === 'manual') continue;
+    if (!v && (cats[i].key === 'manual' || cats[i].key === 'handPts')) continue;
     h += '<div class="fromrow"><div class="fromtop"><span>' + esc(cats[i].short) +
       (cnt != null && cnt > 0 ? ' <span class="note" style="margin:0">(' + cnt + ')</span>' : '') +
       '</span><b class="' + (v < 0 ? 'neg' : '') + '">' + n(v) + '</b></div>' +
@@ -3228,17 +3628,24 @@ function dossier(R) {
   h += '<h3>Squad &mdash; ' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
     '</h3><div class="scroll"><table><thead><tr><th>Player</th>';
   for (i = 0; i < RULES.length; i++) h += '<th>' + esc(abbr(RULES[i].short)) + '</th>';
-  h += '<th>Points</th></tr></thead><tbody>';
+  h += (hand ? '<th>Manual</th>' : '') + '<th>Points</th></tr></thead><tbody>';
   for (i = 0; i < t.members.length; i++) {
     var m = t.members[i], mi;
     h += '<tr><td class="nm">' + esc(m.name) + '</td>';
     for (mi = 0; mi < RULES.length; mi++) h += '<td>' + cellCount(m, RULES[mi]) + '</td>';
+    if (hand) h += '<td>' + (m.handPts ? n(m.handPts) : '\u2014') + '</td>';
     h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
-  if (!t.members.length) h += '<tr><td colspan="' + (RULES.length + 2) +
+  if (!t.members.length) h += '<tr><td colspan="' + (RULES.length + 2 + hand) +
     '" class="sub2">Nobody on this squad yet.</td></tr>';
   h += '</tbody></table></div>';
   $('dossier').innerHTML = h + '</div>';
+}
+
+/* 1 when anybody on a squad has a manual score, so the column only shows up when it means something. */
+function handCol(R) {
+  for (var k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team && R.members[k].handList.length) return 1;
+  return 0;
 }
 
 /* ── Player leaderboard ─────────────────────────────────────────────── */
@@ -3250,11 +3657,14 @@ function memberTable(R) {
   });
   list.sort(function (a, b) {
     var x = a[SORT.k], y = b[SORT.k];
+    /* dir -1 is the first click: names A to Z, numbers highest first. */
     if (typeof x === 'string') return SORT.dir * String(y).localeCompare(String(x));
-    return SORT.dir * ((y || 0) - (x || 0));
+    return SORT.dir * ((x || 0) - (y || 0));
   });
   var cols = [['name', 'Player'], ['team', 'Squad']], ci;
   for (ci = 0; ci < RULES.length; ci++) cols.push([RULES[ci].key, abbr(RULES[ci].short)]);
+  var hand = handCol(R);
+  if (hand) cols.push(['handPts', 'Manual']);
   cols.push(['total', 'Points']);
   var h = '<thead><tr>';
   for (i = 0; i < cols.length; i++)
@@ -3268,6 +3678,7 @@ function memberTable(R) {
       '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' +
       esc(m.team) + '</td>';
     for (ci = 0; ci < RULES.length; ci++) h += '<td>' + cellCount(m, RULES[ci]) + '</td>';
+    if (hand) h += '<td>' + (m.handPts ? n(m.handPts) : '\u2014') + '</td>';
     h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
   if (!list.length) h += '<tr><td colspan="' + cols.length + '" class="sub2">Nobody matches that.</td></tr>';
@@ -3833,8 +4244,16 @@ function saveStatusPanel() {
     h = '<div class="note" style="margin-top:0"><b style="color:var(--green)">Connected to the sheet.</b> ' +
       'Press <b>Save Changes</b> and what you changed is written back to it, so everyone who opens the board ' +
       'sees the same thing. ' +
-      'If two people change the same thing at once, the second is told and shown the first person\'s version ' +
-      '— nobody silently overwrites anybody.</div>' +
+      (SYNC.api >= 2
+        ? 'Several people can have the board open and save at once: a save only sends the rows that person ' +
+          'changed, and they are added to the sheet as it is at that moment, so nobody\'s work is written over. ' +
+          'Only if two people change the very same row does the later save win, for that row. An open board ' +
+          'checks for other people\'s saves every minute or so and updates itself.</div>'
+        : 'If two people change the same tab at once, the second is told and shown the first person\'s version.</div>' +
+          '<div class="warn" style="margin-top:12px"><b>The Apps Script is an older version.</b> Paste the new ' +
+          '<code>TitansCGC.gs</code> into the sheet\u2019s Apps Script and deploy a <b>new version of the same ' +
+          'deployment</b> (Deploy \u2192 Manage deployments \u2192 pencil \u2192 Version: New version). That lets several ' +
+          'people save at once without being turned away, and switches on saving for manual scores.</div>') +
       '<div class="row" style="margin-top:14px">' +
       (pin ? '<span class="note" style="margin:0">This device has the edit PIN.</span>' +
              '<button class="b g sm" onclick="forgetPin()">FORGET PIN ON THIS DEVICE</button>'
@@ -3867,7 +4286,7 @@ function addAdj() {
   if (!t || p === '' || isNaN(+p)) { toast('Pick a squad and put a number in <b>Points</b>.', 'err'); return; }
   if (!r) { toast('Give it a reason — the next person to see it will ask.', 'err'); return; }
   DATA.adjustments = DATA.adjustments || [];
-  DATA.adjustments.push({ month: (DATA.month || ''), team: t, reason: r, points: +p });
+  DATA.adjustments.push({ month: (DATA.month || ''), team: t, reason: r, points: +p, id: newId() });
   $('adjReason').value = ''; $('adjPts').value = '';
   markDirty('adjustments');
   render();
@@ -3877,6 +4296,134 @@ function dropAdj(i) {
   if (!a || !confirm('Remove "' + (a.reason || 'this adjustment') + '" (' + a.points + ') from ' + a.team + '?')) return;
   DATA.adjustments.splice(i, 1);
   markDirty('adjustments');
+  render();
+}
+
+/* ── Manual scores editor ───────────────────────────────────────────────
+   Name | Item | Score, one player at a time. The name has to be somebody on
+   the roster — a typo would score for nobody — so the box offers the roster
+   as you type, and a unique part of a name ("Alex") is enough.           */
+function renderScores(R) {
+  var el = $('msList'); if (!el || !DATA) return;
+  var i, h, names = ROSTER.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var opts = '';
+  for (i = 0; i < names.length; i++) opts += '<option value="' + esc(names[i].name) + '">' + esc(names[i].team || 'no squad') + '</option>';
+  if ($('msNames').innerHTML !== opts) $('msNames').innerHTML = opts;
+  /* Items: every scoring line, then whatever has been typed before. */
+  var seen = {}, items = '';
+  for (i = 0; i < RULES.length; i++) if (!seen[norm(RULES[i].label)]) {
+    seen[norm(RULES[i].label)] = 1;
+    items += '<option value="' + esc(RULES[i].label) + '">' + n(RULES[i].pts) + ' pts</option>';
+  }
+  var list = DATA.scores || [];
+  for (i = 0; i < list.length; i++) if (list[i].item && !seen[norm(list[i].item)]) {
+    seen[norm(list[i].item)] = 1; items += '<option value="' + esc(list[i].item) + '"></option>';
+  }
+  if ($('msItems').innerHTML !== items) $('msItems').innerHTML = items;
+
+  if (!list.length) {
+    el.innerHTML = '<div class="note" style="margin:0">Nothing logged yet. Add a line above.</div>';
+    return;
+  }
+  var total = 0;
+  h = '<div class="scroll"><table><thead><tr><th>Name</th><th>Item</th><th>Score</th><th>Added</th><th></th>' +
+    '</tr></thead><tbody>';
+  for (i = list.length - 1; i >= 0; i--) {
+    var s = list[i], m = R.members[norm(s.name)], team = m && m.team;
+    total += (s.score || 0);
+    h += '<tr><td class="nm">' + (team ? '<span class="dot" style="background:' + color(team) + '"></span>' : '') +
+      esc(s.name) + (m ? (team ? '' : ' <span class="sub2">\u2014 on no squad</span>')
+                        : ' <span class="neg">\u2014 not on the roster</span>') + '</td>' +
+      '<td class="sub2">' + esc(s.item || '\u2014') + '</td>' +
+      '<td class="' + (s.score < 0 ? 'neg' : 'tot') + '">' + (s.score === null ? '\u2014' :
+        (s.score > 0 ? '+' : '') + n(s.score)) + '</td>' +
+      '<td class="sub2">' + esc(s.added || '') + '</td>' +
+      '<td><button class="b g sm" onclick="dropScore(' + i + ')">REMOVE</button></td></tr>';
+  }
+  el.innerHTML = h + '</tbody></table></div><div class="note">' + list.length + ' line' +
+    (list.length === 1 ? '' : 's') + ', ' + (total >= 0 ? '+' : '') + n(total) + ' points in all. Newest at the top.</div>';
+}
+/* Picking a scoring line as the item fills in what that line is worth. */
+function scoreHint() {
+  var it = norm($('msItem').value), i;
+  if ($('msScore').value !== '') return;
+  for (i = 0; i < RULES.length; i++) if (norm(RULES[i].label) === it) { $('msScore').value = RULES[i].pts; return; }
+}
+/* A typed name, as the roster spells it. An exact match wins; failing that,
+   a piece of a name that fits exactly one person. */
+function rosterName(typed) {
+  var t = norm(typed), i, hits = [];
+  if (!t) return { err: 'Type a name.' };
+  for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name) === t) return { name: ROSTER[i].name };
+  for (i = 0; i < ROSTER.length; i++) if (norm(ROSTER[i].name).indexOf(t) !== -1) hits.push(ROSTER[i].name);
+  if (hits.length === 1) return { name: hits[0] };
+  if (hits.length > 1) return { err: '\u201c' + typed + '\u201d could be ' + hits.slice(0, 5).join(', ') +
+    (hits.length > 5 ? '\u2026' : '') + ' \u2014 type more of the name.' };
+  return { err: '\u201c' + typed + '\u201d is not on the roster. Pick a name from the list, or add them on the Roster tab first.' };
+}
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+/* One line checked and turned into a manual score, or a reason it cannot be. */
+function makeScore(nameTxt, itemTxt, scoreTxt) {
+  var who = rosterName(nameTxt);
+  if (who.err) return { err: who.err };
+  var item = String(itemTxt == null ? '' : itemTxt).trim();
+  if (!item) return { err: 'Say what the points are for in <b>Item</b> \u2014 the next person to see it will ask.' };
+  var raw = String(scoreTxt == null ? '' : scoreTxt).replace(/[,\s]/g, '').replace(/pts?$/i, '');
+  if (raw === '' || isNaN(+raw)) return { err: 'Put a number in <b>Score</b> for ' + esc(who.name) + '.' };
+  return { row: { name: who.name, item: item.slice(0, 200), score: +raw, added: todayStr(), id: newId() } };
+}
+function addScore() {
+  if (!DATA) return;
+  var got = makeScore($('msName').value, $('msItem').value, $('msScore').value);
+  if (got.err) { setStatus(got.err, 'err', 'msStatus'); return; }
+  DATA.scores = DATA.scores || [];
+  DATA.scores.push(got.row);
+  $('msName').value = ''; $('msItem').value = ''; $('msScore').value = '';
+  markDirty('scores');
+  render();
+  setStatus('<b>' + (got.row.score >= 0 ? '+' : '') + n(got.row.score) + '</b> to <b>' + esc(got.row.name) +
+    '</b> for ' + esc(got.row.item) + '.' + (SYNC.url && SYNC.can
+      ? ' Press <b>Save Changes</b> at the bottom when you are done.' : ' Not saved \u2014 this view is read-only.'),
+    'ok', 'msStatus');
+  $('msName').focus();
+}
+/* Many lines at once. Good lines go in; any that cannot are left in the box
+   with the reason, so they can be fixed and added again. */
+function addScoresBulk() {
+  if (!DATA) return;
+  var lines = String($('msBulk').value || '').replace(/\r/g, '').split('\n'), i, ok = [], bad = [], left = [];
+  for (i = 0; i < lines.length; i++) {
+    var ln = lines[i].trim(), parts;
+    if (!ln) continue;
+    if (ln.indexOf('|') !== -1) parts = ln.split('|');
+    else if (ln.indexOf('\t') !== -1) parts = ln.split('\t');
+    else parts = ln.split(',');
+    for (var p = 0; p < parts.length; p++) parts[p] = parts[p].trim();
+    if (parts.length > 3) parts = [parts[0], parts.slice(1, parts.length - 1).join(', '), parts[parts.length - 1]];
+    /* A heading row pasted along with the data is not a mistake. */
+    if (i === 0 && norm(parts[0]) === 'name' && /score|points/.test(norm(parts[2] || ''))) continue;
+    if (parts.length < 3) { bad.push('\u201c' + esc(ln) + '\u201d needs a name, an item and a score'); left.push(lines[i]); continue; }
+    var got = makeScore(parts[0], parts[1], parts[2]);
+    if (got.err) { bad.push(got.err); left.push(lines[i]); continue; }
+    ok.push(got.row);
+  }
+  if (!ok.length && !bad.length) { setStatus('Paste some lines in the box first.', 'err', 'msStatus'); return; }
+  DATA.scores = (DATA.scores || []).concat(ok);
+  $('msBulk').value = left.join('\n');
+  if (ok.length) { markDirty('scores'); render(); }
+  setStatus((ok.length ? 'Added <b>' + ok.length + '</b> line' + (ok.length === 1 ? '' : 's') + '.' +
+      (SYNC.url && SYNC.can ? ' Press <b>Save Changes</b> at the bottom when you are done.' : '') : '') +
+    (bad.length ? (ok.length ? '<br>' : '') + '<b>' + bad.length + '</b> could not go in and are still in the box: ' +
+      bad.map(function (x) { return x.replace(/\.$/, ''); }).join('; ') + '.' : ''), bad.length ? 'err' : 'ok', 'msStatus');
+}
+function dropScore(i) {
+  var s = (DATA.scores || [])[i];
+  if (!s || !confirm('Remove ' + (s.score > 0 ? '+' : '') + s.score + ' from ' + s.name + ' (' + (s.item || 'no item') + ')?')) return;
+  DATA.scores.splice(i, 1);
+  markDirty('scores');
   render();
 }
 
@@ -4408,6 +4955,7 @@ function broadcast(R) {
       if (top.tyfcb) bits.push(top.tyfcb + ' TYFCB');
       if (top.training) bits.push(top.training + ' training session(s)');
       if (top.perfect) bits.push('perfect attendance');
+      if (top.handPts) bits.push((top.handPts > 0 ? '+' : '') + n(top.handPts) + ' added by hand');
       out = '👑 *PLAYER OF THE MONTH*\n\n*' + top.name + '* — ' + top.team + '\n*' +
         n(top.total) + ' points*\n\n' + (bits.length ? bits.join(', ') + '.' : 'No activity yet.');
       if (!short && all[1]) out += '\n\nRunner-up: ' + all[1].name + ' on ' + n(all[1].total) + '.';
@@ -4530,7 +5078,9 @@ function demo() {
     }
   }
   adopt({ ok: true, month: M, weeks: weeks, teams: teams, training: training, groups: gRows,
-          adjustments: [{ month: M, team: 'Team 2', reason: 'Chapter challenge won at the AGM', points: 150 }] },
+          adjustments: [{ month: M, team: 'Team 2', reason: 'Chapter challenge won at the AGM', points: 150 }],
+          scores: [{ name: 'Alex Ang', item: 'Visitor missed off PALMS', score: 100, added: '2026-09-15', id: 'demo1' },
+                   { name: 'Sharon Lee', item: 'Ran the chapter training', score: 50, added: '2026-09-22', id: 'demo2' }] },
         'Demo data', '');
   setStatus('Demo mode — invented weekly numbers on placeholder squads. Nothing here is real. ' +
     'Load a link to see the true board.', 'ok');
