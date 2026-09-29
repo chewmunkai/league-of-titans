@@ -3657,8 +3657,9 @@ function memberTable(R) {
   });
   list.sort(function (a, b) {
     var x = a[SORT.k], y = b[SORT.k];
+    /* dir -1 is the first click: names A to Z, numbers highest first. */
     if (typeof x === 'string') return SORT.dir * String(y).localeCompare(String(x));
-    return SORT.dir * ((y || 0) - (x || 0));
+    return SORT.dir * ((x || 0) - (y || 0));
   });
   var cols = [['name', 'Player'], ['team', 'Squad']], ci;
   for (ci = 0; ci < RULES.length; ci++) cols.push([RULES[ci].key, abbr(RULES[ci].short)]);
