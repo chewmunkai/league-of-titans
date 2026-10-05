@@ -55,7 +55,7 @@ var CONFIG = {
   SHEET_ID: '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg',
 
   TEAMS_TAB: 'Teams',
-  // The fortnightly group 1-2-1 draw and whether each group delivered.
+  // The monthly group 1-2-1 draw and whether each group delivered.
   GROUPS_TAB: 'Groups',
   // The chapter's own scoring lines. If this tab exists it defines the
   // whole scoring list and the dashboard's built-in defaults step aside.
@@ -64,7 +64,7 @@ var CONFIG = {
   // exists is used, so an old GameLog tab keeps working untouched.
   ADJUSTMENT_TABS: ['Adjustments', 'GameLog'],
   TRAINING_TAB: 'Training',
-  // The fixed group leaders for the fortnightly draw, in group order.
+  // The fixed group leaders for the monthly draw, in group order.
   MENTORS_TAB: 'Mentors',
   // Everything the dashboard lets you tune: group size, the fine, points
   // carried in. One row per setting.
