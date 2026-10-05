@@ -43,7 +43,7 @@ Straight off the chapter slide, in the slide's own order:
 | Group 1-2-1 completed | 25 pts |
 
 The first six are counted straight out of the PALMS tabs — nobody has to
-remember to claim anything. The seventh comes off the fortnightly draw, below.
+remember to claim anything. The seventh comes off the monthly draw, below.
 Anything the sheet cannot see goes in by hand on the **MANUAL SCORES** tab —
 see [Manual scores](#manual-scores).
 
@@ -61,7 +61,7 @@ counts itself off your spreadsheet every month instead of being typed in by hand
 | TYFCB (money check applied) | TYFCB, with the money trap below handled |
 | Training tab sessions | The Training tab |
 | Perfect attendance | Once a month, for a clean sheet |
-| Group 1-2-1s completed | The fortnightly draw |
+| Group 1-2-1s completed | The monthly draw |
 
 The column picker lists every column found in your loaded sheet, so if you add
 a `CEU` or `Testimonials` column to your PALMS tabs it is there to point at —
@@ -183,8 +183,9 @@ live, because the tabs are fresher than the record.
 - **Weekly tabs** count in the month the weekly tabs hold. A tab with a month in
   its name (`Oct W1`, `Master list 1st week Oct 2026`) counts in that month
   instead, so several months of tabs can sit in the sheet at once.
-- **Group 1-2-1 rounds** count in the month the round *ends*: "29 Sep – 12 Oct"
-  is October's. The **Saved Rounds** table has a *Counts in* picker to change it.
+- **Group 1-2-1 rounds** run a calendar month (1st to the last day) and count in
+  that month: "1–31 Oct 2026" is October's. The **Saved Rounds** table has a
+  *Counts in* picker to change it.
 - **Manual scores and adjustments** have a *Counts in* picker when you add them,
   set to the live month.
 - Anything older with no month of its own counts in the live month, as it always
@@ -196,10 +197,10 @@ points for a finished month go into the live month instead.
 
 ---
 
-## The fortnightly group 1-2-1
+## The monthly group 1-2-1
 
-Every two weeks the chapter is split into small groups, mixed across both
-squads, each led by the same **mentor** every round. They have that fortnight
+Every month the chapter is split into small groups, mixed across both
+squads, each led by the same **mentor** every round. They have that month
 to do their group 1-2-1 and post it in the chapter's social media group.
 
 - **Done it?** Every player in the group scores **25 points**.
@@ -245,16 +246,16 @@ is flagged in red on its card.
 ### Saving a round
 
 **SAVE THIS ROUND** writes it to the **Groups** tab of the sheet, under its
-round name (filled in for you as the next fortnight). It is then the same round
+round name (filled in for you as the month, e.g. "1–31 Oct 2026"). It is then the same round
 for everyone, and it is what scores. **Saved Rounds** lists every round; **Open**
 brings one back into the editor to change and save again, which replaces it.
 Replacing a round keeps each group's Done/Missed where the group number still
-exists. Each round counts in the month it ends — see
+exists. Each round counts in its month — see
 [Which month things count in](#which-month-things-count-in).
 
 ### Marking each group
 
-When the fortnight is up, hit **✓ Done** or **Missed** on each group's card.
+When the month is up, hit **✓ Done** or **Missed** on each group's card.
 That is saved straight to the sheet: Done pays every player in the group, Missed
 puts the group in the fines jar, **Running** puts it back to undecided.
 
@@ -271,7 +272,7 @@ One row per player per round; `Role` is `Mentor` for the mentor. **Done** has
 |---|---|
 | `yes` / `done` / `posted` | Every player in the group scores 25. |
 | `no` / `missed` / `failed` | The group goes in the fines jar. |
-| *(blank)* | The fortnight is still running. Nothing happens either way. |
+| *(blank)* | The month is still running. Nothing happens either way. |
 
 The board will never invent a fine out of an empty cell, and if the rows of one
 group disagree with each other it says so rather than picking one.
@@ -303,7 +304,7 @@ Trail** on each squad's page shows the same sequence with the running total
 after each step — so a disputed score traces line by line back to raw activity.
 
 1. Score every player from the weekly PALMS tabs and the training tab.
-2. Award the group 1-2-1 points to every player whose fortnightly foursome got
+2. Award the group 1-2-1 points to every player whose monthly group got
    it done and posted.
 3. Add any manual scores typed in for a player (Name | Item | Score).
 4. Roll each player up into their squad, activity by activity.
@@ -477,7 +478,7 @@ button will tell you to upload the newer export instead.
 |---|---|
 | Weekly PALMS tabs | A header row containing `First Name` and `RGI`. One tab per meeting week. The header can sit on any row. Visitors, referrals, 1-2-1s, TYFCB and attendance all come from here. |
 | `Teams` | Column A member name, column B squad name. Two squads: the men's and the women's, with any surplus men in the women's squad. |
-| `Groups` | The fortnightly draw and whether each group delivered, plus the `Month` each round counts in. Make the draw on the GROUP 1-2-1 tab. |
+| `Groups` | The monthly draw and whether each group delivered, plus the `Month` each round counts in. Make the draw on the GROUP 1-2-1 tab. |
 | `Scoring` | Optional. Your own scoring lines. If it exists it defines the whole list. |
 | `Training` | A `Name` column plus one column per month. Each month's points read that month's column. |
 | `Adjustments` | Optional. See below. |

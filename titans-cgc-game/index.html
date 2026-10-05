@@ -385,7 +385,7 @@ tr.pending td{background:#fff9e6}
 .rulerow > div:first-child{flex:1;min-width:190px}
 .rulerow button{align-self:flex-end}
 
-/* ── The fortnightly draw ─────────────────────────────────────────── */
+/* ── The monthly draw ─────────────────────────────────────────────── */
 .drawbar{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
 .rollbtn{background:var(--red);color:#fff;border:3px solid var(--ink);border-radius:9px;cursor:pointer;
   font-family:'Press Start 2P',monospace;font-size:11px;padding:17px 22px;letter-spacing:1px;
@@ -622,10 +622,11 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
 
 <!-- ══ GROUP 1-2-1 ══ -->
 <section id="v-groups" class="hide">
-  <div class="panel"><h2>The Fortnightly Draw</h2>
-    <div class="note" style="margin:0 0 16px">Every two weeks the chapter is split into small groups,
+  <div class="panel"><h2>The Monthly Draw</h2>
+    <div class="note" style="margin:0 0 16px">Every month the chapter is split into small groups,
       mixed across both squads, each led by the same <b>mentor</b> every round. They have that
-      fortnight to do their group 1-2-1 and post it in the chapter's social media group. Do it and
+      month &mdash; the 1st to the last day &mdash; to do their group 1-2-1 and post it in the chapter's
+      social media group. Do it and
       <b>every player in the group scores <span id="gPts"></span></b>. Miss it and the group pays the
       fine.</div>
     <div class="drawbar">
@@ -635,7 +636,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
           <option value="3">up to 3</option><option value="4">up to 4</option>
           <option value="5">up to 5</option><option value="6">up to 6</option></select></div>
       <div style="width:200px"><label>Round name</label>
-        <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
+        <input id="roundName" placeholder="e.g. 1–31 Oct 2026" oninput="renderDraw()"></div>
       <button class="b" onclick="saveDraw()" id="saveDrawBtn">💾 SAVE ROUND</button>
       <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
     </div>
@@ -711,7 +712,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
       <div>
         <div class="scroll"><table id="rulesTable"></table></div>
         <div class="note"><span class="chip a">auto</span> counted straight from the PALMS tabs &nbsp;
-          <span class="chip m">groups</span> from the fortnightly draw &nbsp;
+          <span class="chip m">groups</span> from the monthly draw &nbsp;
           <span class="chip p">pending</span> agreed in principle, not yet scoring.<br><br>
           Change any number below and the whole board recalculates instantly — nothing needs
           redeploying.</div>
@@ -867,7 +868,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
         all come from here.</li>
       <li><b>Teams</b> — column A player name, column B squad name. Two squads: the men's and the
         women's, with any surplus men in the women's squad.</li>
-      <li><b>Groups</b> — the fortnightly draw and whether each group delivered. Make the draw on the
+      <li><b>Groups</b> — the monthly draw and whether each group delivered. Make the draw on the
         <b>Group 1-2-1</b> tab and paste it in.</li>
       <li><b>Scoring</b> — optional. Your own scoring lines. If this tab exists it defines the whole
         list and the defaults in this page step aside.</li>
@@ -886,8 +887,8 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
     <h3>Groups columns</h3>
     <div class="scroll"><table id="groupSchema"></table></div>
     <div class="note"><b>Done</b> has three states, not two. <b>yes</b> pays every player in the group;
-      <b>no</b> puts the group in the fines jar; <b>blank</b> means the fortnight is still running and
-      nothing happens either way. Leaving it blank is the honest answer until the two weeks are up.</div>
+      <b>no</b> puts the group in the fines jar; <b>blank</b> means the month is still running and
+      nothing happens either way. Leaving it blank is the honest answer until the month is up.</div>
     <div class="row" style="margin-top:14px">
       <button class="b g" onclick="copyGroupsHeader()">COPY GROUPS HEADER</button>
     </div>
@@ -1024,7 +1025,7 @@ var RULES = [
   { key: 'one21',      label: 'Normal 1-2-1 completed',     short: '1-2-1s',     pts: 25,
     src: { kind: 'week', cols: ['ONE21'] }, unit: '1-2-1' },
   /* Not from PALMS. This one comes off the Groups tab, a player at a time,
-     when their fortnightly foursome gets its group 1-2-1 done and posted. */
+     when their monthly group gets its group 1-2-1 done and posted. */
   { key: 'group121',   label: 'Group 1-2-1 completed',      short: 'Group 1-2-1', pts: 25,
     src: { kind: 'groups' }, unit: 'group 1-2-1' }
 ];
@@ -1114,7 +1115,7 @@ var SET = {
 /* ── Order of operations, shown to the user and used by compute() ────── */
 var OOO = [
   'Score every player from the weekly PALMS tabs and the training tab.',
-  'Award the group 1-2-1 points to every player whose fortnightly foursome got it done and posted.',
+  'Award the group 1-2-1 points to every player whose monthly group got it done and posted.',
   'Add any manual scores typed in for a player (Name | Item | Score).',
   'Roll each player up into their squad, activity by activity.',
   'Add any adjustment the room agreed and logged for that squad.',
@@ -2614,7 +2615,7 @@ function applySettings(list) {
 
      yes / y / done / posted / 1   the group did it — everyone scores
      no  / n / failed / missed / 0 the group did not — the group is fined
-     (blank)                       the fortnight is still running
+     (blank)                       the month is still running
 
    Leaving it blank is not an oversight, it is the third state. Nobody is
    fined for a round that has not finished yet.                            */
@@ -3085,9 +3086,9 @@ function compute(mk, carry) {
   }
   for (k in trainOf) if (trainOf.hasOwnProperty(k) && !members[k]) slot(k);
 
-  /* ── The fortnightly group 1-2-1 ──────────────────────────────────
+  /* ── The monthly group 1-2-1 ──────────────────────────────────────
      A group that got it done pays out to every player in it. A group that
-     did not owes the jar. A group still inside its fortnight does neither
+     did not owes the jar. A group still inside its month does neither
      — the board never invents a fine out of a blank cell. */
   /* Every round is listed, whatever its month, so any group can still be
      marked; only the rounds that count in this month pay out points. */
@@ -3386,7 +3387,8 @@ function weekMonth(tab) { return monthKeyOf(tab, liveMonthKey()) || liveMonthKey
 function groupMonth(g) { return monthKeyOf(g.month, liveMonthKey()) || liveMonthKey(); }
 function scoreMonth(s) { return monthKeyOf(s.month, liveMonthKey()) || liveMonthKey(); }
 function adjMonth(a) { return monthKeyOf(a.month, liveMonthKey()) || liveMonthKey(); }
-/* A new round counts in the month it ends: "29 Sep – 12 Oct" is October's. */
+/* A round counts in the month it names: "1–31 Oct 2026" is October's. A
+   name that spans two months counts in the later one. */
 function roundMonthGuess(name) { return monthKeyOf(name, liveMonthKey(), true) || liveMonthKey(); }
 
 function liveMonths() {
@@ -3701,7 +3703,7 @@ function recordMonth(mk) {
   markDirty('months');
   if (mk === liveMonthKey()) {
     var touched = { groups: 0, scores: 0, adjustments: 0 }, running = {}, gk;
-    /* A group still inside its fortnight has paid nothing into this record.
+    /* A group still inside its round has paid nothing into this record.
        If its round ends in a later month, it goes there, so its points land
        when it is marked; a finished group stays with this month. */
     for (i = 0; i < (DATA.groups || []).length; i++)
@@ -4312,9 +4314,9 @@ function memberTable(R) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   THE FORTNIGHTLY DRAW
+   THE MONTHLY DRAW
 
-   Four players, two from each squad, thrown together for a fortnight. The
+   Four players, two from each squad, thrown together for a month. The
    draw is made here and lives only in this browser tab; the sheet is still
    the record, which is what the Copy For Sheet button is for.
    ═══════════════════════════════════════════════════════════════════════ */
@@ -4427,11 +4429,19 @@ function rollDraw() {
   spinUp(R, made);
 }
 
-/* A fortnight from today, written the way people write it. */
+/* One round per calendar month, named for it: "1–31 Oct 2026". The first
+   month, from the later of today and the month the weekly tabs hold, that
+   has no round yet — so drawing on the 29th of a month that already has
+   its round names next month's. */
 function nextRoundName() {
-  var a = new Date(), b = new Date(a.getTime() + 13 * 86400000);
-  function f(d, withMonth) { return d.getDate() + (withMonth ? ' ' + d.toLocaleDateString('en-GB', { month: 'short' }) : ''); }
-  return a.getMonth() === b.getMonth() ? f(a, false) + '–' + f(b, true) : f(a, true) + ' – ' + f(b, true);
+  var live = DATA ? liveMonthKey() : todayKey(), mk = todayKey() > live ? todayKey() : live, have = {}, i;
+  for (i = 0; i < (DATA && DATA.groups ? DATA.groups.length : 0); i++) have[groupMonth(DATA.groups[i])] = 1;
+  for (i = 0; i < 12 && have[mk]; i++) mk = addMonths(mk, 1);
+  return roundNameFor(mk);
+}
+function roundNameFor(mk) {
+  var y = +mk.slice(0, 4), m = +mk.slice(5, 7);
+  return '1\u2013' + new Date(y, m, 0).getDate() + ' ' + MONTH_FULL[m - 1].slice(0, 3) + ' ' + y;
 }
 
 /* The wow: every slot cycles real names at speed, then the groups lock in
@@ -4657,7 +4667,7 @@ function commitDraw() {
   if (old.length && norm(rn) !== norm(DRAW_ROUND) &&
       !confirm('A round called "' + rn + '" is already saved. Replace it with these groups?')) return false;
   /* Replacing a round keeps each group's Done and Notes where the group
-     number still exists, so fixing a name mid-fortnight does not wipe out a
+     number still exists, so fixing a name mid-month does not wipe out a
      group that has already delivered. */
   var was = {};
   for (i = 0; i < old.length; i++) if (!was[old[i].group]) was[old[i].group] = old[i];
@@ -4735,8 +4745,8 @@ function renderSaved(R) {
       '<button class="b g sm" onclick="deleteRound(ROUNDS[' + r + '])">DELETE</button></td></tr>';
   }
   ROUNDS = R.roundOrder.slice();
-  el.innerHTML = h + '</tbody></table></div><div class="note">A round counts in the month it ends. Change it ' +
-    'here if it belongs somewhere else \u2014 its group 1-2-1 points move with it.</div>';
+  el.innerHTML = h + '</tbody></table></div><div class="note">Each round counts in its month. Change it here if ' +
+    'it belongs somewhere else \u2014 its group 1-2-1 points move with it.</div>';
 }
 var ROUNDS = [];
 function setRoundMonth(rn, mk) {
@@ -4814,7 +4824,7 @@ function roundStatus(R) {
   RG = R.groups;
   if (!R.groups.length) {
     el.innerHTML = '<div class="note" style="margin:0">No rounds yet. Save a draw above and it shows up ' +
-      'here, where you mark each group <b>Done</b> or <b>Missed</b> when the fortnight is up.</div>';
+      'here, where you mark each group <b>Done</b> or <b>Missed</b> when the month is up.</div>';
     return;
   }
   var h = '', r, i;
@@ -4851,7 +4861,7 @@ function roundStatus(R) {
         '</div><div class="note" style="margin-top:9px">' +
         (G.done === true ? n(rule('group121')) + ' each, already in the scores.'
          : G.done === false ? 'Owes the jar.'
-         : 'Mark it when the fortnight is up.') +
+         : 'Mark it when the month is up.') +
         (G.notes ? '<br>' + esc(G.notes) : '') + '</div></div>';
     }
     h += '</div>';
@@ -5649,7 +5659,7 @@ function buildScoreSchema() {
 function buildGroupSchema() {
   var el = $('groupSchema'); if (!el || el.dataset.built) return;
   var rows = [
-    ['Round', '1\u201314 Sept', 'Which fortnight. One name per draw, the same on all its rows.'],
+    ['Round', '1\u201331 Oct 2026', 'Which month. One name per draw, the same on all its rows.'],
     ['Group', '3', 'Which group inside that round.'],
     ['Member', 'Alex Ang', 'One row per player. Spelled as the PALMS tabs spell it.'],
     ['Done', 'yes / no / (blank)', 'Did the group do its 1-2-1 and post it? Blank = still running.'],
@@ -5688,7 +5698,7 @@ function checkData() {
   if (!ROSTER.length) msgs.push('No <b>Teams</b> tab was found, so every score stays at zero until you ' +
     'add one — or drag people onto a squad on the Roster board.');
   if (!DATA.weeks.length) msgs.push('No weekly PALMS tabs were found. Only training and adjustments will count.');
-  if (!(DATA.groups || []).length) msgs.push('No <b>Groups</b> tab was found, so no fortnightly ' +
+  if (!(DATA.groups || []).length) msgs.push('No <b>Groups</b> tab was found, so no monthly ' +
     'group 1-2-1 is being scored. Make a draw on the <b>Group 1-2-1</b> tab and paste it in.');
   if (TEAMS.length > 2) msgs.push('The sheet names <b>' + TEAMS.length + '</b> squads. This game is ' +
     'written for two — everything still scores, but the scoreboard shows a ranked list rather than a ' +
@@ -5862,20 +5872,16 @@ function demo() {
   PARSE_WARN = [];
   LAST = { kind: 'demo' };
   CARRY = { 'Team 1': 0, 'Team 2': 0 };
-  /* A fortnight already judged and a fortnight still running, so both
-     halves of the Groups tab are visible without anyone typing anything. */
+  /* September's round, with groups done, missed and still running, so
+     every state of the Groups tab is visible without anyone typing. */
   var gRows = [], gi, gj;
   var d1 = makeDrawFrom(teams, 'Team 1'), d2 = makeDrawFrom(teams, 'Team 2');
   var pairs = Math.min(Math.floor(d1.length / 2), Math.floor(d2.length / 2));
   for (gi = 0; gi < pairs; gi++) {
-    var verdict = gi === pairs - 1 ? 'no' : 'yes';
+    var verdict = gi === pairs - 1 ? 'no' : (gi === pairs - 2 ? '' : 'yes');
     for (gj = 0; gj < 2; gj++) {
-      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: verdict, notes: '' });
-      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: verdict, notes: '' });
-    }
-    for (gj = 0; gj < 2; gj++) {
-      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: '', notes: '' });
-      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: '', notes: '' });
+      gRows.push({ round: '1\u201330 Sep 2026', group: String(gi + 1), member: d1[gi * 2 + gj], done: verdict, notes: '', month: M });
+      gRows.push({ round: '1\u201330 Sep 2026', group: String(gi + 1), member: d2[gi * 2 + gj], done: verdict, notes: '', month: M });
     }
   }
   adopt({ ok: true, month: M, weeks: weeks, teams: teams, training: training, groups: gRows,

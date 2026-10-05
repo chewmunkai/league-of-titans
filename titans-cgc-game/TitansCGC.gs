@@ -536,6 +536,36 @@ function buildPayload() {
   };
 }
 
+// ── Check before you deploy ──────────────────────────────────────
+// After pasting this file: pick checkSetup in the function menu at the top
+// of the editor and press Run. It only READS the sheet — nothing is changed
+// — and the Execution log lists exactly what the dashboard will find. Any
+// line starting PROBLEM needs fixing before you deploy.
+function checkSetup() {
+  var out = [], k;
+  out.push('TitansCGC script version ' + API_VERSION + ', working on "' + book().getName() + '".');
+  out.push(CONFIG.EDIT_PIN ? 'EDIT_PIN is set, so saving is on.'
+                           : 'PROBLEM: EDIT_PIN is empty. The board will be view-only until you set it.');
+  var weeks = readWeeks();
+  out.push(weeks.length ? weeks.length + ' weekly PALMS tab(s): ' + weeks.map(function (w) {
+    return w.tab + ' (' + w.rows.length + ' players)'; }).join(', ') + '.'
+    : 'PROBLEM: no weekly PALMS tabs found (a tab needs a heading row with First Name and RGI).');
+  var tr = readTraining();
+  out.push(tr.rows.length ? 'Training: ' + tr.rows.length + ' players, months ' + (tr.months || []).join(', ') +
+    '. Newest: ' + tr.month + '.' : 'No Training tab found, so nobody scores training points.');
+  for (k in SECTIONS) {
+    if (!SECTIONS.hasOwnProperty(k)) continue;
+    var sec = readSection(k);
+    out.push(k + ': ' + (sec.error ? 'PROBLEM: ' + sec.error
+      : (sec.exists ? sec.rows.length + ' row(s) in the "' + sec.tab + '" tab.'
+                    : 'no "' + sec.tab + '" tab yet; it is made the first time this is saved.')));
+  }
+  var size = JSON.stringify(buildPayload()).length;
+  out.push('Full read worked: ' + size + ' characters go to the board. Nothing was changed.');
+  Logger.log(out.join('\n'));
+  return out.join('\n');
+}
+
 function getTabNames() {
   return book().getSheets().map(function (s) {
     return s.getName();
