@@ -43,7 +43,7 @@ Straight off the chapter slide, in the slide's own order:
 | Group 1-2-1 completed | 25 pts |
 
 The first six are counted straight out of the PALMS tabs — nobody has to
-remember to claim anything. The seventh comes off the fortnightly draw, below.
+remember to claim anything. The seventh comes off the monthly draw, below.
 Anything the sheet cannot see goes in by hand on the **MANUAL SCORES** tab —
 see [Manual scores](#manual-scores).
 
@@ -61,7 +61,7 @@ counts itself off your spreadsheet every month instead of being typed in by hand
 | TYFCB (money check applied) | TYFCB, with the money trap below handled |
 | Training tab sessions | The Training tab |
 | Perfect attendance | Once a month, for a clean sheet |
-| Group 1-2-1s completed | The fortnightly draw |
+| Group 1-2-1s completed | The monthly draw |
 
 The column picker lists every column found in your loaded sheet, so if you add
 a `CEU` or `Testimonials` column to your PALMS tabs it is there to point at —
@@ -137,10 +137,70 @@ leave both blank.
 
 ---
 
-## The fortnightly group 1-2-1
+## Month by month
 
-Every two weeks the chapter is split into small groups, mixed across both
-squads, each led by the same **mentor** every round. They have that fortnight
+The weekly PALMS tabs only ever hold **one month** — the one running now. The
+**MONTHS** tab keeps every month after that:
+
+- **A table of every month** — each squad's points, who won the month, and
+  whether it is **live** (scored right now from the weekly tabs) or
+  **recorded** (frozen at the end of its month). A line chart of the same.
+- **Players month by month** — every player's points in every month, side by
+  side.
+- **Tick boxes to add months together.** Tick September and October and the
+  Scoreboard, Squads, Players and Broadcast tabs all show September + October:
+  the head-to-head, Player of the Month (it becomes *Top Player — Sep – Oct
+  2026*), the category bars, the audit trail. **THIS MONTH** and **WHOLE
+  SEASON** are one-tap shortcuts. Once there is more than one month, the same
+  tick boxes sit at the top of every one of those tabs.
+
+What you tick is remembered on that device only — it changes what *you* see,
+not the board for everyone.
+
+### Recording a month — do this at the end of every month
+
+1. On the **MONTHS** tab, press **📌 RECORD SEPTEMBER 2026** (whatever month is
+   live), then **Save Changes**.
+   Every player's points for the month, category by category, are frozen into
+   a **Monthly Scores** tab in the sheet. Recording again simply replaces the
+   earlier record.
+2. Put the new month's numbers into the weekly PALMS tabs as usual.
+3. On the MONTHS tab, change **Month the weekly tabs hold** to the new month,
+   then **Save Changes**. That setting is shared, so every copy of the board
+   switches together. Training is read from that month's column.
+
+If you forget step 1 and clear the weekly tabs, that month's numbers are gone
+from the board — so the board nags: it says so at the top of the page when the
+calendar has moved on but the weekly tabs are still being scored as last month,
+and when a live month's numbers no longer match its record.
+
+A recorded month keeps the points it was given when it was recorded, even if a
+point value is changed later. A month that is both live and recorded is shown
+live, because the tabs are fresher than the record.
+
+### Which month things count in
+
+- **Weekly tabs** count in the month the weekly tabs hold. A tab with a month in
+  its name (`Oct W1`, `Master list 1st week Oct 2026`) counts in that month
+  instead, so several months of tabs can sit in the sheet at once.
+- **Group 1-2-1 rounds** run a calendar month (1st to the last day) and count in
+  that month: "1–31 Oct 2026" is October's. The **Saved Rounds** table has a
+  *Counts in* picker to change it.
+- **Manual scores and adjustments** have a *Counts in* picker when you add them,
+  set to the live month.
+- Anything older with no month of its own counts in the live month, as it always
+  did — and is stamped with that month when the month is recorded, so it does
+  not count again next month.
+
+A recorded month is frozen: it is greyed out in the *Counts in* pickers. Late
+points for a finished month go into the live month instead.
+
+---
+
+## The monthly group 1-2-1
+
+Every month the chapter is split into small groups, mixed across both
+squads, each led by the same **mentor** every round. They have that month
 to do their group 1-2-1 and post it in the chapter's social media group.
 
 - **Done it?** Every player in the group scores **25 points**.
@@ -186,15 +246,16 @@ is flagged in red on its card.
 ### Saving a round
 
 **SAVE THIS ROUND** writes it to the **Groups** tab of the sheet, under its
-round name (filled in for you as the next fortnight). It is then the same round
+round name (filled in for you as the month, e.g. "1–31 Oct 2026"). It is then the same round
 for everyone, and it is what scores. **Saved Rounds** lists every round; **Open**
 brings one back into the editor to change and save again, which replaces it.
 Replacing a round keeps each group's Done/Missed where the group number still
-exists.
+exists. Each round counts in its month — see
+[Which month things count in](#which-month-things-count-in).
 
 ### Marking each group
 
-When the fortnight is up, hit **✓ Done** or **Missed** on each group's card.
+When the month is up, hit **✓ Done** or **Missed** on each group's card.
 That is saved straight to the sheet: Done pays every player in the group, Missed
 puts the group in the fines jar, **Running** puts it back to undecided.
 
@@ -211,7 +272,7 @@ One row per player per round; `Role` is `Mentor` for the mentor. **Done** has
 |---|---|
 | `yes` / `done` / `posted` | Every player in the group scores 25. |
 | `no` / `missed` / `failed` | The group goes in the fines jar. |
-| *(blank)* | The fortnight is still running. Nothing happens either way. |
+| *(blank)* | The month is still running. Nothing happens either way. |
 
 The board will never invent a fine out of an empty cell, and if the rows of one
 group disagree with each other it says so rather than picking one.
@@ -238,20 +299,22 @@ is the whole game.
 
 ## Order of operations
 
-Every squad is scored in exactly this sequence, every month, and the **Audit
+Every squad is scored in exactly this sequence, one month at a time, and the **Audit
 Trail** on each squad's page shows the same sequence with the running total
 after each step — so a disputed score traces line by line back to raw activity.
 
 1. Score every player from the weekly PALMS tabs and the training tab.
-2. Award the group 1-2-1 points to every player whose fortnightly foursome got
+2. Award the group 1-2-1 points to every player whose monthly group got
    it done and posted.
 3. Add any manual scores typed in for a player (Name | Item | Score).
 4. Roll each player up into their squad, activity by activity.
 5. Add any adjustment the room agreed and logged for that squad.
-6. Add the points carried in from earlier months to get the season total.
+6. Add the points carried in from before the board kept monthly records.
 
-Both squads start this game on **zero**. The carry-in boxes on the SCORING tab
-are there for when a month closes and you roll the totals forward.
+When months are ticked together, each month is scored like this on its own and
+the months are then added up. Both squads start this game on **zero**, and with
+months now recorded there is no need to roll totals into the carry-in boxes on
+the SCORING tab — they are only for points from before the records began.
 
 ---
 
@@ -316,8 +379,9 @@ deployment — a brand-new deployment gets a new `/exec` link and the board woul
 still be talking to the old one.
 
 Until the script is updated the board still works and still saves, but it says
-so at the top of the page, two people saving the same tab close together get
-the old "someone else saved first" refusal, and manual scores cannot be saved.
+so at the top of the page and holds back whatever the old script cannot store:
+recorded months need the current script (it reports itself as version 3), manual
+scores need version 2 or later.
 
 ### How saving works
 
@@ -351,9 +415,10 @@ the old "someone else saved first" refusal, and manual scores cannot be saved.
 - **A save that is sent twice is harmless.** If the answer from Google is lost
   and the page retries, the rows are already there and nothing doubles up.
 - **What gets saved:** roster (Teams), rounds and Done/Missed (Groups),
-  mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in and
-  the attendance and TYFCB options (Settings), adjustments (Adjustments),
-  manual scores (Manual Scores). PALMS and Training are never written to.
+  mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in, the
+  attendance and TYFCB options and the month the weekly tabs hold (Settings),
+  adjustments (Adjustments), manual scores (Manual Scores), recorded months
+  (Monthly Scores). PALMS and Training are never written to.
 - **Leaving or refreshing with unsaved changes** asks first.
 - A name typed as a formula (`=…`) is stored as text, never run.
 
@@ -413,11 +478,12 @@ button will tell you to upload the newer export instead.
 |---|---|
 | Weekly PALMS tabs | A header row containing `First Name` and `RGI`. One tab per meeting week. The header can sit on any row. Visitors, referrals, 1-2-1s, TYFCB and attendance all come from here. |
 | `Teams` | Column A member name, column B squad name. Two squads: the men's and the women's, with any surplus men in the women's squad. |
-| `Groups` | The fortnightly draw and whether each group delivered. Make the draw on the GROUP 1-2-1 tab and paste it in. |
+| `Groups` | The monthly draw and whether each group delivered, plus the `Month` each round counts in. Make the draw on the GROUP 1-2-1 tab. |
 | `Scoring` | Optional. Your own scoring lines. If it exists it defines the whole list. |
-| `Training` | A `Name` column plus one column per month. It reads every month and uses the rightmost one, whether or not it is filled in yet. Change it with the month picker on the DATA tab. |
+| `Training` | A `Name` column plus one column per month. Each month's points read that month's column. |
 | `Adjustments` | Optional. See below. |
-| `Manual Scores` | Optional. `Name \| Item \| Score` (plus `Added` and `ID`, filled in by the board). Made for you the first time a manual score is saved. |
+| `Manual Scores` | Optional. `Name \| Item \| Score` (plus `Added`, `ID` and `Month`, filled in by the board). Made for you the first time a manual score is saved. |
+| `Monthly Scores` | Made for you the first time a month is recorded: `Month \| Squad \| Player \| Key \| Category \| Count \| Points \| Recorded`. One row per player per category per month. |
 
 `templates/Teams.csv`, `templates/Groups.csv`, `templates/Scoring.csv`,
 `templates/Adjustments.csv` and `templates/ManualScores.csv` are ready to paste

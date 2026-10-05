@@ -5,8 +5,8 @@
  *
  * This script does NO scoring. It hands the raw rows over, and writes back
  * only the tabs the dashboard owns: Teams, Groups, Mentors, Scoring,
- * Settings, Adjustments and Manual Scores. It never touches a PALMS tab or
- * Training.
+ * Settings, Adjustments, Manual Scores and Monthly Scores. It never touches
+ * a PALMS tab or Training.
  *
  * The sheet is the shared record. Anyone with the dashboard link can READ
  * it; SAVING needs the edit PIN below, so the board can be put up in front
@@ -55,7 +55,7 @@ var CONFIG = {
   SHEET_ID: '1DGPPrDKswS0JMJUMkwdtoffV9S7LmReKGT_FmQ1ZlSg',
 
   TEAMS_TAB: 'Teams',
-  // The fortnightly group 1-2-1 draw and whether each group delivered.
+  // The monthly group 1-2-1 draw and whether each group delivered.
   GROUPS_TAB: 'Groups',
   // The chapter's own scoring lines. If this tab exists it defines the
   // whole scoring list and the dashboard's built-in defaults step aside.
@@ -64,13 +64,16 @@ var CONFIG = {
   // exists is used, so an old GameLog tab keeps working untouched.
   ADJUSTMENT_TABS: ['Adjustments', 'GameLog'],
   TRAINING_TAB: 'Training',
-  // The fixed group leaders for the fortnightly draw, in group order.
+  // The fixed group leaders for the monthly draw, in group order.
   MENTORS_TAB: 'Mentors',
   // Everything the dashboard lets you tune: group size, the fine, points
   // carried in. One row per setting.
   SETTINGS_TAB: 'Settings',
   // Points typed in by hand for one player: Name | Item | Score.
   SCORES_TAB: 'Manual Scores',
+  // Each finished month, frozen: every player's points by category, so a
+  // month is kept after its weekly PALMS tabs are cleared for the next one.
+  MONTHS_TAB: 'Monthly Scores',
 
   // Saving is refused until this is set. Anyone who has it can change the
   // roster, the draw and the scoring for everybody, so treat it like a
@@ -165,7 +168,7 @@ function handleAction(p) {
 // done a minute earlier: both rows survive. Only when two people change the
 // very same row does the later save win — for that one row.
 
-var API_VERSION = 2;
+var API_VERSION = 3;
 
 // headers: how the tab is written. heads: words that find each column when
 // the tab is read, so a tab somebody built by hand in another order still
@@ -177,12 +180,12 @@ var SECTIONS = {
   teams:       { headers: ['Member Name', 'Team'],
                  heads: [['member', 'name', 'player'], ['team', 'squad']],
                  must: [0, 1], key: [0] },
-  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'],
+  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes', 'Month'],
                  heads: [['round', 'cycle', 'fortnight', 'period'], ['group', 'pod'],
                          ['member', 'player', 'name'], ['role'],
                          ['done', 'completed', 'complete', 'posted', 'status', 'outcome'],
-                         ['notes', 'note', 'detail']],
-                 must: [1, 2], key: [0, 2], text: [0] },
+                         ['notes', 'note', 'detail'], ['month']],
+                 must: [1, 2], key: [0, 2], text: [0, 6] },
   mentors:     { headers: ['Mentor', 'Order'],
                  heads: [['mentor'], ['order', 'group']],
                  must: [0], key: [0] },
@@ -199,10 +202,17 @@ var SECTIONS = {
                          ['points', 'pts', 'score'], ['id']],
                  not: { 1: ['target'] },
                  must: [1], key: [0, 1, 2, 3], id: 4, text: [0] },
-  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID'],
+  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID', 'Month'],
                  heads: [['name', 'member', 'player'], ['item', 'activity', 'what', 'reason'],
-                         ['score', 'points', 'pts'], ['added', 'date', 'when'], ['id']],
-                 must: [0, 2], key: [0, 1, 2, 3], id: 4, text: [3] }
+                         ['score', 'points', 'pts'], ['added', 'date', 'when'], ['id'], ['month']],
+                 must: [0, 2], key: [0, 1, 2, 3], id: 4, text: [3, 5] },
+  // One row per player per category per month, plus one per squad for that
+  // month's adjustments. Recording a month again replaces its rows.
+  months:      { headers: ['Month', 'Squad', 'Player', 'Key', 'Category', 'Count', 'Points', 'Recorded'],
+                 heads: [['month'], ['squad', 'team'], ['player', 'member', 'name'], ['key'],
+                         ['category', 'activity', 'item'], ['count', 'qty'], ['points', 'pts', 'score'],
+                         ['recorded', 'saved']],
+                 must: [0, 6], key: [0, 1, 2, 3], text: [0, 7] }
 };
 
 // The tab a section is read from right now…
@@ -213,6 +223,7 @@ function readTabName(section) {
   if (section === 'scoring') return CONFIG.SCORING_TAB;
   if (section === 'settings') return CONFIG.SETTINGS_TAB;
   if (section === 'scores') return CONFIG.SCORES_TAB;
+  if (section === 'months') return CONFIG.MONTHS_TAB;
   if (section === 'adjustments') {
     var ss = book();
     for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++)
@@ -516,12 +527,43 @@ function buildPayload() {
     mentorsRaw: readTabRaw(CONFIG.MENTORS_TAB, ['mentor']),
     settingsRaw: readTabRaw(CONFIG.SETTINGS_TAB, ['setting']),
     scoresRaw: readTabRaw(CONFIG.SCORES_TAB, ['score', 'points']),
+    monthsRaw: readTabRaw(CONFIG.MONTHS_TAB, ['category', 'points']),
     // A fingerprint of each saveable tab as it stands. The dashboard checks
     // these every so often and refreshes itself when somebody else has saved.
     hashes: hashes,
     canSave: !!CONFIG.EDIT_PIN,
     warnings: []
   };
+}
+
+// ── Check before you deploy ──────────────────────────────────────
+// After pasting this file: pick checkSetup in the function menu at the top
+// of the editor and press Run. It only READS the sheet — nothing is changed
+// — and the Execution log lists exactly what the dashboard will find. Any
+// line starting PROBLEM needs fixing before you deploy.
+function checkSetup() {
+  var out = [], k;
+  out.push('TitansCGC script version ' + API_VERSION + ', working on "' + book().getName() + '".');
+  out.push(CONFIG.EDIT_PIN ? 'EDIT_PIN is set, so saving is on.'
+                           : 'PROBLEM: EDIT_PIN is empty. The board will be view-only until you set it.');
+  var weeks = readWeeks();
+  out.push(weeks.length ? weeks.length + ' weekly PALMS tab(s): ' + weeks.map(function (w) {
+    return w.tab + ' (' + w.rows.length + ' players)'; }).join(', ') + '.'
+    : 'PROBLEM: no weekly PALMS tabs found (a tab needs a heading row with First Name and RGI).');
+  var tr = readTraining();
+  out.push(tr.rows.length ? 'Training: ' + tr.rows.length + ' players, months ' + (tr.months || []).join(', ') +
+    '. Newest: ' + tr.month + '.' : 'No Training tab found, so nobody scores training points.');
+  for (k in SECTIONS) {
+    if (!SECTIONS.hasOwnProperty(k)) continue;
+    var sec = readSection(k);
+    out.push(k + ': ' + (sec.error ? 'PROBLEM: ' + sec.error
+      : (sec.exists ? sec.rows.length + ' row(s) in the "' + sec.tab + '" tab.'
+                    : 'no "' + sec.tab + '" tab yet; it is made the first time this is saved.')));
+  }
+  var size = JSON.stringify(buildPayload()).length;
+  out.push('Full read worked: ' + size + ' characters go to the board. Nothing was changed.');
+  Logger.log(out.join('\n'));
+  return out.join('\n');
 }
 
 function getTabNames() {
@@ -577,6 +619,7 @@ function isExcluded(name) {
   if (n === CONFIG.GROUPS_TAB.toLowerCase()) return true;
   if (n === CONFIG.SCORING_TAB.toLowerCase()) return true;
   if (n === CONFIG.SCORES_TAB.toLowerCase()) return true;
+  if (n === CONFIG.MONTHS_TAB.toLowerCase()) return true;
   if (n === CONFIG.TRAINING_TAB.toLowerCase()) return true;
   for (var i = 0; i < CONFIG.EXCLUDE_TABS.length; i++) {
     if (n.indexOf(CONFIG.EXCLUDE_TABS[i].toLowerCase()) !== -1) return true;

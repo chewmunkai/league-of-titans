@@ -93,7 +93,8 @@ body.has-savebar .toast{bottom:92px}
 .livebanner{display:none;background:#fff6d9;border:2px solid var(--gold-dk);border-radius:9px;
   padding:11px 15px;font-size:13.5px;color:#6b4d00;margin-bottom:16px;line-height:1.55}
 body.loading-live .livebanner{display:block}
-body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-scoring,body.loading-live #v-manual{
+body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-scoring,body.loading-live #v-manual,
+body.loading-live #v-months .recpanel{
   pointer-events:none;opacity:.5;filter:grayscale(.35)}
 
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);max-width:min(620px,92vw);
@@ -103,6 +104,23 @@ body.loading-live #v-roster,body.loading-live #v-groups,body.loading-live #v-sco
 .toast.show{transform:translate(-50%,0)}
 .toast.ok{box-shadow:5px 5px 0 var(--green)}
 .toast b{color:var(--gold)}
+
+/* ── Months: the tick-box bar and the month-by-month tables ──────── */
+.pbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:0 0 18px}
+.plab{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1.5px;font-weight:700;color:var(--muted)}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:20px;
+  padding:6px 12px 6px 9px;background:var(--paper);cursor:pointer;font-size:13.5px;font-weight:600;
+  text-transform:none;letter-spacing:0;color:var(--ink);margin:0;user-select:none}
+.mchip input{width:16px;height:16px;margin:0;accent-color:var(--red)}
+.mchip.on{background:#fff6d9;box-shadow:2px 2px 0 var(--ink)}
+.mchip i{font-style:normal;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--green);font-weight:700}
+.mchip i.rec{color:var(--muted)}
+.ptot{font-size:13px;color:var(--muted)}
+.ptot b{color:var(--ink)}
+table td.mon{background:#fff6d9}
+table th.mon{background:var(--gold);color:var(--ink)}
+.mtick{width:18px;height:18px;accent-color:var(--red)}
+.recbox{border:2px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px;background:var(--paper2)}
 
 /* ── Nav ──────────────────────────────────────────────────────────── */
 nav{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:26px 0 22px}
@@ -367,7 +385,7 @@ tr.pending td{background:#fff9e6}
 .rulerow > div:first-child{flex:1;min-width:190px}
 .rulerow button{align-self:flex-end}
 
-/* ── The fortnightly draw ─────────────────────────────────────────── */
+/* ── The monthly draw ─────────────────────────────────────────────── */
 .drawbar{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
 .rollbtn{background:var(--red);color:#fff;border:3px solid var(--ink);border-radius:9px;cursor:pointer;
   font-family:'Press Start 2P',monospace;font-size:11px;padding:17px 22px;letter-spacing:1px;
@@ -493,6 +511,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 <div class="livebanner">⏳ <b>Connecting to the live sheet…</b> Have a look around — editing
   unlocks in a few seconds, so nothing you change can be overwritten when it arrives.</div>
 <div id="globalWarn"></div>
+<div id="periodBar"></div>
 
 <!-- ══ SCOREBOARD ══ -->
 <section id="v-board" class="hide">
@@ -505,7 +524,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     <div class="note">Each bar is the points that activity has put on the board this month, side by side.
       The longer bar took that category.</div></div>
 
-  <div class="panel"><h2>Player Of The Month</h2>
+  <div class="panel"><h2 id="mvpTitle">Player Of The Month</h2>
     <div class="mvp">
       <div class="mvpHero" id="mvpHero"></div>
       <div class="podium" id="mvpPodium"></div>
@@ -517,7 +536,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
   <div class="panel"><h2>At A Glance</h2><div class="cards" id="glance"></div></div>
 
-  <div class="panel"><h2>Momentum &mdash; Points Per Week</h2><div id="chart"></div>
+  <div class="panel"><h2 id="chartTitle">Momentum &mdash; Points Per Week</h2><div id="chart"></div>
     <div class="legend" id="legend"></div></div>
 
   <div class="panel"><h2>Where The Points Came From</h2>
@@ -546,6 +565,25 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     <div class="scroll" style="margin-top:15px"><table id="members"></table></div></div>
 </section>
 
+<!-- ══ MONTHS ══ -->
+<section id="v-months" class="hide">
+  <div class="panel"><h2>Month By Month</h2>
+    <div class="note" style="margin:0 0 16px">Every month the board knows: the one running now, live from the
+      weekly tabs, and every month recorded before it. <b>Tick the months to add together</b> &mdash; the
+      Scoreboard, Squads, Players and Broadcast tabs all show exactly what is ticked here.</div>
+    <div class="scroll"><table id="monthTable"></table></div>
+    <div id="monthChart" style="margin-top:20px"></div>
+    <div class="legend" id="monthLegend"></div></div>
+
+  <div class="panel"><h2>Players Month By Month</h2>
+    <div class="note" style="margin:0 0 15px">Each player's points in each month. The last column adds up the
+      months that are ticked.</div>
+    <div class="scroll"><table id="monthPlayers"></table></div></div>
+
+  <div class="panel recpanel"><h2>Record A Month</h2>
+    <div id="monthRecord"></div></div>
+</section>
+
 <!-- ══ MANUAL SCORES ══ -->
 <section id="v-manual" class="hide">
   <div class="panel"><h2>Manual Scores</h2>
@@ -561,6 +599,7 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
           oninput="scoreHint()"></div>
       <div style="width:110px"><label>Score</label>
         <input id="msScore" type="number" placeholder="100" onkeydown="if(event.key==='Enter')addScore()"></div>
+      <div style="width:190px"><label>Counts in</label><select id="msMonth"></select></div>
       <button class="b" onclick="addScore()">+ ADD</button>
     </div>
     <datalist id="msNames"></datalist><datalist id="msItems"></datalist>
@@ -568,7 +607,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
 
     <h3>Paste several at once</h3>
     <div class="note" style="margin:0 0 10px">One per line, <code>Name | Item | Score</code>. A tab or a comma
-      between them works too, so rows copied straight out of a spreadsheet go in as they are.</div>
+      between them works too, so rows copied straight out of a spreadsheet go in as they are. They count in the
+      month picked above.</div>
     <textarea id="msBulk" style="min-height:110px" placeholder="Alex Ang | Visitor missed off PALMS | 100
 Sharon Lee | Ran the chapter training | 50"></textarea>
     <div class="row" style="margin-top:12px"><button class="b g" onclick="addScoresBulk()">ADD THESE LINES</button></div>
@@ -582,10 +622,11 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
 
 <!-- ══ GROUP 1-2-1 ══ -->
 <section id="v-groups" class="hide">
-  <div class="panel"><h2>The Fortnightly Draw</h2>
-    <div class="note" style="margin:0 0 16px">Every two weeks the chapter is split into small groups,
+  <div class="panel"><h2>The Monthly Draw</h2>
+    <div class="note" style="margin:0 0 16px">Every month the chapter is split into small groups,
       mixed across both squads, each led by the same <b>mentor</b> every round. They have that
-      fortnight to do their group 1-2-1 and post it in the chapter's social media group. Do it and
+      month &mdash; the 1st to the last day &mdash; to do their group 1-2-1 and post it in the chapter's
+      social media group. Do it and
       <b>every player in the group scores <span id="gPts"></span></b>. Miss it and the group pays the
       fine.</div>
     <div class="drawbar">
@@ -595,7 +636,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
           <option value="3">up to 3</option><option value="4">up to 4</option>
           <option value="5">up to 5</option><option value="6">up to 6</option></select></div>
       <div style="width:200px"><label>Round name</label>
-        <input id="roundName" placeholder="e.g. 1–14 Sept" oninput="renderDraw()"></div>
+        <input id="roundName" placeholder="e.g. 1–31 Oct 2026" oninput="renderDraw()"></div>
       <button class="b" onclick="saveDraw()" id="saveDrawBtn">💾 SAVE ROUND</button>
       <button class="b g" onclick="copyDraw()" id="copyDrawBtn">COPY FOR SHEET</button>
     </div>
@@ -671,7 +712,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
       <div>
         <div class="scroll"><table id="rulesTable"></table></div>
         <div class="note"><span class="chip a">auto</span> counted straight from the PALMS tabs &nbsp;
-          <span class="chip m">groups</span> from the fortnightly draw &nbsp;
+          <span class="chip m">groups</span> from the monthly draw &nbsp;
           <span class="chip p">pending</span> agreed in principle, not yet scoring.<br><br>
           Change any number below and the whole board recalculates instantly — nothing needs
           redeploying.</div>
@@ -705,6 +746,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
       <div style="flex:1;min-width:200px"><label>Reason</label>
         <input id="adjReason" placeholder="e.g. Chapter challenge won at the AGM"></div>
       <div style="width:110px"><label>Points</label><input id="adjPts" type="number" placeholder="150"></div>
+      <div style="width:190px"><label>Counts in</label><select id="adjMonth"></select></div>
       <button class="b" onclick="addAdj()">+ ADD</button>
     </div></div>
 
@@ -767,14 +809,14 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
 
     <div class="row" style="margin-top:15px">
       <div style="flex:1;min-width:230px"><label>Tab names to read (plain sheet link only)</label>
-        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Mentors, Scoring, Settings, Adjustments, GameLog, Manual Scores"></div>
+        <input id="tabs" value="Master list 1st week, Master list 2nd week, Master list 3rd week, Master list 4th week, Master list 5th week, training of the month, Teams, Groups, Mentors, Scoring, Settings, Adjustments, GameLog, Manual Scores, Monthly Scores"></div>
     </div>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
 
     <div class="row" style="margin-top:15px">
-      <div style="width:250px"><label>Which month's training counts</label>
-        <select id="trainMonth" onchange="TRAIN_MONTH=this.value;render()"></select></div>
+      <div style="flex:1;min-width:260px;max-width:520px"><label>Month the weekly tabs hold</label>
+        <select id="liveMonthData" onchange="setLiveMonth(this.value)"></select></div>
     </div>
 
     <div class="row" style="margin-top:16px">
@@ -826,7 +868,7 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
         all come from here.</li>
       <li><b>Teams</b> — column A player name, column B squad name. Two squads: the men's and the
         women's, with any surplus men in the women's squad.</li>
-      <li><b>Groups</b> — the fortnightly draw and whether each group delivered. Make the draw on the
+      <li><b>Groups</b> — the monthly draw and whether each group delivered. Make the draw on the
         <b>Group 1-2-1</b> tab and paste it in.</li>
       <li><b>Scoring</b> — optional. Your own scoring lines. If this tab exists it defines the whole
         list and the defaults in this page step aside.</li>
@@ -845,8 +887,8 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
     <h3>Groups columns</h3>
     <div class="scroll"><table id="groupSchema"></table></div>
     <div class="note"><b>Done</b> has three states, not two. <b>yes</b> pays every player in the group;
-      <b>no</b> puts the group in the fines jar; <b>blank</b> means the fortnight is still running and
-      nothing happens either way. Leaving it blank is the honest answer until the two weeks are up.</div>
+      <b>no</b> puts the group in the fines jar; <b>blank</b> means the month is still running and
+      nothing happens either way. Leaving it blank is the honest answer until the month is up.</div>
     <div class="row" style="margin-top:14px">
       <button class="b g" onclick="copyGroupsHeader()">COPY GROUPS HEADER</button>
     </div>
@@ -903,7 +945,6 @@ var ROSTER = [];               // [{name, team}] — live, editable, drives all 
 var ROSTER_BASE = [];          // roster exactly as the sheet had it, for Reset
 var MOVES = [];                // roster changes made on this page since load
 var PARSE_WARN = [];           // anything the loader could not understand
-var TRAIN_MONTH = null;        // which month's training counts; null = the sheet's latest
 
 /* The chapter's own sheet. Opening the page with no address bar clutter
    loads this. Point it somewhere else with #s=<sheet id> in the link. */
@@ -934,18 +975,22 @@ var SYNC = { url: null, can: false, api: 0, hashes: {}, base: {}, seed: {}, dirt
              last: null, error: '', stale: [] };
 var SECTION_NAMES = { teams: 'roster', groups: 'group 1-2-1 rounds', mentors: 'mentors',
                       scoring: 'scoring', settings: 'settings', adjustments: 'adjustments',
-                      scores: 'manual scores' };
+                      scores: 'manual scores', months: 'monthly records' };
+/* The script version each section needs before it can be saved. */
+var SECTION_API = { scores: 2, months: 3 };
 /* How each tab is laid out and how a row in it is named. The Apps Script
    holds the same table; the two have to agree for a changed row to land on
    the right row in the sheet. */
 var SECTION_DEF = {
   teams:       { headers: ['Member Name', 'Team'], key: [0] },
-  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes'], key: [0, 2] },
+  groups:      { headers: ['Round', 'Group', 'Member', 'Role', 'Done', 'Notes', 'Month'], key: [0, 2] },
   mentors:     { headers: ['Mentor', 'Order'], key: [0] },
   scoring:     { headers: ['Key', 'Name', 'Points', 'Source', 'Columns'], key: [0], keyFallback: 1 },
   settings:    { headers: ['Setting', 'Value'], key: [0] },
   adjustments: { headers: ['Month', 'Team', 'Reason', 'Points', 'ID'], key: [0, 1, 2, 3], id: 4 },
-  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID'], key: [0, 1, 2, 3], id: 4 }
+  scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID', 'Month'], key: [0, 1, 2, 3], id: 4 },
+  months:      { headers: ['Month', 'Squad', 'Player', 'Key', 'Category', 'Count', 'Points', 'Recorded'],
+                 key: [0, 1, 2, 3] }
 };
 var MENTORS = [];              // mentor names, in group order — they anchor a group each
 
@@ -980,7 +1025,7 @@ var RULES = [
   { key: 'one21',      label: 'Normal 1-2-1 completed',     short: '1-2-1s',     pts: 25,
     src: { kind: 'week', cols: ['ONE21'] }, unit: '1-2-1' },
   /* Not from PALMS. This one comes off the Groups tab, a player at a time,
-     when their fortnightly foursome gets its group 1-2-1 done and posted. */
+     when their monthly group gets its group 1-2-1 done and posted. */
   { key: 'group121',   label: 'Group 1-2-1 completed',      short: 'Group 1-2-1', pts: 25,
     src: { kind: 'groups' }, unit: 'group 1-2-1' }
 ];
@@ -1060,13 +1105,17 @@ var SET = {
      five ringgit each. */
   penaltyAmount: 5,
   penaltyPerMember: false,
-  groupSize: 4               // two from each squad
+  groupSize: 4,              // two from each squad
+  /* Which month the weekly PALMS tabs hold right now. Blank = the latest
+     month in the Training tab. Shared through the Settings tab, because
+     every copy of the board has to agree on it. */
+  liveMonth: ''
 };
 
 /* ── Order of operations, shown to the user and used by compute() ────── */
 var OOO = [
   'Score every player from the weekly PALMS tabs and the training tab.',
-  'Award the group 1-2-1 points to every player whose fortnightly foursome got it done and posted.',
+  'Award the group 1-2-1 points to every player whose monthly group got it done and posted.',
   'Add any manual scores typed in for a player (Name | Item | Score).',
   'Roll each player up into their squad, activity by activity.',
   'Add any adjustment the room agreed and logged for that squad.',
@@ -1145,9 +1194,10 @@ function saveAll() {
 function pinOffText() {
   return 'Saving is switched off in the Apps Script: set EDIT_PIN in it and deploy a new version.';
 }
-function oldScriptText() {
-  return 'Manual scores need the updated Apps Script. Paste the new TitansCGC.gs into the sheet’s ' +
-    'Apps Script and deploy a new version of the same deployment — everything else saves fine meanwhile.';
+function oldScriptText(sec) {
+  return (sec === 'months' ? 'Monthly records need' : 'Manual scores need') + ' the updated Apps Script. ' +
+    'Paste the new TitansCGC.gs into the sheet’s Apps Script and deploy a new version of the same ' +
+    'deployment — everything else saves fine meanwhile.';
 }
 
 function flushSaves() {
@@ -1155,13 +1205,13 @@ function flushSaves() {
   var sec = null, k;
   for (k in SYNC.dirty) {
     if (!SYNC.dirty.hasOwnProperty(k)) continue;
-    /* An older script has never heard of manual scores; save the rest. */
-    if (k === 'scores' && SYNC.api < 2) continue;
+    /* An older script has never heard of this section; save the rest. */
+    if (SYNC.api < (SECTION_API[k] || 0)) continue;
     sec = k; break;
   }
   if (!sec) {
-    if (SYNC.dirty.scores && SYNC.api < 2) {
-      SYNC.phase = 'error'; SYNC.error = oldScriptText(); syncPill(); return;
+    for (k in SYNC.dirty) if (SYNC.dirty.hasOwnProperty(k) && SYNC.api < (SECTION_API[k] || 0)) {
+      SYNC.phase = 'error'; SYNC.error = oldScriptText(k); syncPill(); return;
     }
     if (SYNC.phase === 'saving') { SYNC.phase = 'done'; SYNC.last = new Date(); settleDone(); pollSoon(); }
     syncPill(); return;
@@ -1329,7 +1379,7 @@ function sectionRows(sec) {
   if (sec === 'groups')
     for (i = 0; i < (DATA.groups || []).length; i++) {
       var g = DATA.groups[i];
-      out.push([g.round, g.group, g.member, g.role || '', g.done || '', g.notes || '']);
+      out.push([g.round, g.group, g.member, g.role || '', g.done || '', g.notes || '', g.month || '']);
     }
   if (sec === 'mentors')
     for (i = 0; i < MENTORS.length; i++) out.push([MENTORS[i], i + 1]);
@@ -1344,6 +1394,7 @@ function sectionRows(sec) {
     out.push(['penaltyPerMember', SET.penaltyPerMember ? 'yes' : 'no']);
     out.push(['lateBreaksPerfect', SET.lateBreaksPerfect ? 'yes' : 'no']);
     out.push(['tyfcbMode', SET.tyfcbMode]);
+    out.push(['liveMonth', SET.liveMonth || '']);
     for (i = 0; i < TEAMS.length; i++) out.push(['carry: ' + TEAMS[i], CARRY[TEAMS[i]] || 0]);
   }
   if (sec === 'adjustments')
@@ -1354,7 +1405,12 @@ function sectionRows(sec) {
   if (sec === 'scores')
     for (i = 0; i < (DATA.scores || []).length; i++) {
       var sc = DATA.scores[i];
-      out.push([sc.name, sc.item || '', sc.score === null ? '' : sc.score, sc.added || '', sc.id || '']);
+      out.push([sc.name, sc.item || '', sc.score === null ? '' : sc.score, sc.added || '', sc.id || '', sc.month || '']);
+    }
+  if (sec === 'months')
+    for (i = 0; i < (DATA.history || []).length; i++) {
+      var hr = DATA.history[i];
+      out.push([hr.month, hr.squad, hr.player || '', hr.key, hr.label || '', hr.count, hr.points, hr.recorded || '']);
     }
   return out;
 }
@@ -1431,6 +1487,7 @@ function takeSection(sec, headers, rows) {
   else if (sec === 'settings') { applySettings(readSettingsGrid(grid)); syncTeams(); }
   else if (sec === 'adjustments') { DATA.adjustments = readAdjGrid(grid); syncTeams(); }
   else if (sec === 'scores') DATA.scores = readScoresGrid(grid);
+  else if (sec === 'months') DATA.history = readMonthsGrid(grid);
 }
 function newId() {
   return new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -2153,7 +2210,7 @@ function zipRead(buf, e) {
 function build(grids) {
   RAWTABS = grids;
   var pay = { ok: true, month: '', weeks: [], teams: [], training: [], adjustments: [],
-              groups: [], scoring: [], mentors: [], settings: [], scores: [], trainingMonths: [] };
+              groups: [], scoring: [], mentors: [], settings: [], scores: [], history: [], trainingMonths: [] };
   var k, grid, kind, unread = [];
 
   for (k in grids) {
@@ -2175,6 +2232,7 @@ function build(grids) {
     else if (kind === 'mentors')  pay.mentors = pay.mentors.concat(readMentorsGrid(grid));
     else if (kind === 'settings') pay.settings = pay.settings.concat(readSettingsGrid(grid));
     else if (kind === 'scores')   pay.scores = pay.scores.concat(readScoresGrid(grid));
+    else if (kind === 'months')   pay.history = pay.history.concat(readMonthsGrid(grid));
     else unread.push(k);
   }
   if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
@@ -2191,6 +2249,7 @@ function classify(name, grid) {
   if (nm === 'mentors' || nm === 'mentor') return 'mentors';
   if (nm === 'settings') return 'settings';
   if (nm === 'manual scores' || nm === 'manual score' || nm === 'manual' || nm === 'scores') return 'scores';
+  if (nm === 'monthly scores' || nm === 'monthly' || nm === 'months' || nm === 'month by month') return 'months';
   if (nm === 'groups' || nm === 'group 121' || nm === 'group 1-2-1' || nm === 'pairings') return 'groups';
   if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
       nm === 'game log' || nm === 'log') return 'adj';
@@ -2200,6 +2259,7 @@ function classify(name, grid) {
   /* Shape beats name. A tab with First Name and RGI is a meeting week even
      when it is called "Master list 1st week". */
   if (findWeekHeader(grid) !== -1) return 'week';
+  if (findMonthsHeader(grid) !== -1) return 'months';
   if (findScoresHeader(grid, true) !== -1) return 'scores';
   if (findScoringHeader(grid) !== -1) return 'scoring';
   if (findSettingsHeader(grid) !== -1) return 'settings';
@@ -2544,6 +2604,7 @@ function applySettings(list) {
     else if (lk === 'latebreaksperfect') SET.lateBreaksPerfect = yesish(v);
     else if (lk === 'tyfcbmode' && /^(auto|slips|count)$/.test(String(v))) SET.tyfcbMode = String(v);
     else if (lk.indexOf('carry:') === 0) CARRY[key.slice(6).trim()] = num(v);
+    else if (lk === 'livemonth') SET.liveMonth = String(v == null ? '' : v).trim();
   }
   rebuild('settings'); rebuild('carry');
 }
@@ -2554,7 +2615,7 @@ function applySettings(list) {
 
      yes / y / done / posted / 1   the group did it — everyone scores
      no  / n / failed / missed / 0 the group did not — the group is fined
-     (blank)                       the fortnight is still running
+     (blank)                       the month is still running
 
    Leaving it blank is not an oversight, it is the third state. Nobody is
    fined for a round that has not finished yet.                            */
@@ -2564,7 +2625,8 @@ var GRP_FIELDS = [
   { key: 'member', heads: ['member', 'player', 'name'] },
   { key: 'role',   heads: ['role'] },
   { key: 'done',   heads: ['done', 'completed', 'complete', 'posted', 'status', 'outcome'] },
-  { key: 'notes',  heads: ['notes', 'note', 'detail', 'details'] }
+  { key: 'notes',  heads: ['notes', 'note', 'detail', 'details'] },
+  { key: 'month',  heads: ['month'] }
 ];
 function findGroupsHeader(grid) {
   var limit = Math.min(grid.length, 10), r, c;
@@ -2599,7 +2661,7 @@ function readGroupsGrid(grid) {
     var who = g('member');
     if (!who || norm(who) === 'member' || norm(who) === 'total') continue;
     out.push({ round: g('round'), group: g('group'), member: who, role: g('role'),
-               done: g('done'), notes: g('notes') });
+               done: g('done'), notes: g('notes'), month: g('month') });
   }
   return out;
 }
@@ -2678,7 +2740,8 @@ var SCORE_FIELDS = [
   { key: 'item',  heads: ['item', 'activity', 'what', 'reason'] },
   { key: 'score', heads: ['score', 'points', 'pts'] },
   { key: 'added', heads: ['added', 'date', 'when'] },
-  { key: 'id',    heads: ['id'], exact: 1 }
+  { key: 'id',    heads: ['id'], exact: 1 },
+  { key: 'month', heads: ['month'] }
 ];
 /* strict: only a tab that says Item is taken for one when guessing from its shape. */
 function findScoresHeader(grid, strict) {
@@ -2713,22 +2776,77 @@ function readScoresGrid(grid) {
     var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
     var who = g('name');
     if (!who || norm(who) === 'name' || norm(who) === 'total') continue;
-    out.push({ name: who, item: g('item'), added: g('added'), id: g('id'),
+    out.push({ name: who, item: g('item'), added: g('added'), id: g('id'), month: g('month'),
                score: g('score') === '' ? null : num(row[map.score]) });
   }
   return out;
+}
+
+/* ── Monthly Scores tab ─────────────────────────────────────────────────
+   Month | Squad | Player | Key | Category | Count | Points | Recorded. Each
+   finished month, frozen when somebody presses Record on the Months tab:
+   one row per player per category, one per squad for its adjustments. It
+   is what keeps a month on the board after its weekly tabs are cleared.  */
+var MONTH_FIELDS = [
+  { key: 'month',    heads: ['month'] },
+  { key: 'squad',    heads: ['squad', 'team'] },
+  { key: 'player',   heads: ['player', 'member', 'name'] },
+  { key: 'key',      heads: ['key'], exact: 1 },
+  { key: 'label',    heads: ['category', 'activity', 'item'] },
+  { key: 'count',    heads: ['count', 'qty'] },
+  { key: 'points',   heads: ['points', 'pts', 'score'] },
+  { key: 'recorded', heads: ['recorded', 'saved'] }
+];
+function findMonthsHeader(grid) {
+  var limit = Math.min(grid.length, 10), r, c;
+  for (r = 0; r < limit; r++) {
+    c = headerCells(grid, r);
+    if (has(c, 'month') && has(c, 'points') && (has(c, 'category') || (has(c, 'squad') && has(c, 'player')))) return r;
+  }
+  return -1;
+}
+function readMonthsGrid(grid) {
+  var hr = findMonthsHeader(grid);
+  if (hr === -1) return [];
+  var map = mapFields(headerCells(grid, hr), MONTH_FIELDS), out = [], r;
+  if (map.month == null || map.points == null) return [];
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    var mk = monthKeyOf(g('month'));
+    if (!mk || g('points') === '') continue;
+    out.push({ month: g('month'), mk: mk, squad: g('squad'), player: g('player'), key: g('key') || slugKey(g('label')),
+               label: g('label'), count: num(row[map.count]), points: num(row[map.points]), recorded: g('recorded') });
+  }
+  return out;
+}
+/* Which column is which, by heading. First match wins and no column is used twice. */
+function mapFields(cells, fields) {
+  var map = {}, taken = {}, i, j, hh, f;
+  for (i = 0; i < fields.length; i++) {
+    f = fields[i];
+    for (j = 0; j < cells.length && map[f.key] == null; j++) {
+      if (!cells[j] || taken[j]) continue;
+      for (hh = 0; hh < f.heads.length; hh++)
+        if (cells[j] === f.heads[hh] || (!f.exact && cells[j].indexOf(f.heads[hh]) !== -1)) {
+          map[f.key] = j; taken[j] = 1; break;
+        }
+    }
+  }
+  return map;
 }
 
 /* ── Apps Script payload ────────────────────────────────────────────── */
 function normalise(res) {
   var pay = { ok: true, month: res.month || '', weeks: res.weeks || [], teams: res.teams || [],
               training: res.training || [], trainingMonths: res.trainingMonths || [],
-              adjustments: [], groups: [], scoring: [], mentors: [], settings: [], scores: [],
+              adjustments: [], groups: [], scoring: [], mentors: [], settings: [], scores: [], history: [],
               hashes: res.hashes || null, canSave: !!res.canSave, api: num(res.api) };
   function raw(r) { return r && r.headers && r.headers.length ? [r.headers].concat(r.rows || []) : null; }
   if (raw(res.mentorsRaw)) pay.mentors = readMentorsGrid(raw(res.mentorsRaw));
   if (raw(res.settingsRaw)) pay.settings = readSettingsGrid(raw(res.settingsRaw));
   if (raw(res.scoresRaw)) pay.scores = readScoresGrid(raw(res.scoresRaw));
+  if (raw(res.monthsRaw)) pay.history = readMonthsGrid(raw(res.monthsRaw));
   if (res.scoringRaw && res.scoringRaw.headers)
     pay.scoring = readScoringGrid([res.scoringRaw.headers].concat(res.scoringRaw.rows || []));
   else pay.scoring = res.scoring || [];
@@ -2757,11 +2875,12 @@ function normalise(res) {
    and keeps what this person was looking at — the month picked, the draw on
    screen — rather than behaving like a fresh load. */
 function adopt(pay, sourceName, url, bg) {
-  var keepDraw = bg ? { draw: DRAW, round: DRAW_ROUND, month: TRAIN_MONTH } : null;
+  var keepDraw = bg ? { draw: DRAW, round: DRAW_ROUND } : null;
   DATA = pay;
   DATA.groups = DATA.groups || [];
   DATA.adjustments = DATA.adjustments || [];
   DATA.scores = DATA.scores || [];
+  DATA.history = DATA.history || [];
   /* A Scoring tab replaces the list outright rather than merging with it:
      a half-applied scoring change is worse than either version of it. */
   RULES = [];
@@ -2784,7 +2903,6 @@ function adopt(pay, sourceName, url, bg) {
   ROSTER_BASE = [];
   for (i = 0; i < ROSTER.length; i++) ROSTER_BASE.push({ name: ROSTER[i].name, team: ROSTER[i].team });
   MOVES = [];
-  TRAIN_MONTH = keepDraw ? keepDraw.month : null;
   applySettings(pay.settings || []);
   MENTORS = (pay.mentors || []).slice();
   DRAW = keepDraw ? keepDraw.draw : null;
@@ -2808,11 +2926,12 @@ function adopt(pay, sourceName, url, bg) {
     PARSE_WARN.push('The Apps Script is connected but <b>saving is switched off</b> in it: set ' +
       '<code>EDIT_PIN</code> in its CONFIG block and deploy it again. Until then changes made here are ' +
       'not kept.');
-  if (SYNC.url && pay.canSave && SYNC.api < 2)
-    PARSE_WARN.push('The Apps Script behind this board is an <b>older version</b>. It still saves, but if ' +
-      'two people save the same tab close together the second one is turned away, and it cannot save ' +
-      '<b>manual scores</b>. Paste the new <code>TitansCGC.gs</code> into the sheet\u2019s Apps Script and ' +
-      'deploy a new version of the same deployment (Manage deployments \u2192 edit \u2192 New version).');
+  if (SYNC.url && pay.canSave && SYNC.api < 3)
+    PARSE_WARN.push('The Apps Script behind this board is an <b>older version</b>. It still saves, but it cannot ' +
+      'save <b>monthly records</b>' + (SYNC.api < 2 ? ' or <b>manual scores</b>, and if two people save the same tab ' +
+      'close together the second one is turned away' : '') + '. Paste the new <code>TitansCGC.gs</code> into the ' +
+      'sheet\u2019s Apps Script and deploy a new version of the same deployment (Manage deployments \u2192 edit ' +
+      '\u2192 New version).');
   syncPill();
 
   var bits = [];
@@ -2872,28 +2991,44 @@ function benched(t) { return /^(|no squad|none|left|left chapter|-|—)$/i.test(
    chapters record RM 4,500. */
 var TYFCB_AMOUNT_FLOOR = 20;
 
-function compute() {
+/* One month, scored from the live data: that month's weekly tabs, its
+   Training column, and the rounds, manual scores and adjustments logged
+   against it. mk is "2026-09"; left out, it is the month the weekly tabs
+   hold now. carry === false leaves out the points carried in. */
+function compute(mk, carry) {
   var W = [], i, j, k;
   function warn(m) { W.push(m); }
+  mk = mk || liveMonthKey();
+  var mLabel = mkLabel(mk);
 
-  var weekNames = [];
-  for (i = 0; i < (DATA.weeks || []).length; i++) weekNames.push(DATA.weeks[i].tab);
+  var weeks = [], weekNames = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++)
+    if (weekMonth(DATA.weeks[i].tab) === mk) { weeks.push(DATA.weeks[i]); weekNames.push(DATA.weeks[i].tab); }
 
   /* ── Step 1: every player's own points ───────────────────────────── */
   var teamOf = {}, trainOf = {}, members = {};
   for (i = 0; i < ROSTER.length; i++) teamOf[norm(ROSTER[i].name)] = ROSTER[i].team;
 
-  var tKey = norm(trainMonth()), tAny = 0;
+  /* Training is one column per month. A Training tab with no month
+     columns at all is a plain "this month" count, so it belongs only to
+     the month the weekly tabs hold. */
+  var tAny = 0, tHasMonths = 0, tCol = 0;
   for (i = 0; i < (DATA.training || []).length; i++) {
-    var tr = DATA.training[i];
-    var got = (tr.months && tr.months[tKey] !== undefined) ? tr.months[tKey] : tr.sessions;
+    var tr = DATA.training[i], got = 0, tk;
+    if (tr.months) for (tk in tr.months) if (tr.months.hasOwnProperty(tk)) {
+      tHasMonths = 1;
+      if (monthKeyOf(tk, mk) === mk) { got = tr.months[tk]; tCol = 1; }
+    }
+    if (!tHasMonths && mk === liveMonthKey()) got = tr.sessions;
     trainOf[norm(tr.name)] = num(got);
     if (num(got) > 0) tAny = 1;
   }
-  if ((DATA.training || []).length && !tAny)
-    warn('Nobody has any training logged for <b>' + esc(trainMonth()) + '</b>, so no squad is getting ' +
-         'training points. If that column just has not been filled in yet, fill it in and hit Refresh — ' +
-         'or pick a different month on the Data tab.');
+  if ((DATA.training || []).length && tHasMonths && !tCol)
+    warn('The Training tab has no column for <b>' + esc(mLabel) + '</b> yet, so nobody is getting training ' +
+         'points for it. Add the column and hit Refresh.');
+  else if ((DATA.training || []).length && !tAny && weeks.length)
+    warn('Nobody has any training logged for <b>' + esc(mLabel) + '</b>, so no squad is getting ' +
+         'training points. If that column just has not been filled in yet, fill it in and hit Refresh.');
 
   /* Is the TYFCB column a count of slips, or a pile of ringgit? Decide it
      once, for the whole month, and say out loud which way it went. */
@@ -2933,8 +3068,8 @@ function compute() {
     return (r.X && r.X[norm(col)] !== undefined) ? num(r.X[norm(col)]) : 0;
   }
 
-  for (i = 0; i < (DATA.weeks || []).length; i++) {
-    var w = DATA.weeks[i];
+  for (i = 0; i < weeks.length; i++) {
+    var w = weeks[i];
     for (j = 0; j < w.rows.length; j++) {
       var r = w.rows[j], m = slot(r.name), ri, RW;
       m.absent += num(r.A); m.late += num(r.L); m.weeks++;
@@ -2951,10 +3086,12 @@ function compute() {
   }
   for (k in trainOf) if (trainOf.hasOwnProperty(k) && !members[k]) slot(k);
 
-  /* ── The fortnightly group 1-2-1 ──────────────────────────────────
+  /* ── The monthly group 1-2-1 ──────────────────────────────────────
      A group that got it done pays out to every player in it. A group that
-     did not owes the jar. A group still inside its fortnight does neither
+     did not owes the jar. A group still inside its month does neither
      — the board never invents a fine out of a blank cell. */
+  /* Every round is listed, whatever its month, so any group can still be
+     marked; only the rounds that count in this month pay out points. */
   var rounds = {}, roundOrder = [], fines = [], groupList = [];
   for (i = 0; i < (DATA.groups || []).length; i++) {
     var gr = DATA.groups[i];
@@ -2962,7 +3099,8 @@ function compute() {
     if (!rounds[rk]) { rounds[rk] = {}; roundOrder.push(rk); }
     var gk = String(gr.group || '?');
     if (!rounds[rk][gk]) {
-      rounds[rk][gk] = { round: rk, group: gk, members: [], done: null, notes: '', conflict: false };
+      rounds[rk][gk] = { round: rk, group: gk, members: [], done: null, notes: '', conflict: false,
+                         month: groupMonth(gr) };
       groupList.push(rounds[rk][gk]);
     }
     var G = rounds[rk][gk];
@@ -2982,7 +3120,7 @@ function compute() {
            'agree and disagree that it was done. The whole group succeeds or fails together, so make ' +
            'the Done column say the same thing on every one of its rows.');
     var seen121 = {};
-    for (j = 0; j < G2.members.length; j++) {
+    for (j = 0; j < G2.members.length && G2.month === mk; j++) {
       var mk2 = norm(G2.members[j]);
       if (!members[mk2]) {
         warn('<b>' + esc(G2.members[j]) + '</b> is in round ' + esc(G2.round) + ' group ' + esc(G2.group) +
@@ -3006,7 +3144,7 @@ function compute() {
      would score for nobody, so it is flagged instead of quietly lost. */
   for (i = 0; i < (DATA.scores || []).length; i++) {
     var ms = DATA.scores[i], msk = norm(ms.name);
-    if (!msk) continue;
+    if (!msk || scoreMonth(ms) !== mk) continue;
     if (!members[msk]) {
       warn('A manual score is logged for <b>' + esc(ms.name) + '</b> (' + esc(ms.item || 'no item') + '), ' +
            'who is not in the sheet at all, so it was not counted. Check the spelling against the Roster.');
@@ -3044,6 +3182,7 @@ function compute() {
       m2[R3.key] = m2.c[R3.key];
     }
     m2.total += m2.handPts;
+    m2.handN = m2.handList.length;
   }
 
   /* ── Step 2: roll players up into their squad ────────────────────── */
@@ -3051,7 +3190,8 @@ function compute() {
   function ts(name) {
     if (!teams[name]) {
       var T0 = { name: name, manual: 0, activity: 0, monthTotal: 0, fines: 0, handPts: 0, handList: [],
-        carry: (CARRY[name] || 0), grand: 0, members: [], byWeek: {}, audit: [], counts: {} }, z;
+        handN: 0, adjN: 0, carry: carry === false ? 0 : (CARRY[name] || 0), grand: 0, members: [],
+        byWeek: {}, audit: [], counts: {} }, z;
       for (z = 0; z < RULES.length; z++) { T0[RULES[z].key] = 0; T0.counts[RULES[z].key] = 0; }
       teams[name] = T0;
     }
@@ -3070,6 +3210,7 @@ function compute() {
       t.counts[rk2] = (t.counts[rk2] || 0) + (m3.c[rk2] || 0);
     }
     t.handPts += m3.handPts;
+    t.handN += m3.handList.length;
     for (z2 = 0; z2 < m3.handList.length; z2++) t.handList.push({ who: m3.name, s: m3.handList[z2] });
     t.members.push(m3);
     for (var wn in m3.byWeek) if (m3.byWeek.hasOwnProperty(wn)) t.byWeek[wn] = (t.byWeek[wn] || 0) + m3.byWeek[wn];
@@ -3079,7 +3220,7 @@ function compute() {
   var adjBy = {};
   for (i = 0; i < (DATA.adjustments || []).length; i++) {
     var g = DATA.adjustments[i];
-    if (!g.team) continue;
+    if (!g.team || adjMonth(g) !== mk) continue;
     if (TEAMS.indexOf(g.team) === -1) {
       warn('An adjustment is logged for <b>' + esc(g.team) + '</b>, which is not a squad on the board. ' +
            'Check the spelling against the Teams tab — it was not counted.');
@@ -3131,12 +3272,15 @@ function compute() {
                    (adjs[j].points >= 0 ? '+' : '') + n(adjs[j].points));
     }
     T.manual = adjSum;
+    T.adjN = adjs.length;
     if (adjs.length) log('Adjustments agreed in the room', adjBits.join(', ') + '.', adjSum,
                          adjSum >= 0 ? 'hit' : 'cut');
 
     T.monthTotal = run;
-    log('Points carried in', T.carry ? 'Banked before this month started.'
-        : 'Nothing banked — this squad starts the game on zero.', T.carry, T.carry ? 'hit' : '');
+    T.latestPts = run;
+    log('Points carried in', T.carry ? 'Banked before the board kept month-by-month records.'
+        : (carry === false && CARRY[T.name] ? 'Not counted here \u2014 only the months ticked at the top.'
+        : 'Nothing banked \u2014 this squad starts the game on zero.'), T.carry, T.carry ? 'hit' : '');
     T.grand = T.monthTotal + T.carry;
     T.members.sort(function (a, b) { return b.total - a.total; });
   }
@@ -3159,19 +3303,466 @@ function compute() {
 
   return { teams: teamList, members: members, weekNames: weekNames,
            warnings: W, tyAsSlips: tyAsSlips, tyMax: tyMax,
-           groups: groupList, roundOrder: roundOrder, fines: fines, fineTotal: fineTotal };
+           groups: groupList, roundOrder: roundOrder, fines: fines, fineTotal: fineTotal,
+           month: mk, months: [mk], latest: mk, label: mLabel, span: 'month', rules: RULES };
 }
 
-/* The month whose training counts: whatever was picked, else the sheet's latest. */
-function trainMonth() {
-  if (TRAIN_MONTH) return TRAIN_MONTH;
-  return (DATA && DATA.month) || '';
+/* ═══════════════════════════════════════════════════════════════════════
+   MONTH BY MONTH
+
+   The weekly PALMS tabs hold one month at a time — "live". Before they are
+   cleared for the next month, Record on the Months tab freezes the month
+   into the Monthly Scores tab: every player's points by category. So the
+   board knows two kinds of month:
+
+     live      scored right now from the weekly tabs (normally just one)
+     recorded  read back from Monthly Scores, exactly as it was frozen
+
+   A month that is both is shown live — the tabs are fresher than the
+   record. Tick any months at the top and every view adds them together.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+                  'September', 'October', 'November', 'December'];
+var MONTH_WORDS = '\\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|' +
+  'sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\b\\.?(?:\\s*,?\\s*(\\d{4}|\'\\d{2}))?';
+function pad2(x) { return ('0' + x).slice(-2); }
+function todayKey() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
+function addMonths(mk, d) {
+  var y = +mk.slice(0, 4), m = +mk.slice(5, 7) - 1 + d;
+  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+  return y + '-' + pad2(m + 1);
 }
+/* A month with no year belongs to whichever year puts it nearest ref. */
+function guessYear(mon, ref) {
+  ref = ref || todayKey();
+  var ry = +ref.slice(0, 4), rm = +ref.slice(5, 7);
+  return mon - rm > 6 ? ry - 1 : (rm - mon > 6 ? ry + 1 : ry);
+}
+/* A month written any way a person — or Google — might write it:
+   "September 2026", "Sept", "Sep '26", "2026-09-01" … becomes "2026-09".
+   last: take the last month named, so "29 Sep – 12 Oct" is October. */
+function monthKeyOf(v, ref, last) {
+  var s = String(v == null ? '' : v).trim(), m;
+  if (!s) return '';
+  m = /^(\d{4})-(\d{1,2})(?:-\d{1,2})?(?:[T ].*)?$/.exec(s);
+  if (m && +m[2] >= 1 && +m[2] <= 12) return m[1] + '-' + pad2(m[2]);
+  m = /^(\d{1,2})[\/.](\d{4})$/.exec(s);
+  if (m && +m[1] >= 1 && +m[1] <= 12) return m[2] + '-' + pad2(m[1]);
+  var re = new RegExp(MONTH_WORDS, 'ig'), hit = null, x;
+  while ((x = re.exec(s))) { hit = x; if (!last) break; }
+  if (!hit) return '';
+  var mon = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    .indexOf(hit[1].slice(0, 3).toLowerCase()) + 1;
+  var yr = hit[2] ? (hit[2].charAt(0) === "'" ? 2000 + +hit[2].slice(1) : +hit[2]) : 0;
+  if (!yr) { var y4 = /\b(20\d{2})\b/.exec(s); yr = y4 ? +y4[1] : guessYear(mon, ref); }
+  return yr + '-' + pad2(mon);
+}
+function mkLabel(mk) { return mk ? MONTH_FULL[+mk.slice(5, 7) - 1] + ' ' + mk.slice(0, 4) : ''; }
+function mkShort(mk) { return mk ? MONTH_FULL[+mk.slice(5, 7) - 1].slice(0, 3) + ' ' + mk.slice(0, 4) : ''; }
+/* "Sep – Oct 2026" for a run of months, "Aug, Oct 2026" for a scatter. */
+function periodLabel(ms) {
+  if (!ms.length) return '';
+  if (ms.length === 1) return mkLabel(ms[0]);
+  var i, run = true, a = ms[0], b = ms[ms.length - 1];
+  for (i = 1; i < ms.length; i++) if (addMonths(ms[i - 1], 1) !== ms[i]) run = false;
+  var mon = function (k) { return MONTH_FULL[+k.slice(5, 7) - 1].slice(0, 3); };
+  if (run) return a.slice(0, 4) === b.slice(0, 4) ? mon(a) + ' – ' + mon(b) + ' ' + b.slice(0, 4)
+                                                   : mkShort(a) + ' – ' + mkShort(b);
+  var same = a.slice(0, 4) === b.slice(0, 4), out = [];
+  for (i = 0; i < ms.length; i++) out.push(same ? mon(ms[i]) : mkShort(ms[i]));
+  return out.join(', ') + (same ? ' ' + b.slice(0, 4) : '');
+}
+
+/* The month the weekly tabs hold: the Months tab setting, else the newest
+   month in the Training tab, else this calendar month. */
+function liveMonthKey() {
+  return monthKeyOf(SET.liveMonth) || monthKeyOf(DATA && DATA.month) || todayKey();
+}
+/* A weekly tab named for a month ("Oct W1") belongs to it; the usual
+   "Master list 1st week" belongs to the live month. */
+function weekMonth(tab) { return monthKeyOf(tab, liveMonthKey()) || liveMonthKey(); }
+/* Rounds, manual scores and adjustments carry a Month. One without — an
+   older row — counts in the live month, exactly as it always has. */
+function groupMonth(g) { return monthKeyOf(g.month, liveMonthKey()) || liveMonthKey(); }
+function scoreMonth(s) { return monthKeyOf(s.month, liveMonthKey()) || liveMonthKey(); }
+function adjMonth(a) { return monthKeyOf(a.month, liveMonthKey()) || liveMonthKey(); }
+/* A round counts in the month it names: "1–31 Oct 2026" is October's. A
+   name that spans two months counts in the later one. */
+function roundMonthGuess(name) { return monthKeyOf(name, liveMonthKey(), true) || liveMonthKey(); }
+
+function liveMonths() {
+  var seen = {}, out = [], i, k = liveMonthKey();
+  seen[k] = 1; out.push(k);
+  for (i = 0; i < (DATA && DATA.weeks ? DATA.weeks.length : 0); i++) {
+    var w = weekMonth(DATA.weeks[i].tab);
+    if (!seen[w]) { seen[w] = 1; out.push(w); }
+  }
+  return out.sort();
+}
+function recordedMonths() {
+  var seen = {}, out = [], i;
+  for (i = 0; i < (DATA && DATA.history ? DATA.history.length : 0); i++) {
+    var k = DATA.history[i].mk;
+    if (k && !seen[k]) { seen[k] = 1; out.push(k); }
+  }
+  return out.sort();
+}
+function isLive(mk) { return liveMonths().indexOf(mk) !== -1; }
+function isRecorded(mk) { return recordedMonths().indexOf(mk) !== -1; }
+function allMonths() {
+  var seen = {}, out = [], a = liveMonths().concat(recordedMonths()), i;
+  for (i = 0; i < a.length; i++) if (!seen[a[i]]) { seen[a[i]] = 1; out.push(a[i]); }
+  return out.sort();
+}
+function recordedOn(mk) {
+  for (var i = 0; i < (DATA.history || []).length; i++) if (DATA.history[i].mk === mk) return DATA.history[i].recorded || '';
+  return '';
+}
+function hasCarry() { for (var k in CARRY) if (CARRY.hasOwnProperty(k) && CARRY[k]) return true; return false; }
+
+/* compute() is cheap, but a render can ask for the same month several
+   times over. Cleared at the start of every render. */
+var CMP = null;
+function computeFor(mk, carry) {
+  CMP = CMP || {};
+  var key = mk + '|' + (carry === false ? 0 : 1);
+  if (!CMP[key]) CMP[key] = compute(mk, carry);
+  return CMP[key];
+}
+
+/* One month as flat rows — the same shape whether it was scored just now
+   or read back from the Monthly Scores tab. This is also what Record writes. */
+function hrow(mk, squad, player, key, label, count, points, stamp) {
+  return { month: mkLabel(mk), mk: mk, squad: squad, player: player, key: key, label: label,
+           count: count, points: points, recorded: stamp || '' };
+}
+function snapshotRows(R, mk, stamp) {
+  var out = [], i, j, r;
+  for (i = 0; i < R.teams.length; i++) {
+    var T = R.teams[i];
+    for (j = 0; j < T.members.length; j++) {
+      var m = T.members[j];
+      for (r = 0; r < RULES.length; r++) {
+        var c = m.c[RULES[r].key] || 0, p = m.p[RULES[r].key] || 0;
+        if (c || p) out.push(hrow(mk, T.name, m.name, RULES[r].key, RULES[r].short, c, p, stamp));
+      }
+      if (m.handN) out.push(hrow(mk, T.name, m.name, 'handPts', 'Manual scores', m.handN, m.handPts, stamp));
+    }
+    if (T.adjN) out.push(hrow(mk, T.name, '', 'adjust', 'Adjustments', T.adjN, T.manual, stamp));
+  }
+  return out;
+}
+function monthRows(mk) {
+  if (isLive(mk)) return snapshotRows(computeFor(mk), mk);
+  var out = [], i;
+  for (i = 0; i < (DATA.history || []).length; i++) if (DATA.history[i].mk === mk) out.push(DATA.history[i]);
+  return out;
+}
+/* Squad and player totals for one month, for the month-by-month tables. */
+function monthSummary(mk) {
+  var rows = monthRows(mk), out = { teams: {}, players: {}, total: 0 }, i;
+  for (i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    out.teams[r.squad] = (out.teams[r.squad] || 0) + r.points;
+    out.total += r.points;
+    if (!r.player) continue;
+    var pk = norm(r.player);
+    if (!out.players[pk]) out.players[pk] = { name: r.player, squad: r.squad, pts: 0 };
+    out.players[pk].pts += r.points;
+  }
+  return out;
+}
+
+/* ── Which months are ticked ────────────────────────────────────────────
+   all     every month, and the points carried in: the season
+   live    just the month the weekly tabs hold, whatever month that is
+   custom  the months ticked one by one                                   */
+var PERIOD = { mode: 'all', sel: {}, carry: true };
+var PERIOD_KEY = 'titans-cgc-period';
+function loadPeriod() {
+  try {
+    var v = JSON.parse(window.localStorage.getItem(PERIOD_KEY) || 'null');
+    if (v && /^(all|live|custom)$/.test(v.mode)) {
+      PERIOD.mode = v.mode; PERIOD.sel = v.sel || {}; PERIOD.carry = v.carry !== false;
+    }
+  } catch (e) {}
+}
+function keepPeriod() { try { window.localStorage.setItem(PERIOD_KEY, JSON.stringify(PERIOD)); } catch (e) {} }
+function periodMonths() {
+  if (PERIOD.mode === 'all') return allMonths();
+  if (PERIOD.mode === 'live') return [liveMonthKey()];
+  var all = allMonths(), out = [], i;
+  for (i = 0; i < all.length; i++) if (PERIOD.sel[all[i]]) out.push(all[i]);
+  return out.length ? out : [liveMonthKey()];
+}
+function periodCarry() { return hasCarry() && (PERIOD.mode === 'all' || (PERIOD.mode === 'custom' && PERIOD.carry)); }
+function tickMonth(mk, on) {
+  var cur = periodMonths(), sel = {}, i, n = 0, all = allMonths();
+  for (i = 0; i < cur.length; i++) sel[cur[i]] = 1;
+  if (on) sel[mk] = 1; else delete sel[mk];
+  for (i = 0; i < all.length; i++) if (sel[all[i]]) n++;
+  if (!n) { toast('Keep at least one month ticked.', 'err'); render(); return; }
+  PERIOD.carry = periodCarry();
+  PERIOD.mode = (n === all.length && PERIOD.carry === hasCarry()) ? 'all' : 'custom';
+  PERIOD.sel = sel;
+  keepPeriod(); render();
+}
+function tickCarry(on) {
+  var cur = periodMonths(), i;
+  PERIOD.sel = {}; for (i = 0; i < cur.length; i++) PERIOD.sel[cur[i]] = 1;
+  PERIOD.carry = !!on;
+  PERIOD.mode = (cur.length === allMonths().length && on) ? 'all' : 'custom';
+  keepPeriod(); render();
+}
+function setPeriod(mode) { PERIOD.mode = mode; PERIOD.carry = mode === 'all'; PERIOD.sel = {}; keepPeriod(); render(); }
+
+/* The board for whatever is ticked. One live month is scored exactly as
+   before, audit trail and weekly chart included; anything else is the
+   months' rows added together. */
+function periodResult() {
+  var months = periodMonths(), carry = periodCarry();
+  if (months.length === 1 && isLive(months[0])) return computeFor(months[0], carry);
+  return aggregate(months, carry);
+}
+
+function aggregate(months, carry) {
+  var W = [], rows = [], i, j, k, multi = months.length > 1;
+  for (i = 0; i < months.length; i++) {
+    if (isLive(months[i])) {
+      var Rm = computeFor(months[i]);
+      rows = rows.concat(snapshotRows(Rm, months[i]));
+      W = W.concat(Rm.warnings);
+    } else rows = rows.concat(monthRows(months[i]));
+  }
+
+  /* Today's scoring lines first, in the slide's order; then any line a
+     recorded month scored that has since been removed. */
+  var rules = [], have = {};
+  for (i = 0; i < RULES.length; i++) { var cr = cloneRule(RULES[i]); cr.multi = multi; rules.push(cr); have[cr.key] = 1; }
+  for (i = 0; i < rows.length; i++) {
+    var rk = rows[i].key;
+    if (rk === 'handPts' || rk === 'adjust' || have[rk]) continue;
+    have[rk] = 1;
+    rules.push({ key: rk, label: rows[i].label || rk, short: rows[i].label || rk, pts: null, src: null,
+                 unit: 'entry', old: 1, multi: multi });
+  }
+
+  var members = {}, teams = {};
+  function ts(name) {
+    if (!teams[name]) {
+      var T0 = { name: name, manual: 0, activity: 0, monthTotal: 0, fines: 0, handPts: 0, handList: [],
+                 handN: 0, adjN: 0, adjBits: [], carry: carry ? (CARRY[name] || 0) : 0, grand: 0, members: [],
+                 byWeek: {}, audit: [], counts: {} }, z;
+      for (z = 0; z < rules.length; z++) { T0[rules[z].key] = 0; T0.counts[rules[z].key] = 0; }
+      teams[name] = T0;
+    }
+    return teams[name];
+  }
+  for (i = 0; i < TEAMS.length; i++) ts(TEAMS[i]);
+
+  for (i = 0; i < rows.length; i++) {
+    var r = rows[i], T = ts(r.squad || 'No squad'), lab = mkShort(r.mk);
+    T.byWeek[lab] = (T.byWeek[lab] || 0) + r.points;
+    if (r.key === 'adjust') {
+      T.manual += r.points; T.adjN += r.count;
+      T.adjBits.push(lab + ' ' + (r.points >= 0 ? '+' : '') + n(r.points));
+      continue;
+    }
+    var pk = norm(r.player);
+    if (!pk) continue;
+    /* A player is listed under the squad they were on most recently; each
+       month's points stay with the squad they were earned for. */
+    var m = members[pk] || (members[pk] = { name: r.player, key: pk, team: r.squad, latest: '', c: {}, p: {},
+      total: 0, handPts: 0, handN: 0, handList: [], byMonth: {} });
+    if (r.mk >= m.latest) { m.latest = r.mk; m.team = r.squad; }
+    if (r.key === 'handPts') {
+      m.handPts += r.points; m.handN += r.count; T.handPts += r.points; T.handN += r.count;
+    } else {
+      m.c[r.key] = (m.c[r.key] || 0) + r.count; m.p[r.key] = (m.p[r.key] || 0) + r.points;
+      T[r.key] = (T[r.key] || 0) + r.points; T.counts[r.key] = (T.counts[r.key] || 0) + r.count;
+    }
+    m.total += r.points;
+    m.byMonth[r.mk] = (m.byMonth[r.mk] || 0) + r.points;
+  }
+
+  for (k in members) {
+    if (!members.hasOwnProperty(k)) continue;
+    var mm = members[k];
+    mm.perfect = 0; mm.training = 0;
+    for (j = 0; j < rules.length; j++) {
+      var key = rules[j].key, kind = rules[j].src ? rules[j].src.kind : '';
+      mm.c[key] = mm.c[key] || 0; mm.p[key] = mm.p[key] || 0;
+      mm[key] = mm.c[key];
+      if (kind === 'perfect') mm.perfect += mm.c[key];
+      if (kind === 'training') mm.training += mm.c[key];
+    }
+    ts(mm.team).members.push(mm);
+  }
+
+  var teamList = [], latest = months[months.length - 1];
+  for (k in teams) if (teams.hasOwnProperty(k)) teamList.push(teams[k]);
+  for (i = 0; i < teamList.length; i++) {
+    var T2 = teamList[i], run = 0;
+    var log = function (name, why, delta, cls) {
+      run += delta;
+      T2.audit.push({ name: name, why: why, delta: delta, running: run, cls: cls || '' });
+    };
+    for (j = 0; j < rules.length; j++) {
+      var R2 = rules[j], val = T2[R2.key] || 0, cnt = T2.counts[R2.key] || 0;
+      if (R2.old && !val && !cnt) continue;
+      var unit = cnt + ' ' + (cnt === 1 ? R2.unit : (R2.units || R2.unit + 's'));
+      log(R2.short, unit + (multi ? ' across ' + periodLabel(months) : ' in ' + mkLabel(months[0])) +
+          (R2.old ? ', on a scoring line no longer used' : '') + '.', val, val > 0 ? 'hit' : '');
+    }
+    T2.activity = run;
+    if (T2.handN) log('Manual scores', T2.handN + ' line' + (T2.handN === 1 ? '' : 's') + ' added by hand.',
+                      T2.handPts, T2.handPts >= 0 ? 'hit' : 'cut');
+    if (T2.adjN) log('Adjustments agreed in the room', T2.adjBits.join(', ') + '.', T2.manual,
+                     T2.manual >= 0 ? 'hit' : 'cut');
+    T2.monthTotal = run;
+    T2.latestPts = T2.byWeek[mkShort(latest)] || 0;
+    if (hasCarry()) log('Points carried in', T2.carry ? 'Banked before the board kept month-by-month records.'
+                        : 'Not counted here — only the months ticked at the top.', T2.carry, T2.carry ? 'hit' : '');
+    T2.grand = T2.monthTotal + T2.carry;
+    T2.members.sort(function (a, b) { return b.total - a.total; });
+  }
+  teamList.sort(function (a, b) { return b.grand - a.grand; });
+  for (i = 0; i < teamList.length; i++) teamList[i].rank = i + 1;
+
+  var weekNames = [];
+  for (i = 0; i < months.length; i++) weekNames.push(mkShort(months[i]));
+  return { teams: teamList, members: members, weekNames: weekNames, warnings: W, rules: rules,
+           groups: [], roundOrder: [], fines: [], fineTotal: 0,
+           month: latest, months: months, latest: latest, label: periodLabel(months), span: 'period' };
+}
+
+/* Things about months worth saying out loud, rather than guessing. */
+function monthWarnings() {
+  var W = [], live = liveMonthKey(), known = {}, i, lost = {}, nLost = 0;
+  var all = allMonths();
+  for (i = 0; i < all.length; i++) known[all[i]] = 1;
+  function check(list, fn) {
+    for (var j = 0; j < (list || []).length; j++) {
+      var k = fn(list[j]);
+      if (!known[k]) { lost[k] = 1; nLost++; }
+    }
+  }
+  check(DATA.scores, scoreMonth); check(DATA.adjustments, adjMonth); check(DATA.groups, groupMonth);
+  if (nLost) {
+    var names = []; for (var lk in lost) if (lost.hasOwnProperty(lk)) names.push(mkLabel(lk));
+    W.push('Some manual scores, adjustments or group 1-2-1 rounds are logged against <b>' + esc(names.join(', ')) +
+      '</b>, which the board has no weekly tabs or record for — so they count nowhere. Change their month, ' +
+      'or switch the month on the <b>Months</b> tab if the weekly tabs really hold it.');
+  }
+  /* A group still running in a month that is already frozen would pay its
+     points into nowhere when it is marked. */
+  var stuck = {}, nStuck = 0;
+  for (i = 0; i < (DATA.groups || []).length; i++) {
+    var g = DATA.groups[i], gm = groupMonth(g);
+    if (doneState(g.done) === null && isRecorded(gm) && !isLive(gm) && !stuck[g.round]) { stuck[g.round] = mkLabel(gm); nStuck++; }
+  }
+  if (nStuck) {
+    var sl = []; for (var sr in stuck) if (stuck.hasOwnProperty(sr)) sl.push(sr + ' (' + stuck[sr] + ')');
+    W.push('Still-running group 1-2-1 rounds count in a month that is already recorded: <b>' + esc(sl.join(', ')) +
+      '</b>. Their points would land nowhere \u2014 move them to ' + esc(mkLabel(live)) + ' in the <b>Saved Rounds</b> ' +
+      'table on the Group 1-2-1 tab.');
+  }
+  if (todayKey() > live)
+    W.push('It is now <b>' + esc(mkLabel(todayKey())) + '</b>, but the weekly tabs are being scored as <b>' +
+      esc(mkLabel(live)) + '</b>. ' + (isRecorded(live) ? '' : 'Record ' + esc(mkLabel(live)) + ' on the ' +
+      '<b>Months</b> tab before its weekly tabs are cleared, then ') + 'switch the month there once the new ' +
+      'month’s numbers go in.');
+  if (isRecorded(live) && (DATA.weeks || []).length) {
+    var a = monthSummary(live), b = 0;
+    for (i = 0; i < DATA.history.length; i++) if (DATA.history[i].mk === live) b += DATA.history[i].points;
+    if (a.total !== b)
+      W.push('<b>' + esc(mkLabel(live)) + '</b> is on screen live at ' + n(a.total) + ' points, but its record ' +
+        'says ' + n(b) + '. If the month is still running, record it again when it ends. If the weekly tabs now ' +
+        'hold a new month, switch the month on the <b>Months</b> tab.');
+  }
+  return W;
+}
+
+/* ── Recording a month ──────────────────────────────────────────────────
+   Freezes a live month into the Monthly Scores tab, replacing any earlier
+   record of it. Rounds, manual scores and adjustments with no month of
+   their own are stamped with it too, so they stay in this month after the
+   weekly tabs move on instead of turning up again in the next one.       */
+function recordMonth(mk) {
+  if (!DATA) return;
+  if (!isLive(mk)) { toast('Only a month the weekly tabs hold can be recorded.', 'err'); return; }
+  if (SYNC.url && SYNC.api < 3) { toast(esc(oldScriptText('months')), 'err', 9000); return; }
+  var label = mkLabel(mk), again = isRecorded(mk);
+  if (!confirm((again ? 'Record ' + label + ' again? It replaces the record made on ' + (recordedOn(mk) || 'an earlier day') + '.'
+                      : 'Record ' + label + '?') + '\n\nEvery player’s points for ' + label + ' are frozen into the ' +
+      'Monthly Scores tab, so the month stays on the board after its weekly tabs are cleared.')) return;
+  var rows = snapshotRows(compute(mk), mk, todayStr()), i, keep = [];
+  for (i = 0; i < (DATA.history || []).length; i++) if (DATA.history[i].mk !== mk) keep.push(DATA.history[i]);
+  DATA.history = keep.concat(rows);
+  markDirty('months');
+  if (mk === liveMonthKey()) {
+    var touched = { groups: 0, scores: 0, adjustments: 0 }, running = {}, gk;
+    /* A group still inside its round has paid nothing into this record.
+       If its round ends in a later month, it goes there, so its points land
+       when it is marked; a finished group stays with this month. */
+    for (i = 0; i < (DATA.groups || []).length; i++)
+      if (doneState(DATA.groups[i].done) === null) running[DATA.groups[i].round + '|' + DATA.groups[i].group] = 1;
+    for (i = 0; i < (DATA.groups || []).length; i++) {
+      var gr = DATA.groups[i];
+      if (monthKeyOf(gr.month)) continue;
+      gk = roundMonthGuess(gr.round);
+      gr.month = (running[gr.round + '|' + gr.group] && gk > mk) ? mkLabel(gk) : label;
+      touched.groups = 1;
+    }
+    for (i = 0; i < (DATA.scores || []).length; i++) if (!monthKeyOf(DATA.scores[i].month)) { DATA.scores[i].month = label; touched.scores = 1; }
+    for (i = 0; i < (DATA.adjustments || []).length; i++) if (!monthKeyOf(DATA.adjustments[i].month)) { DATA.adjustments[i].month = label; touched.adjustments = 1; }
+    for (var sk in touched) if (touched[sk]) markDirty(sk);
+  }
+  render();
+  toast('<b>' + esc(label) + '</b> is recorded on screen — press <b>Save Changes</b> to keep it.', 'ok', 6000);
+}
+function dropMonthRecord(mk) {
+  if (!confirm('Delete the record of ' + mkLabel(mk) + ' for everyone?' +
+      (isLive(mk) ? '' : '\n\nIts weekly tabs are gone, so the month disappears from the board.'))) return;
+  var keep = [], i;
+  for (i = 0; i < DATA.history.length; i++) if (DATA.history[i].mk !== mk) keep.push(DATA.history[i]);
+  DATA.history = keep;
+  markDirty('months');
+  render();
+}
+function setLiveMonth(v) {
+  SET.liveMonth = v ? mkLabel(v) : '';
+  markDirty('settings');
+  render();
+}
+/* Months to offer in a picker: a year back from the live month, one ahead,
+   plus anything already on the board. Newest first. */
+function monthOptions() {
+  var live = liveMonthKey(), seen = {}, out = [], i, a = allMonths();
+  for (i = -11; i <= 1; i++) { var k = addMonths(live, i); if (!seen[k]) { seen[k] = 1; out.push(k); } }
+  for (i = 0; i < a.length; i++) if (!seen[a[i]]) { seen[a[i]] = 1; out.push(a[i]); }
+  return out.sort().reverse();
+}
+/* A month picker for something that scores. A recorded month that is no
+   longer live is frozen, so it is offered but greyed out. */
+function fillMonthSelect(id, chosen) {
+  var el = $(id); if (!el) return;
+  var opts = monthOptions(), h = '', i, cur = el.value || chosen || liveMonthKey();
+  for (i = 0; i < opts.length; i++) {
+    var frozen = isRecorded(opts[i]) && !isLive(opts[i]);
+    h += '<option value="' + opts[i] + '"' + (opts[i] === cur ? ' selected' : '') + (frozen ? ' disabled' : '') + '>' +
+      esc(mkLabel(opts[i])) + (opts[i] === liveMonthKey() ? ' · now' : (frozen ? ' · recorded' : '')) + '</option>';
+  }
+  if (el.innerHTML !== h) el.innerHTML = h;
+  if (el.value !== cur && !isRecorded(cur)) el.value = cur;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    DRAWING THE BOARD
    ═══════════════════════════════════════════════════════════════════════ */
 
-var VIEWS = [['board', 'SCOREBOARD'], ['squads', 'SQUADS'], ['players', 'PLAYERS'],
+var VIEWS = [['board', 'SCOREBOARD'], ['squads', 'SQUADS'], ['players', 'PLAYERS'], ['months', 'MONTHS'],
              ['manual', 'MANUAL SCORES'], ['groups', 'GROUP 1-2-1'], ['roster', 'ROSTER'], ['scoring', 'SCORING'],
              ['share', 'BROADCAST'], ['data', 'DATA']];
 
@@ -3194,20 +3785,27 @@ function render() {
   buildRulesTable(); buildSettings(); buildCarry(); buildTeamNames();
   if (VIEW === 'scoring') buildRules();
   buildOOO(); buildSchema(); buildGroupSchema(); buildScoreSchema();
-  fillSelects(); fillTrainMonths();
+  CMP = null;
+  fillSelects(); fillLiveMonth('liveMonthData');
   if (VIEW === 'data') saveStatusPanel();
-  if (!DATA) { $('globalWarn').innerHTML = ''; return; }
-  var R = compute();
-  showWarnings(R);
-  if (VIEW === 'board') { versus(R); h2h(R); mvp(R); glance(R); chart(R); breakdown(R); }
-  if (VIEW === 'squads') dossier(R);
-  if (VIEW === 'players') memberTable(R);
+  if (!DATA) { $('globalWarn').innerHTML = ''; $('periodBar').innerHTML = ''; return; }
+  /* The working tabs — draw, roster, manual scores — work on the month the
+     weekly tabs hold. The tabs you look at follow the months ticked. */
+  var R = computeFor(liveMonthKey());
+  var P = PERIOD_VIEWS[VIEW] ? periodResult() : null;
+  showWarnings(R, P);
+  periodBar();
+  if (VIEW === 'board') { versus(P); h2h(P); mvp(P); glance(P); chart(P); breakdown(P); }
+  if (VIEW === 'squads') dossier(P);
+  if (VIEW === 'players') memberTable(P);
+  if (VIEW === 'months') renderMonths();
   if (VIEW === 'groups') { renderDraw(); renderMentors(R); renderSaved(R); roundStatus(R); finesPanel(R); }
   if (VIEW === 'roster') { board(R); moveLog(); }
-  if (VIEW === 'share') broadcast(R);
+  if (VIEW === 'share') broadcast(P);
   if (VIEW === 'scoring') renderAdj();
   if (VIEW === 'manual') renderScores(R);
 }
+var PERIOD_VIEWS = { board: 1, squads: 1, players: 1, share: 1, months: 1 };
 
 /* The notices matter — a TYFCB column misread as money is exactly the kind
    of thing that must never go quiet — but a wall of red across the top of a
@@ -3215,11 +3813,11 @@ function render() {
    line by default, open on the tabs where you are actually fixing things. */
 var WARN_OPEN = false;
 function toggleWarn() { WARN_OPEN = !WARN_OPEN; render(); }
-function showWarnings(R) {
-  var all = [], seen = {}, i, raw = PARSE_WARN.concat(R.warnings);
+function showWarnings(R, P) {
+  var all = [], seen = {}, i, raw = PARSE_WARN.concat(R.warnings, P && P !== R ? P.warnings : [], monthWarnings());
   for (i = 0; i < raw.length; i++) if (!seen['$' + raw[i]]) { seen['$' + raw[i]] = 1; all.push(raw[i]); }
   if (!all.length) { $('globalWarn').innerHTML = ''; return; }
-  var working = (VIEW === 'data' || VIEW === 'scoring' || VIEW === 'roster' || VIEW === 'manual');
+  var working = (VIEW === 'data' || VIEW === 'scoring' || VIEW === 'roster' || VIEW === 'manual' || VIEW === 'months');
   var open = WARN_OPEN || working;
   var head = '<button class="warntab" onclick="toggleWarn()">' +
     (open ? '\u25be' : '\u25b8') + ' ' + all.length + ' notice' + (all.length === 1 ? '' : 's') +
@@ -3229,12 +3827,16 @@ function showWarnings(R) {
     : '<div class="warnbar">' + head + '</div>';
 }
 
-function fillTrainMonths() {
-  var sel = $('trainMonth'); if (!sel) return;
-  var list = (DATA && DATA.trainingMonths) || [], i, h = '';
-  if (!list.length) { sel.innerHTML = '<option>' + esc(trainMonth() || 'no Training tab loaded') + '</option>'; return; }
-  for (i = 0; i < list.length; i++)
-    h += '<option' + (norm(list[i]) === norm(trainMonth()) ? ' selected' : '') + '>' + esc(list[i]) + '</option>';
+/* The month the weekly tabs hold. "Automatic" follows the newest month in
+   the Training tab; picking one pins it for everybody (Settings tab). */
+function fillLiveMonth(id) {
+  var sel = $(id); if (!sel) return;
+  if (!DATA) { sel.innerHTML = '<option>Load the sheet first</option>'; return; }
+  var auto = monthKeyOf(DATA.month), pinned = monthKeyOf(SET.liveMonth), opts = monthOptions(), i;
+  var h = '<option value=""' + (pinned ? '' : ' selected') + '>Automatic' + (auto ? ' \u2014 ' + esc(mkLabel(auto)) +
+    ', the newest month in the Training tab' : '') + '</option>';
+  for (i = 0; i < opts.length; i++)
+    h += '<option value="' + opts[i] + '"' + (opts[i] === pinned ? ' selected' : '') + '>' + esc(mkLabel(opts[i])) + '</option>';
   if (sel.innerHTML !== h) sel.innerHTML = h;
 }
 
@@ -3274,12 +3876,12 @@ function versus(R) {
         '<div class="pos">' + (i + 1) + '</div><div>' +
         '<div class="tname">' + esc(t.name) + '</div>' +
         '<div class="tmeta">' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
-        ' &middot; ' + n(t.carry) + ' carried in &middot; ' + n(t.monthTotal) + ' this month</div>' +
+        ' &middot; ' + n(t.carry) + ' carried in &middot; ' + n(t.latestPts) + ' ' + whenLabel(R) + '</div>' +
         '<div class="bar"><i style="width:' + Math.max(0, t.grand / max * 100) + '%;background:' +
         color(t.name) + '"></i></div></div>' +
         '<div><div class="tpts" style="color:' + color(t.name) + '">' + n(t.grand) + '</div>' +
-        '<div class="tdelta' + (t.monthTotal < 0 ? ' neg' : '') + '">' +
-        (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + ' this month</div></div></div>';
+        '<div class="tdelta' + (t.latestPts < 0 ? ' neg' : '') + '">' +
+        (t.latestPts >= 0 ? '+' : '') + n(t.latestPts) + ' ' + whenLabel(R) + '</div></div></div>';
     }
     $('versus').innerHTML = h;
     $('versusNote').innerHTML = 'This game is written for two squads and the sheet has <b>' + T.length +
@@ -3297,7 +3899,7 @@ function versus(R) {
       '<div class="vscore">' + n(t.grand) + '</div>' +
       '<div class="vmeta">' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
       (t.carry ? ' &middot; ' + n(t.carry) + ' carried in' : '') + '</div>' +
-      '<div class="vmonth">' + (t.monthTotal >= 0 ? '+' : '') + n(t.monthTotal) + ' THIS MONTH</div></div>';
+      '<div class="vmonth">' + (t.latestPts >= 0 ? '+' : '') + n(t.latestPts) + ' ' + whenLabel(R).toUpperCase() + '</div></div>';
   }
   $('versus').innerHTML =
     side(a, !tied) +
@@ -3315,6 +3917,9 @@ function versus(R) {
       ' for <b>' + esc(b.name) + '</b> to draw level. Tap a squad to open its full breakdown.';
   $('versusNote').innerHTML += '<br><br>' + SQUAD_RULE;
 }
+
+/* "this month" for the month on screen; "in Oct 2026" when months are added up. */
+function whenLabel(R) { return R.span === 'month' && R.month === liveMonthKey() ? 'this month' : 'in ' + mkShort(R.latest); }
 
 /* One bar, split by share of the season. Zero-zero sits it in the middle
    rather than dividing by nothing. */
@@ -3338,12 +3943,12 @@ function h2h(R) {
 
   if (T.length === 2) {
     var a = T[0], b = T[1], max = 1;
-    for (i = 0; i < RULES.length; i++) max = Math.max(max, a[RULES[i].key] || 0, b[RULES[i].key] || 0);
+    for (i = 0; i < R.rules.length; i++) max = Math.max(max, a[R.rules[i].key] || 0, b[R.rules[i].key] || 0);
     if (a.handPts || b.handPts) max = Math.max(max, Math.abs(a.handPts), Math.abs(b.handPts));
     if (a.manual || b.manual) max = Math.max(max, Math.abs(a.manual), Math.abs(b.manual));
     var h = '<div class="h2hhead"><div>' + esc(a.name) + '</div><div>Activity</div><div>' +
             esc(b.name) + '</div></div><div class="h2h">';
-    var rows = RULES.slice();
+    var rows = R.rules.slice();
     if (a.handPts || b.handPts) rows.push({ key: 'handPts', short: 'Manual scores', pts: null, why: 'added by hand' });
     if (a.manual || b.manual) rows.push({ key: 'manual', short: 'Adjustments', pts: null });
     for (i = 0; i < rows.length; i++) {
@@ -3352,7 +3957,8 @@ function h2h(R) {
         '<div class="h2hbar l">' + (av ? '<i style="width:' + (Math.abs(av) / max * 100) +
         '%;background:' + color(a.name) + '">' + n(av) + '</i>' : '') + '</div>' +
         '<div class="h2hlab"><div class="hl">' + esc(rows[i].short) + '</div>' +
-        '<div class="hp">' + (rows[i].pts === null ? (rows[i].why || 'agreed in the room') : n(rows[i].pts) + ' each') +
+        '<div class="hp">' + (rows[i].pts === null ? (rows[i].why || (rows[i].old ? 'earlier scoring line' : 'agreed in the room'))
+          : n(rows[i].pts) + ' each') +
         '</div></div>' +
         '<div class="h2hbar r">' + (bv ? '<i style="width:' + (Math.abs(bv) / max * 100) +
         '%;background:' + color(b.name) + '">' + n(bv) + '</i>' : '') + '</div></div>';
@@ -3363,12 +3969,13 @@ function h2h(R) {
 
   /* Three or more: one stacked bar per activity, each squad's share. */
   var g = '<div class="h2h">', mx = 1;
-  for (i = 0; i < RULES.length; i++) for (j = 0; j < T.length; j++) mx = Math.max(mx, T[j][RULES[i].key] || 0);
-  for (i = 0; i < RULES.length; i++) {
-    g += '<div><div class="fromtop"><span><b>' + esc(RULES[i].short) + '</b></span>' +
-         '<span class="note" style="margin:0">' + n(RULES[i].pts) + ' each</span></div>';
+  var RR = R.rules;
+  for (i = 0; i < RR.length; i++) for (j = 0; j < T.length; j++) mx = Math.max(mx, T[j][RR[i].key] || 0);
+  for (i = 0; i < RR.length; i++) {
+    g += '<div><div class="fromtop"><span><b>' + esc(RR[i].short) + '</b></span>' +
+         '<span class="note" style="margin:0">' + (RR[i].pts === null ? 'earlier scoring line' : n(RR[i].pts) + ' each') + '</span></div>';
     for (j = 0; j < T.length; j++) {
-      var v = T[j][RULES[i].key] || 0;
+      var v = T[j][RR[i].key] || 0;
       g += '<div class="fromtop" style="font-size:12.5px;margin-top:6px"><span><span class="dot" style="background:' +
         color(T[j].name) + '"></span>' + esc(T[j].name) + '</span><b>' + n(v) + '</b></div>' +
         '<div class="bar"><i style="width:' + (v / mx * 100) + '%;background:' + color(T[j].name) + '"></i></div>';
@@ -3400,12 +4007,16 @@ function mvp(R) {
   if (top.one21) bits.push(top.one21 + ' 1-2-1' + (top.one21 === 1 ? '' : 's'));
   if (top.tyfcb) bits.push(top.tyfcb + ' TYFCB');
   if (top.training) bits.push(top.training + ' training session' + (top.training === 1 ? '' : 's'));
-  if (top.perfect) bits.push('perfect attendance');
+  if (top.perfect) bits.push(R.span === 'month' ? 'perfect attendance' : top.perfect + ' month' +
+    (top.perfect === 1 ? '' : 's') + ' of perfect attendance');
   if (top.handPts) bits.push((top.handPts > 0 ? '+' : '') + n(top.handPts) + ' added by hand');
   var second = all[1], lead = second ? top.total - second.total : 0;
+  var one = R.months.length === 1;
+  $('mvpTitle').textContent = one ? 'Player Of The Month' : 'Top Player \u2014 ' + R.label;
 
   $('mvpHero').innerHTML =
-    '<div class="mvpCrown">PLAYER OF THE MONTH</div>' +
+    '<div class="mvpCrown">' + (one ? 'PLAYER OF ' + esc(mkLabel(R.month).toUpperCase()) : 'TOP PLAYER \u00b7 ' +
+      esc(R.label.toUpperCase())) + '</div>' +
     '<div class="mvpName">' + esc(top.name) + '</div>' +
     '<div class="mvpTeam"><span class="dot" style="background:' + color(top.team) + '"></span>' +
     esc(top.team) + '</div>' +
@@ -3426,15 +4037,15 @@ function mvp(R) {
   $('mvpPodium').innerHTML = h || '<div class="note">Nobody else on the board yet.</div>';
 
   var ch = '', c;
-  for (c = 0; c < RULES.length; c++) {
-    var RC = RULES[c], key = RC.key;
+  for (c = 0; c < R.rules.length; c++) {
+    var RC = R.rules[c], key = RC.key;
     /* A yes/no line has no "most": it has a headcount. */
     if (RC.src && RC.src.kind === 'perfect') {
-      var got = 0;
-      for (i = 0; i < all.length; i++) if (all[i].c[key]) got++;
+      var got = 0, gp = 0;
+      for (i = 0; i < all.length; i++) { if (all[i].c[key]) got++; gp += all[i].p[key] || 0; }
       ch += '<div class="catbox"><div class="ck">' + esc(RC.short) + '</div>' +
         '<div class="cv">' + got + ' of ' + all.length + '</div>' +
-        '<div class="cd">' + n(got * RC.pts) + ' points</div></div>';
+        '<div class="cd">' + n(gp) + ' points</div></div>';
       continue;
     }
     var best = null, tie = 0;
@@ -3459,14 +4070,14 @@ function glance(R) {
   var mover = T.slice().sort(function (a, b) { return b.monthTotal - a.monthTotal; })[0];
   var c = [
     ['In front', lead.name, T.length > 1 ? n(gap) + ' clear of ' + T[1].name : 'the only squad'],
-    ['Best month', mover ? mover.name : '—',
-      mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' this month' : '']
+    [R.months.length === 1 ? 'Best month' : 'Most points', mover ? mover.name : '—',
+      mover ? (mover.monthTotal >= 0 ? '+' : '') + n(mover.monthTotal) + ' in ' + R.label : '']
   ], gi;
-  for (gi = 0; gi < RULES.length; gi++) {
-    var RG = RULES[gi], tot = 0, pts = 0;
+  for (gi = 0; gi < R.rules.length; gi++) {
+    var RG = R.rules[gi], tot = 0, pts = 0;
     for (i = 0; i < all.length; i++) { tot += (all[i].c[RG.key] || 0); pts += (all[i].p[RG.key] || 0); }
     c.push([RG.short,
-      (RG.src && RG.src.kind === 'perfect') ? tot + ' of ' + all.length : String(tot),
+      (RG.src && RG.src.kind === 'perfect' && !RG.multi) ? tot + ' of ' + all.length : String(tot),
       pts ? 'worth ' + n(pts) + ' points' : 'nothing yet']);
   }
   var h = '';
@@ -3489,11 +4100,14 @@ function weekLabel(name) {
 }
 
 /* ── Momentum chart ─────────────────────────────────────────────────── */
-function chart(R) {
+function chart(R, chartId, legendId, note) {
+  chartId = chartId || 'chart'; legendId = legendId || 'legend';
   var weeks = R.weekNames, i, w, t;
+  if (chartId === 'chart') $('chartTitle').innerHTML = R.span === 'month' ? 'Momentum &mdash; Points Per Week'
+    : 'Momentum &mdash; Points Per Month';
   if (!weeks.length) {
-    $('chart').innerHTML = '<div class="note">No weekly tabs loaded, so there is nothing to chart yet.</div>';
-    $('legend').innerHTML = ''; return;
+    $(chartId).innerHTML = '<div class="note">No weekly tabs loaded, so there is nothing to chart yet.</div>';
+    $(legendId).innerHTML = ''; return;
   }
   var W = 760, H = 250, PL = 50, PR = 16, PT = 16, PB = 34, max = 10;
   for (i = 0; i < R.teams.length; i++)
@@ -3523,29 +4137,32 @@ function chart(R) {
       g += '<circle cx="' + xs(w) + '" cy="' + ys(t.byWeek[weeks[w]] || 0) + '" r="4.5" fill="#fff" stroke="' +
            color(t.name) + '" stroke-width="3"/>';
   }
-  $('chart').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + g + '</svg>';
+  $(chartId).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + g + '</svg>';
   var lh = '';
   for (i = 0; i < R.teams.length; i++)
     lh += '<span><span class="dot" style="background:' + color(R.teams[i].name) + '"></span>' +
           esc(R.teams[i].name) + '</span>';
-  lh += '<span style="font-style:italic">Weekly pace counts visitors, referrals, 1-2-1s and TYFCB. ' +
-        'Training, perfect attendance and manual scores belong to no one week, so they sit outside this chart.</span>';
-  $('legend').innerHTML = lh;
+  lh += '<span style="font-style:italic">' + (note || (R.span === 'month'
+    ? 'Weekly pace counts visitors, referrals, 1-2-1s and TYFCB. Training, perfect attendance and manual ' +
+      'scores belong to no one week, so they sit outside this chart.'
+    : 'Every point each squad scored in each month ticked at the top.')) + '</span>';
+  $(legendId).innerHTML = lh;
 }
 
 /* ── Breakdown table ────────────────────────────────────────────────── */
 function breakdown(R) {
   var h = '<thead><tr><th>Squad</th>', i, c;
-  var hand = 0;
-  for (i = 0; i < R.teams.length; i++) if (R.teams[i].handList.length) hand = 1;
-  for (c = 0; c < RULES.length; c++) h += '<th>' + esc(RULES[c].short) + '</th>';
-  h += (hand ? '<th>Manual</th>' : '') + '<th>Adjust.</th><th>Month</th><th>Season</th></tr></thead><tbody>';
+  var hand = 0, RR = R.rules;
+  for (i = 0; i < R.teams.length; i++) if (R.teams[i].handN) hand = 1;
+  for (c = 0; c < RR.length; c++) h += '<th>' + esc(RR[c].short) + '</th>';
+  h += (hand ? '<th>Manual</th>' : '') + '<th>Adjust.</th><th>' + (R.months.length === 1 ? 'Month' : 'Months') +
+    '</th><th>Total</th></tr></thead><tbody>';
   for (i = 0; i < R.teams.length; i++) {
     var t = R.teams[i];
     h += '<tr><td class="nm"><span class="dot" style="background:' + color(t.name) + '"></span>' +
          esc(t.name) + '</td>';
-    for (c = 0; c < RULES.length; c++) {
-      var v = t[RULES[c].key] || 0;
+    for (c = 0; c < RR.length; c++) {
+      var v = t[RR[c].key] || 0;
       h += '<td' + (v < 0 ? ' class="neg"' : '') + '>' + n(v) + '</td>';
     }
     if (hand) h += '<td' + (t.handPts < 0 ? ' class="neg"' : '') + '>' + n(t.handPts) + '</td>';
@@ -3560,7 +4177,7 @@ function breakdown(R) {
 /* A yes/no line reads as Yes, not as 1. Anything else is a count. */
 function cellCount(m, R) {
   var v = m.c[R.key] || 0;
-  if (R.src && R.src.kind === 'perfect') return v ? 'Yes' : '—';
+  if (R.src && R.src.kind === 'perfect' && !R.multi) return v ? 'Yes' : '—';
   return String(v);
 }
 /* Column headings have to survive a squad table with ten rules in it. */
@@ -3578,20 +4195,28 @@ function dossier(R) {
   for (i = 0; i < R.teams.length; i++) if (R.teams[i].name === name) t = R.teams[i];
   if (!t) { $('dossier').innerHTML = ''; return; }
   var above = R.teams[t.rank - 2], below = R.teams[t.rank], col = color(t.name);
-  var cats = RULES.concat([{ key: 'handPts', short: 'Manual scores' }, { key: 'manual', short: 'Adjustments' }]);
+  var RR = R.rules;
+  var cats = RR.concat([{ key: 'handPts', short: 'Manual scores' }, { key: 'manual', short: 'Adjustments' }]);
   var maxc = 1, hand = handCol(R);
-  t.counts.handPts = t.handList.length;
+  t.counts.handPts = t.handN;
   for (i = 0; i < cats.length; i++) maxc = Math.max(maxc, Math.abs(t[cats[i].key] || 0));
 
   var h = '<div class="panel" style="border-top:9px solid ' + col + '"><h2>' + esc(t.name) + '</h2>';
   h += '<div class="cards">' +
     card('Position', '#' + t.rank + ' of ' + R.teams.length,
          t.rank === 1 ? 'Holding the board' : 'Chasing ' + esc(R.teams[0].name)) +
-    card('Season points', n(t.grand), n(t.carry) + ' carried in, ' + n(t.monthTotal) + ' this month') +
+    card('Points', n(t.grand), (t.carry ? n(t.carry) + ' carried in, ' : '') + n(t.monthTotal) + ' in ' + esc(R.label)) +
     card('Gap above', above ? n(above.grand - t.grand) : '—', above ? 'to ' + esc(above.name) : 'Nobody above') +
     card('Gap below', below ? n(t.grand - below.grand) : '—', below ? 'over ' + esc(below.name) : 'Nobody below') +
     '</div>';
 
+  if (R.months.length > 1) {
+    h += '<h3>Month by month</h3><div class="cards">';
+    for (i = 0; i < R.months.length; i++)
+      h += card(esc(mkLabel(R.months[i])), n(t.byWeek[mkShort(R.months[i])] || 0),
+                isLive(R.months[i]) ? 'live from the weekly tabs' : 'recorded ' + esc(recordedOn(R.months[i])));
+    h += '</div>';
+  }
   h += '<h3>Where the points came from</h3>';
   for (i = 0; i < cats.length; i++) {
     var v = t[cats[i].key] || 0, cnt = t.counts ? t.counts[cats[i].key] : null;
@@ -3614,8 +4239,10 @@ function dossier(R) {
       '<div class="sWhy">' + esc(a.why) + '</div>' +
       '<div class="sRun">Running total: <b>' + n(a.running) + '</b></div></div>';
   }
-  h += '</div><div class="note">Season total: <b>' + n(t.grand) + '</b>. Every number above comes ' +
-    'straight from the sheet — change a point value on the Scoring tab and this rewrites itself.</div>';
+  h += '</div><div class="note">Total for ' + esc(R.label) + ': <b>' + n(t.grand) + '</b>. ' +
+    (R.span === 'month' ? 'Every number above comes straight from the sheet \u2014 change a point value on the ' +
+      'Scoring tab and this rewrites itself.'
+    : 'A recorded month keeps the points it was given when it was recorded, whatever the scoring says today.') + '</div>';
 
   h += '<h3>What would move the needle</h3><div class="cards">';
   if (below) h += card('Stay ahead', '+' + n(t.grand - below.grand + 1), 'to keep ' + esc(below.name) + ' behind');
@@ -3627,16 +4254,16 @@ function dossier(R) {
 
   h += '<h3>Squad &mdash; ' + t.members.length + ' player' + (t.members.length === 1 ? '' : 's') +
     '</h3><div class="scroll"><table><thead><tr><th>Player</th>';
-  for (i = 0; i < RULES.length; i++) h += '<th>' + esc(abbr(RULES[i].short)) + '</th>';
+  for (i = 0; i < RR.length; i++) h += '<th>' + esc(abbr(RR[i].short)) + '</th>';
   h += (hand ? '<th>Manual</th>' : '') + '<th>Points</th></tr></thead><tbody>';
   for (i = 0; i < t.members.length; i++) {
     var m = t.members[i], mi;
     h += '<tr><td class="nm">' + esc(m.name) + '</td>';
-    for (mi = 0; mi < RULES.length; mi++) h += '<td>' + cellCount(m, RULES[mi]) + '</td>';
+    for (mi = 0; mi < RR.length; mi++) h += '<td>' + cellCount(m, RR[mi]) + '</td>';
     if (hand) h += '<td>' + (m.handPts ? n(m.handPts) : '\u2014') + '</td>';
     h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
-  if (!t.members.length) h += '<tr><td colspan="' + (RULES.length + 2 + hand) +
+  if (!t.members.length) h += '<tr><td colspan="' + (RR.length + 2 + hand) +
     '" class="sub2">Nobody on this squad yet.</td></tr>';
   h += '</tbody></table></div>';
   $('dossier').innerHTML = h + '</div>';
@@ -3644,7 +4271,7 @@ function dossier(R) {
 
 /* 1 when anybody on a squad has a manual score, so the column only shows up when it means something. */
 function handCol(R) {
-  for (var k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team && R.members[k].handList.length) return 1;
+  for (var k in R.members) if (R.members.hasOwnProperty(k) && R.members[k].team && R.members[k].handN) return 1;
   return 0;
 }
 
@@ -3662,7 +4289,8 @@ function memberTable(R) {
     return SORT.dir * ((x || 0) - (y || 0));
   });
   var cols = [['name', 'Player'], ['team', 'Squad']], ci;
-  for (ci = 0; ci < RULES.length; ci++) cols.push([RULES[ci].key, abbr(RULES[ci].short)]);
+  var RR = R.rules;
+  for (ci = 0; ci < RR.length; ci++) cols.push([RR[ci].key, abbr(RR[ci].short)]);
   var hand = handCol(R);
   if (hand) cols.push(['handPts', 'Manual']);
   cols.push(['total', 'Points']);
@@ -3677,7 +4305,7 @@ function memberTable(R) {
     h += '<tr><td class="nm">' + medal + esc(m.name) + '</td>' +
       '<td class="sub2"><span class="dot" style="background:' + color(m.team) + '"></span>' +
       esc(m.team) + '</td>';
-    for (ci = 0; ci < RULES.length; ci++) h += '<td>' + cellCount(m, RULES[ci]) + '</td>';
+    for (ci = 0; ci < RR.length; ci++) h += '<td>' + cellCount(m, RR[ci]) + '</td>';
     if (hand) h += '<td>' + (m.handPts ? n(m.handPts) : '\u2014') + '</td>';
     h += '<td class="tot">' + n(m.total) + '</td></tr>';
   }
@@ -3686,9 +4314,9 @@ function memberTable(R) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   THE FORTNIGHTLY DRAW
+   THE MONTHLY DRAW
 
-   Four players, two from each squad, thrown together for a fortnight. The
+   Four players, two from each squad, thrown together for a month. The
    draw is made here and lives only in this browser tab; the sheet is still
    the record, which is what the Copy For Sheet button is for.
    ═══════════════════════════════════════════════════════════════════════ */
@@ -3801,11 +4429,19 @@ function rollDraw() {
   spinUp(R, made);
 }
 
-/* A fortnight from today, written the way people write it. */
+/* One round per calendar month, named for it: "1–31 Oct 2026". The first
+   month, from the later of today and the month the weekly tabs hold, that
+   has no round yet — so drawing on the 29th of a month that already has
+   its round names next month's. */
 function nextRoundName() {
-  var a = new Date(), b = new Date(a.getTime() + 13 * 86400000);
-  function f(d, withMonth) { return d.getDate() + (withMonth ? ' ' + d.toLocaleDateString('en-GB', { month: 'short' }) : ''); }
-  return a.getMonth() === b.getMonth() ? f(a, false) + '–' + f(b, true) : f(a, true) + ' – ' + f(b, true);
+  var live = DATA ? liveMonthKey() : todayKey(), mk = todayKey() > live ? todayKey() : live, have = {}, i;
+  for (i = 0; i < (DATA && DATA.groups ? DATA.groups.length : 0); i++) have[groupMonth(DATA.groups[i])] = 1;
+  for (i = 0; i < 12 && have[mk]; i++) mk = addMonths(mk, 1);
+  return roundNameFor(mk);
+}
+function roundNameFor(mk) {
+  var y = +mk.slice(0, 4), m = +mk.slice(5, 7);
+  return '1\u2013' + new Date(y, m, 0).getDate() + ' ' + MONTH_FULL[m - 1].slice(0, 3) + ' ' + y;
 }
 
 /* The wow: every slot cycles real names at speed, then the groups lock in
@@ -4031,15 +4667,16 @@ function commitDraw() {
   if (old.length && norm(rn) !== norm(DRAW_ROUND) &&
       !confirm('A round called "' + rn + '" is already saved. Replace it with these groups?')) return false;
   /* Replacing a round keeps each group's Done and Notes where the group
-     number still exists, so fixing a name mid-fortnight does not wipe out a
+     number still exists, so fixing a name mid-month does not wipe out a
      group that has already delivered. */
   var was = {};
   for (i = 0; i < old.length; i++) if (!was[old[i].group]) was[old[i].group] = old[i];
+  var month = old.length ? (old[0].month || '') : mkLabel(roundMonthGuess(rn));
   for (i = 0; i < DRAW.length; i++)
     for (j = 0; j < DRAW[i].members.length; j++) {
       var m = DRAW[i].members[j], prev = was[String(DRAW[i].n)] || {};
       keep.push({ round: rn, group: String(DRAW[i].n), member: m.name, role: m.mentor ? 'Mentor' : '',
-                  done: prev.done || '', notes: prev.notes || '' });
+                  done: prev.done || '', notes: prev.notes || '', month: month });
     }
   DATA.groups = keep;
   DRAW_ROUND = rn;
@@ -4089,23 +4726,34 @@ function renderSaved(R) {
       '<b>Save This Round</b> — it goes into the <b>Groups</b> tab of the sheet, for everyone.</div>';
     return;
   }
-  var h = '<div class="scroll"><table><thead><tr><th>Round</th><th>Groups</th><th>Players</th>' +
-    '<th>Done</th><th>Missed</th><th></th></tr></thead><tbody>', r, i;
+  var h = '<div class="scroll"><table><thead><tr><th>Round</th><th>Counts in</th><th>Groups</th><th>Players</th>' +
+    '<th>Done</th><th>Missed</th><th></th></tr></thead><tbody>', r, i, opts = monthOptions();
   for (r = R.roundOrder.length - 1; r >= 0; r--) {
-    var rn = R.roundOrder[r], gn = 0, heads = 0, dn = 0, ms = 0;
+    var rn = R.roundOrder[r], gn = 0, heads = 0, dn = 0, ms = 0, gm = '';
     for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) {
-      gn++; heads += R.groups[i].members.length;
+      gn++; heads += R.groups[i].members.length; gm = gm || R.groups[i].month;
       if (R.groups[i].done === true) dn++; else if (R.groups[i].done === false) ms++;
     }
-    h += '<tr><td class="nm">' + esc(rn) + '</td><td>' + gn + '</td><td>' + heads + '</td><td>' + dn +
+    var pick = '<select onchange="setRoundMonth(ROUNDS[' + r + '],this.value)">';
+    for (i = 0; i < opts.length; i++)
+      pick += '<option value="' + opts[i] + '"' + (opts[i] === gm ? ' selected' : '') + '>' + esc(mkShort(opts[i])) +
+        (isRecorded(opts[i]) && !isLive(opts[i]) ? ' (recorded)' : '') + '</option>';
+    pick += '</select>';
+    h += '<tr><td class="nm">' + esc(rn) + '</td><td>' + pick + '</td><td>' + gn + '</td><td>' + heads + '</td><td>' + dn +
       '</td><td>' + ms + '</td><td style="white-space:nowrap">' +
       '<button class="b g sm" onclick="openRound(ROUNDS[' + r + '])">OPEN</button> ' +
       '<button class="b g sm" onclick="deleteRound(ROUNDS[' + r + '])">DELETE</button></td></tr>';
   }
   ROUNDS = R.roundOrder.slice();
-  el.innerHTML = h + '</tbody></table></div>';
+  el.innerHTML = h + '</tbody></table></div><div class="note">Each round counts in its month. Change it here if ' +
+    'it belongs somewhere else \u2014 its group 1-2-1 points move with it.</div>';
 }
 var ROUNDS = [];
+function setRoundMonth(rn, mk) {
+  for (var i = 0; i < DATA.groups.length; i++) if (DATA.groups[i].round === rn) DATA.groups[i].month = mkLabel(mk);
+  markDirty('groups');
+  render();
+}
 
 function copyDraw() {
   if (!DRAW) return;
@@ -4176,7 +4824,7 @@ function roundStatus(R) {
   RG = R.groups;
   if (!R.groups.length) {
     el.innerHTML = '<div class="note" style="margin:0">No rounds yet. Save a draw above and it shows up ' +
-      'here, where you mark each group <b>Done</b> or <b>Missed</b> when the fortnight is up.</div>';
+      'here, where you mark each group <b>Done</b> or <b>Missed</b> when the month is up.</div>';
     return;
   }
   var h = '', r, i;
@@ -4185,9 +4833,12 @@ function roundStatus(R) {
     for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) {
       if (R.groups[i].done === true) done++; else if (R.groups[i].done === false) failed++; else open++;
     }
+    var rm = '';
+    for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) { rm = R.groups[i].month; break; }
     h += '<h3 style="margin-top:' + (r === R.roundOrder.length - 1 ? '0' : '26px') + '">' + esc(rn) +
       ' &mdash; ' + done + ' done, ' + failed + ' missed' + (open ? ', ' + open + ' still running' : '') +
-      '</h3><div class="draw">';
+      ' <span class="note" style="margin:0;text-transform:none;letter-spacing:0">\u00b7 counts in ' + esc(mkLabel(rm)) +
+      '</span></h3><div class="draw">';
     for (i = 0; i < R.groups.length; i++) {
       var G = R.groups[i];
       if (G.round !== rn) continue;
@@ -4210,12 +4861,161 @@ function roundStatus(R) {
         '</div><div class="note" style="margin-top:9px">' +
         (G.done === true ? n(rule('group121')) + ' each, already in the scores.'
          : G.done === false ? 'Owes the jar.'
-         : 'Mark it when the fortnight is up.') +
+         : 'Mark it when the month is up.') +
         (G.notes ? '<br>' + esc(G.notes) : '') + '</div></div>';
     }
     h += '</div>';
   }
   el.innerHTML = h;
+}
+
+/* ── The tick-box bar ───────────────────────────────────────────────────
+   Above every tab that shows points: one box per month, plus the points
+   carried in when there are any. Hidden while there is only one month to
+   show, except on the Months tab where it is the whole point.            */
+function periodBar() {
+  var el = $('periodBar'); if (!el) return;
+  var all = allMonths(), on = periodMonths(), sel = {}, i, h = '';
+  if (!DATA || !PERIOD_VIEWS[VIEW] || (all.length < 2 && !hasCarry() && VIEW !== 'months')) { el.innerHTML = ''; return; }
+  for (i = 0; i < on.length; i++) sel[on[i]] = 1;
+  h += '<div class="pbar"><span class="plab">SHOWING</span>';
+  for (i = 0; i < all.length; i++) {
+    var k = all[i], live = isLive(k);
+    h += '<label class="mchip' + (sel[k] ? ' on' : '') + '"><input type="checkbox"' + (sel[k] ? ' checked' : '') +
+      ' onchange="tickMonth(\'' + k + '\',this.checked)">' + esc(mkShort(k)) +
+      '<i class="' + (live ? '' : 'rec') + '">' + (live ? 'live' : 'recorded') + '</i></label>';
+  }
+  if (hasCarry())
+    h += '<label class="mchip' + (periodCarry() ? ' on' : '') + '"><input type="checkbox"' + (periodCarry() ? ' checked' : '') +
+      ' onchange="tickCarry(this.checked)">Carried in</label>';
+  h += '<button class="b g sm" onclick="setPeriod(\'live\')"' + (PERIOD.mode === 'live' ? ' disabled' : '') +
+    '>THIS MONTH</button><button class="b g sm" onclick="setPeriod(\'all\')"' + (PERIOD.mode === 'all' ? ' disabled' : '') +
+    '>WHOLE SEASON</button>';
+  if (VIEW !== 'months') h += '<button class="b g sm" onclick="go(\'months\')">MONTH BY MONTH →</button>';
+  h += '</div>';
+  if (el.innerHTML !== h) el.innerHTML = h;
+}
+
+/* ── The Months tab ─────────────────────────────────────────────────── */
+function renderMonths() {
+  var all = allMonths(), on = periodMonths(), sel = {}, i, j, k, sums = {};
+  for (i = 0; i < on.length; i++) sel[on[i]] = 1;
+  var summ = {};
+  for (i = 0; i < all.length; i++) summ[all[i]] = monthSummary(all[i]);
+
+  /* Squads: everyone on the board now, plus any squad a recorded month names. */
+  var squads = TEAMS.slice();
+  for (i = 0; i < all.length; i++) for (k in summ[all[i]].teams)
+    if (summ[all[i]].teams.hasOwnProperty(k) && squads.indexOf(k) === -1) squads.push(k);
+
+  var h = '<thead><tr><th></th><th>Month</th><th>From</th>';
+  for (j = 0; j < squads.length; j++) h += '<th><span class="dot" style="background:' + color(squads[j]) + '"></span>' +
+    esc(squads[j]) + '</th>';
+  h += '<th>Month won by</th></tr></thead><tbody>';
+  for (i = all.length - 1; i >= 0; i--) {
+    var mk = all[i], S = summ[mk], best = null, second = null;
+    for (j = 0; j < squads.length; j++) {
+      var v = S.teams[squads[j]] || 0;
+      if (sel[mk]) sums[squads[j]] = (sums[squads[j]] || 0) + v;
+      if (best === null || v > (S.teams[best] || 0)) { second = best; best = squads[j]; }
+      else if (second === null || v > (S.teams[second] || 0)) second = squads[j];
+    }
+    var gap = best !== null ? (S.teams[best] || 0) - (second !== null ? (S.teams[second] || 0) : 0) : 0;
+    h += '<tr' + (sel[mk] ? ' class="mon"' : '') + '><td><input type="checkbox" class="mtick"' + (sel[mk] ? ' checked' : '') +
+      ' onchange="tickMonth(\'' + mk + '\',this.checked)"></td><td class="nm">' + esc(mkLabel(mk)) + '</td>' +
+      '<td class="sub2">' + (isLive(mk) ? '<b style="color:var(--green)">Live</b> · weekly tabs'
+        : 'Recorded ' + esc(recordedOn(mk))) + '</td>';
+    for (j = 0; j < squads.length; j++) h += '<td' + (sel[mk] ? ' class="mon"' : '') + '>' + n(S.teams[squads[j]] || 0) + '</td>';
+    h += '<td class="sub2">' + (S.total ? (gap ? esc(best) + ' by ' + n(gap) : 'Level') : '—') + '</td></tr>';
+  }
+  var carry = periodCarry(), leader = null;
+  h += '<tr><td></td><td class="nm">Ticked: ' + esc(periodLabel(on)) + '</td><td class="sub2">' +
+    (carry ? 'with points carried in' : on.length + ' month' + (on.length === 1 ? '' : 's')) + '</td>';
+  for (j = 0; j < squads.length; j++) {
+    var tot = (sums[squads[j]] || 0) + (carry ? (CARRY[squads[j]] || 0) : 0);
+    sums[squads[j]] = tot;
+    if (leader === null || tot > sums[leader]) leader = squads[j];
+    h += '<td class="tot" style="color:' + color(squads[j]) + '">' + n(tot) + '</td>';
+  }
+  h += '<td class="sub2">' + (leader !== null ? '<b>' + esc(leader) + '</b> ahead' : '') + '</td></tr>';
+  $('monthTable').innerHTML = h + '</tbody>';
+
+  /* The same line chart as the scoreboard, one point per month. */
+  var C = { teams: [], weekNames: [], span: 'period' };
+  for (i = 0; i < all.length; i++) C.weekNames.push(mkShort(all[i]));
+  for (j = 0; j < squads.length; j++) {
+    var bw = {};
+    for (i = 0; i < all.length; i++) bw[mkShort(all[i])] = summ[all[i]].teams[squads[j]] || 0;
+    C.teams.push({ name: squads[j], byWeek: bw });
+  }
+  chart(C, 'monthChart', 'monthLegend', 'Points each squad scored in each month, ticked or not.');
+
+  /* Players: every month as a column, ticked ones shaded, then the total. */
+  var players = {}, list = [];
+  for (i = 0; i < all.length; i++) for (k in summ[all[i]].players) {
+    if (!summ[all[i]].players.hasOwnProperty(k)) continue;
+    var sp = summ[all[i]].players[k];
+    if (!players[k]) { players[k] = { name: sp.name, squad: sp.squad, by: {}, tot: 0 }; list.push(players[k]); }
+    players[k].squad = sp.squad;
+    players[k].by[all[i]] = sp.pts;
+    if (sel[all[i]]) players[k].tot += sp.pts;
+  }
+  list.sort(function (a, b) { return b.tot - a.tot || a.name.localeCompare(b.name); });
+  var ph = '<thead><tr><th>Player</th><th>Squad</th>';
+  for (i = 0; i < all.length; i++) ph += '<th' + (sel[all[i]] ? ' class="mon"' : '') + '>' + esc(mkShort(all[i])) + '</th>';
+  ph += '<th>Ticked</th></tr></thead><tbody>';
+  for (j = 0; j < list.length; j++) {
+    var P = list[j];
+    ph += '<tr><td class="nm">' + (j < 3 && P.tot > 0 ? (j + 1) + '. ' : '') + esc(P.name) + '</td><td class="sub2">' +
+      '<span class="dot" style="background:' + color(P.squad) + '"></span>' + esc(P.squad) + '</td>';
+    for (i = 0; i < all.length; i++)
+      ph += '<td' + (sel[all[i]] ? ' class="mon"' : '') + '>' + (P.by[all[i]] ? n(P.by[all[i]]) : '—') + '</td>';
+    ph += '<td class="tot">' + n(P.tot) + '</td></tr>';
+  }
+  if (!list.length) ph += '<tr><td colspan="' + (all.length + 3) + '" class="sub2">Nobody has any points yet.</td></tr>';
+  $('monthPlayers').innerHTML = ph + '</tbody>';
+
+  monthRecordPanel();
+}
+
+function monthRecordPanel() {
+  var el = $('monthRecord'); if (!el) return;
+  var live = liveMonths(), cur = liveMonthKey(), i, h = '';
+  var blocked = !SYNC.url ? 'This copy of the board cannot save, so a record made here would be lost on reload.'
+    : (!SYNC.can ? pinOffText() : (SYNC.api < 3 ? oldScriptText('months') : ''));
+  h += '<div class="row" style="margin:0 0 6px"><div style="flex:1;min-width:260px;max-width:520px">' +
+    '<label>Month the weekly tabs hold</label>' +
+    '<select id="liveMonthMonths" onchange="setLiveMonth(this.value)"></select></div></div>' +
+    '<div class="hint">Switch this when the new month’s weekly numbers go into the PALMS tabs. It is saved for ' +
+    'everybody, and Training is read from the same month’s column.</div>';
+  for (i = 0; i < live.length; i++) {
+    var mk = live[i], S = monthSummary(mk), when = recordedOn(mk);
+    h += '<div class="recbox"><b>' + esc(mkLabel(mk)) + '</b> — live, ' + n(S.total) + ' points so far. ' +
+      (isRecorded(mk) ? 'Recorded on <b>' + esc(when || 'an earlier day') + '</b>; recording again replaces that.'
+        : '<b style="color:var(--red-dk)">Not recorded yet.</b>') +
+      '<div class="row" style="margin-top:10px"><button class="b" onclick="recordMonth(\'' + mk + '\')"' +
+      (blocked && SYNC.url ? ' disabled' : '') + '>📌 ' + (isRecorded(mk) ? 'RECORD AGAIN' : 'RECORD ' +
+      esc(mkLabel(mk).toUpperCase())) + '</button></div></div>';
+  }
+  h += '<div class="note"><b>When a month ends, record it before its weekly tabs are cleared.</b> Recording freezes ' +
+    'every player’s points for that month into a <b>Monthly Scores</b> tab in the sheet, so the month stays on ' +
+    'the board for good and can be ticked alongside any other. Then switch the month above. Recording again ' +
+    'simply replaces the earlier record.</div>' + (blocked ? '<div class="warn soft">' + esc(blocked) + '</div>' : '');
+  var rec = recordedMonths();
+  if (rec.length) {
+    h += '<h3>Recorded months</h3><div class="scroll"><table><thead><tr><th>Month</th><th>Points</th><th>Recorded</th>' +
+      '<th></th></tr></thead><tbody>';
+    for (i = rec.length - 1; i >= 0; i--) {
+      var t = 0, j;
+      for (j = 0; j < DATA.history.length; j++) if (DATA.history[j].mk === rec[i]) t += DATA.history[j].points;
+      h += '<tr><td class="nm">' + esc(mkLabel(rec[i])) + (isLive(rec[i]) ? ' <span class="sub2">· also live</span>' : '') +
+        '</td><td>' + n(t) + '</td><td class="sub2">' + esc(recordedOn(rec[i])) + '</td>' +
+        '<td><button class="b g sm" onclick="dropMonthRecord(\'' + rec[i] + '\')">DELETE</button></td></tr>';
+    }
+    h += '</tbody></table></div>';
+  }
+  el.innerHTML = h;
+  fillLiveMonth('liveMonthMonths');
 }
 
 /* ── The Saving panel on the DATA tab ───────────────────────────────── */
@@ -4248,7 +5048,11 @@ function saveStatusPanel() {
         ? 'Several people can have the board open and save at once: a save only sends the rows that person ' +
           'changed, and they are added to the sheet as it is at that moment, so nobody\'s work is written over. ' +
           'Only if two people change the very same row does the later save win, for that row. An open board ' +
-          'checks for other people\'s saves every minute or so and updates itself.</div>'
+          'checks for other people\'s saves every minute or so and updates itself.</div>' +
+          (SYNC.api < 3 ? '<div class="warn" style="margin-top:12px"><b>The Apps Script is one version behind.</b> ' +
+            'Everything saves except <b>monthly records</b>. Paste the new <code>TitansCGC.gs</code> into the ' +
+            'sheet\u2019s Apps Script and deploy a <b>new version of the same deployment</b> (Deploy \u2192 Manage ' +
+            'deployments \u2192 pencil \u2192 Version: New version).</div>' : '')
         : 'If two people change the same tab at once, the second is told and shown the first person\'s version.</div>' +
           '<div class="warn" style="margin-top:12px"><b>The Apps Script is an older version.</b> Paste the new ' +
           '<code>TitansCGC.gs</code> into the sheet\u2019s Apps Script and deploy a <b>new version of the same ' +
@@ -4272,11 +5076,14 @@ function renderAdj() {
   var sel = $('adjTeam'), opts = '';
   for (i = 0; i < TEAMS.length; i++) opts += '<option>' + esc(TEAMS[i]) + '</option>';
   if (sel && sel.innerHTML !== opts) { var cur = sel.value; sel.innerHTML = opts; if (cur) sel.value = cur; }
+  fillMonthSelect('adjMonth');
   if (!list.length) { el.innerHTML = '<div class="note" style="margin:0">None yet.</div>'; return; }
-  h = '<div class="scroll"><table><thead><tr><th>Squad</th><th>Reason</th><th>Points</th><th></th></tr></thead><tbody>';
+  h = '<div class="scroll"><table><thead><tr><th>Squad</th><th>Reason</th><th>Counts in</th><th>Points</th><th></th>' +
+    '</tr></thead><tbody>';
   for (i = 0; i < list.length; i++)
     h += '<tr><td class="nm"><span class="dot" style="background:' + color(list[i].team) + '"></span>' +
-      esc(list[i].team) + '</td><td class="sub2">' + esc(list[i].reason || '—') + '</td><td class="' +
+      esc(list[i].team) + '</td><td class="sub2">' + esc(list[i].reason || '—') + '</td>' +
+      '<td class="sub2">' + esc(mkShort(adjMonth(list[i]))) + '</td><td class="' +
       (list[i].points < 0 ? 'neg' : 'tot') + '">' + (list[i].points > 0 ? '+' : '') + n(list[i].points) +
       '</td><td><button class="b g sm" onclick="dropAdj(' + i + ')">REMOVE</button></td></tr>';
   el.innerHTML = h + '</tbody></table></div>';
@@ -4286,7 +5093,8 @@ function addAdj() {
   if (!t || p === '' || isNaN(+p)) { toast('Pick a squad and put a number in <b>Points</b>.', 'err'); return; }
   if (!r) { toast('Give it a reason — the next person to see it will ask.', 'err'); return; }
   DATA.adjustments = DATA.adjustments || [];
-  DATA.adjustments.push({ month: (DATA.month || ''), team: t, reason: r, points: +p, id: newId() });
+  DATA.adjustments.push({ month: mkLabel($('adjMonth').value || liveMonthKey()), team: t, reason: r, points: +p,
+                          id: newId() });
   $('adjReason').value = ''; $('adjPts').value = '';
   markDirty('adjustments');
   render();
@@ -4320,14 +5128,15 @@ function renderScores(R) {
     seen[norm(list[i].item)] = 1; items += '<option value="' + esc(list[i].item) + '"></option>';
   }
   if ($('msItems').innerHTML !== items) $('msItems').innerHTML = items;
+  fillMonthSelect('msMonth');
 
   if (!list.length) {
     el.innerHTML = '<div class="note" style="margin:0">Nothing logged yet. Add a line above.</div>';
     return;
   }
   var total = 0;
-  h = '<div class="scroll"><table><thead><tr><th>Name</th><th>Item</th><th>Score</th><th>Added</th><th></th>' +
-    '</tr></thead><tbody>';
+  h = '<div class="scroll"><table><thead><tr><th>Name</th><th>Item</th><th>Score</th><th>Counts in</th>' +
+    '<th>Added</th><th></th></tr></thead><tbody>';
   for (i = list.length - 1; i >= 0; i--) {
     var s = list[i], m = R.members[norm(s.name)], team = m && m.team;
     total += (s.score || 0);
@@ -4337,6 +5146,7 @@ function renderScores(R) {
       '<td class="sub2">' + esc(s.item || '\u2014') + '</td>' +
       '<td class="' + (s.score < 0 ? 'neg' : 'tot') + '">' + (s.score === null ? '\u2014' :
         (s.score > 0 ? '+' : '') + n(s.score)) + '</td>' +
+      '<td class="sub2">' + esc(mkShort(scoreMonth(s))) + '</td>' +
       '<td class="sub2">' + esc(s.added || '') + '</td>' +
       '<td><button class="b g sm" onclick="dropScore(' + i + ')">REMOVE</button></td></tr>';
   }
@@ -4373,7 +5183,8 @@ function makeScore(nameTxt, itemTxt, scoreTxt) {
   if (!item) return { err: 'Say what the points are for in <b>Item</b> \u2014 the next person to see it will ask.' };
   var raw = String(scoreTxt == null ? '' : scoreTxt).replace(/[,\s]/g, '').replace(/pts?$/i, '');
   if (raw === '' || isNaN(+raw)) return { err: 'Put a number in <b>Score</b> for ' + esc(who.name) + '.' };
-  return { row: { name: who.name, item: item.slice(0, 200), score: +raw, added: todayStr(), id: newId() } };
+  return { row: { name: who.name, item: item.slice(0, 200), score: +raw, added: todayStr(), id: newId(),
+                  month: mkLabel($('msMonth').value || liveMonthKey()) } };
 }
 function addScore() {
   if (!DATA) return;
@@ -4848,7 +5659,7 @@ function buildScoreSchema() {
 function buildGroupSchema() {
   var el = $('groupSchema'); if (!el || el.dataset.built) return;
   var rows = [
-    ['Round', '1\u201314 Sept', 'Which fortnight. One name per draw, the same on all its rows.'],
+    ['Round', '1\u201331 Oct 2026', 'Which month. One name per draw, the same on all its rows.'],
     ['Group', '3', 'Which group inside that round.'],
     ['Member', 'Alex Ang', 'One row per player. Spelled as the PALMS tabs spell it.'],
     ['Done', 'yes / no / (blank)', 'Did the group do its 1-2-1 and post it? Blank = still running.'],
@@ -4887,7 +5698,7 @@ function checkData() {
   if (!ROSTER.length) msgs.push('No <b>Teams</b> tab was found, so every score stays at zero until you ' +
     'add one — or drag people onto a squad on the Roster board.');
   if (!DATA.weeks.length) msgs.push('No weekly PALMS tabs were found. Only training and adjustments will count.');
-  if (!(DATA.groups || []).length) msgs.push('No <b>Groups</b> tab was found, so no fortnightly ' +
+  if (!(DATA.groups || []).length) msgs.push('No <b>Groups</b> tab was found, so no monthly ' +
     'group 1-2-1 is being scored. Make a draw on the <b>Group 1-2-1</b> tab and paste it in.');
   if (TEAMS.length > 2) msgs.push('The sheet names <b>' + TEAMS.length + '</b> squads. This game is ' +
     'written for two — everything still scores, but the scoreboard shows a ranked list rather than a ' +
@@ -4914,7 +5725,7 @@ function broadcast(R) {
   var medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
   var all = rostered(R), top = all[0];
   var gap = T.length > 1 ? T[0].grand - T[1].grand : 0;
-  var month = (DATA && DATA.month) || 'this month';
+  var month = R.label || 'this month';
   var out = '';
 
   function table() {
@@ -5061,29 +5872,41 @@ function demo() {
   PARSE_WARN = [];
   LAST = { kind: 'demo' };
   CARRY = { 'Team 1': 0, 'Team 2': 0 };
-  /* A fortnight already judged and a fortnight still running, so both
-     halves of the Groups tab are visible without anyone typing anything. */
+  /* September's round, with groups done, missed and still running, so
+     every state of the Groups tab is visible without anyone typing. */
   var gRows = [], gi, gj;
   var d1 = makeDrawFrom(teams, 'Team 1'), d2 = makeDrawFrom(teams, 'Team 2');
   var pairs = Math.min(Math.floor(d1.length / 2), Math.floor(d2.length / 2));
   for (gi = 0; gi < pairs; gi++) {
-    var verdict = gi === pairs - 1 ? 'no' : 'yes';
+    var verdict = gi === pairs - 1 ? 'no' : (gi === pairs - 2 ? '' : 'yes');
     for (gj = 0; gj < 2; gj++) {
-      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: verdict, notes: '' });
-      gRows.push({ round: '1\u201314 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: verdict, notes: '' });
-    }
-    for (gj = 0; gj < 2; gj++) {
-      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d1[gi * 2 + gj], done: '', notes: '' });
-      gRows.push({ round: '15\u201328 Sept', group: String(gi + 1), member: d2[gi * 2 + gj], done: '', notes: '' });
+      gRows.push({ round: '1\u201330 Sep 2026', group: String(gi + 1), member: d1[gi * 2 + gj], done: verdict, notes: '', month: M });
+      gRows.push({ round: '1\u201330 Sep 2026', group: String(gi + 1), member: d2[gi * 2 + gj], done: verdict, notes: '', month: M });
     }
   }
   adopt({ ok: true, month: M, weeks: weeks, teams: teams, training: training, groups: gRows,
           adjustments: [{ month: M, team: 'Team 2', reason: 'Chapter challenge won at the AGM', points: 150 }],
-          scores: [{ name: 'Alex Ang', item: 'Visitor missed off PALMS', score: 100, added: '2026-09-15', id: 'demo1' },
-                   { name: 'Sharon Lee', item: 'Ran the chapter training', score: 50, added: '2026-09-22', id: 'demo2' }] },
+          scores: [{ name: 'Alex Ang', item: 'Visitor missed off PALMS', score: 100, added: '2026-09-15', id: 'demo1',
+                     month: M },
+                   { name: 'Sharon Lee', item: 'Ran the chapter training', score: 50, added: '2026-09-22', id: 'demo2',
+                     month: M }],
+          history: demoHistory(teams, rnd) },
         'Demo data', '');
   setStatus('Demo mode — invented weekly numbers on placeholder squads. Nothing here is real. ' +
     'Load a link to see the true board.', 'ok');
+}
+
+/* A made-up August, as if it had been recorded at the end of the month. */
+function demoHistory(teams, rnd) {
+  var out = [], i, mk = '2026-08', lines = [['visitor', 'Visitors', 100], ['referral', 'Referrals', 50],
+    ['one21', '1-2-1s', 25], ['attendance', 'Attendance', 50]];
+  for (i = 0; i < teams.length; i++)
+    for (var j = 0; j < lines.length; j++) {
+      var c = j === 3 ? (rnd(6) ? 1 : 0) : rnd(j === 0 ? 2 : 6);
+      if (c) out.push(hrow(mk, teams[i].team, teams[i].name, lines[j][0], lines[j][1], c, c * lines[j][2], '2026-08-31'));
+    }
+  out.push(hrow(mk, 'Team 1', '', 'adjust', 'Adjustments', 1, 100, '2026-08-31'));
+  return out;
 }
 
 /* Just the names on one squad, in sheet order — enough to deal demo rounds
@@ -5104,6 +5927,7 @@ function boot() {
   DEFAULT_TABS = $('tabs').value;
   SET_DEFAULT = {};
   for (var sk in SET) if (SET.hasOwnProperty(sk)) SET_DEFAULT[sk] = SET[sk];
+  loadPeriod();
 
   /* The address bar chooses the source, shortest form first:
        (nothing)   the chapter's own sheet
