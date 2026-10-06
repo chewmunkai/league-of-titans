@@ -139,8 +139,9 @@ leave both blank.
 
 ## Periods
 
-The game runs in **periods** — one per calendar month, 1st to the last day:
-**Period 1**, **Period 2**, and so on (rename any of them with the ✎). The
+The game runs in **periods** — **Period 1**, **Period 2**, and so on (rename
+any of them with the ✎). Each is a calendar month unless you set other dates
+(see [Changing a period's dates](#changing-a-periods-dates)). The
 current period is scored live from the weekly PALMS tabs. Every earlier one is
 **saved** in a **Monthly Scores** tab in the sheet, so it stays on the board for
 good.
@@ -164,12 +165,30 @@ good.
   - **Fix the current period** — tucked away, only for putting the board back
     on the right month by hand, or deleting a saved period.
 
-### End of the month — one button
+### Changing a period's dates
+
+Press **📅 CHANGE DATES** under the current period (or 📅 on a saved period's
+card), pick **Starts** and **Ends**, then **SAVE DATES**. Any length works: 1 Sep
+– 4 Oct, four weeks, a whole quarter.
+
+- Periods sit end to end, so moving one end moves its neighbour: Period 1
+  ending 4 Oct means Period 2 starts 5 Oct. The date boxes won't let a
+  neighbour shrink to nothing.
+- **The next period copies the current one's length.** Whole months stay
+  whole months (Oct → Nov); four weeks stays four weeks (21 Oct – 17 Nov →
+  18 Nov – 15 Dec). Change it once it starts if it needs to be different.
+- Moving a saved period changes only its dates. Its saved points stay
+  exactly as they are, and manual scores, adjustments and rounds stay in the
+  period they were logged in.
+- **Training** is a column per month, so each month's column counts in the
+  period that holds the middle of that month (the 15th).
+
+### End of the period — one button
 
 On the **PERIODS** tab press **🏁 SAVE PERIOD 1 & START PERIOD 2**. That's it:
 
 1. Period 1's points are saved for good in the **Monthly Scores** tab.
-2. The board starts Period 2 (e.g. 1–31 Oct 2026) on **zero**.
+2. The board starts Period 2 (the day after Period 1 ends) on **zero**.
 3. **No need to clear the weekly tabs.** The board remembers what each weekly
    tab held, and leaves a tab out until new numbers are pasted into it. The
    PERIODS tab lists the tabs still waiting.
@@ -192,11 +211,12 @@ value is changed later.
 ### Which period things count in
 
 - **Weekly tabs** count in the current period. A tab with a month in its name
-  (`Oct W1`, `Master list 1st week Oct 2026`) counts in that month instead.
-- **Training** is read from the current month's column of the Training tab.
-- **Group 1-2-1 rounds** run a calendar month and count in that month's period:
-  "1–31 Oct 2026" is October's. The **Saved Rounds** table has a *Counts in*
-  picker to change it.
+  (`Oct W1`, `Master list 1st week Oct 2026`) counts in the period holding that
+  month instead.
+- **Training** — each month's column counts in the period holding its 15th.
+- **Group 1-2-1 rounds** run one per period and are named for its dates
+  ("1–31 Oct 2026", "5 Oct – 1 Nov 2026"). The **Saved Rounds** table has a
+  *Counts in* picker to change it, including *next period*.
 - **Manual scores and adjustments** have a *Counts in* picker when you add them,
   set to the current period.
 

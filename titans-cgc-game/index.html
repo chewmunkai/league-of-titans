@@ -146,6 +146,12 @@ button.b.pgo{display:block;width:100%;margin-top:18px;font-size:12px;padding:20p
 .pmeta{margin-top:5px;font-size:12.5px;color:var(--muted)}
 .pcbtns{display:flex;gap:8px;margin-top:13px}
 .pcard .psq{grid-template-columns:minmax(60px,110px) 1fr auto;font-size:13.5px}
+.pedit.pcal{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:1.2px;font-weight:700;
+  border:2px solid var(--line);border-radius:20px;padding:2px 10px;margin-left:6px;vertical-align:1px}
+.pdedit{background:#fff9e6;border:2px solid var(--gold-dk);border-radius:10px;padding:14px;margin:0 0 16px}
+.pdrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pdedit input{padding:8px 10px}
+.pdbtns{display:flex;gap:8px;margin-top:12px}
 details.pfix summary{cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:2px;
   font-weight:700;text-transform:uppercase;color:var(--muted)}
 details.pfix[open] summary{margin-bottom:12px}
@@ -855,11 +861,6 @@ Sharon Lee | Ran the chapter training | 50"></textarea>
     <div class="hint">Comma separated, spelled exactly as the tabs in your sheet. A plain sheet link
       cannot list its own tabs, so it checks these names and quietly skips any that do not exist.</div>
 
-    <div class="row" style="margin-top:15px">
-      <div style="flex:1;min-width:260px;max-width:520px"><label>Current period &mdash; the month the weekly tabs hold</label>
-        <select id="liveMonthData" onchange="setLiveMonth(this.value)"></select></div>
-    </div>
-
     <div class="row" style="margin-top:16px">
       <button class="b" onclick="load()">LOAD DATA</button>
       <button class="b g" onclick="copyBookmark()">COPY ONE-CLICK LINK</button>
@@ -1151,6 +1152,7 @@ var SET = {
      month in the Training tab. Shared through the Settings tab, because
      every copy of the board has to agree on it. */
   liveMonth: '',
+  liveEnd: '',              // the day the current period ends, when it is not a calendar month
   /* Each weekly tab's fingerprint when the last period was saved, so the
      next period leaves last period's numbers out until new ones go in. */
   closedWeeks: '',
@@ -1440,6 +1442,7 @@ function sectionRows(sec) {
     out.push(['lateBreaksPerfect', SET.lateBreaksPerfect ? 'yes' : 'no']);
     out.push(['tyfcbMode', SET.tyfcbMode]);
     out.push(['liveMonth', SET.liveMonth || '']);
+    out.push(['liveEnd', SET.liveEnd || '']);
     out.push(['closedWeeks', SET.closedWeeks || '']);
     var pn = [], pk;
     for (pk in SET.periodNames) if (SET.periodNames.hasOwnProperty(pk)) pn.push(pk);
@@ -1593,7 +1596,7 @@ function othersSaved(hashes) {
 function quietOK() {
   if (!LAST || LAST.kind !== 'exec') return false;
   if (pendingList().length || SYNC.saving || SYNC.phase === 'saving' || SYNC.phase === 'error') return false;
-  if (ROLLING || PICKED || DRAGGING !== -1) return false;
+  if (ROLLING || PICKED || DRAGGING !== -1 || DATE_EDIT) return false;
   if ($('pinModal').className.indexOf('hide') === -1) return false;
   var a = document.activeElement, tag = a && a.tagName;
   return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
@@ -2657,8 +2660,9 @@ function applySettings(list) {
     else if (lk.indexOf('carry:') === 0) CARRY[key.slice(6).trim()] = num(v);
     else if (lk === 'livemonth') SET.liveMonth = String(v == null ? '' : v).trim();
     else if (lk === 'closedweeks') SET.closedWeeks = String(v == null ? '' : v).trim();
-    else if (lk.indexOf('name:') === 0 && monthKeyOf(key.slice(5).trim()) && String(v == null ? '' : v).trim())
-      SET.periodNames[monthKeyOf(key.slice(5).trim())] = String(v).trim();
+    else if (lk === 'liveend') SET.liveEnd = periodKeyOf(v);
+    else if (lk.indexOf('name:') === 0 && periodKeyOf(key.slice(5).trim()) && String(v == null ? '' : v).trim())
+      SET.periodNames[periodKeyOf(key.slice(5).trim())] = String(v).trim();
   }
   rebuild('settings'); rebuild('carry');
 }
@@ -2867,7 +2871,7 @@ function readMonthsGrid(grid) {
   for (r = hr + 1; r < grid.length; r++) {
     var row = grid[r] || [];
     var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
-    var mk = monthKeyOf(g('month'));
+    var mk = periodKeyOf(g('month'));
     if (!mk || g('points') === '') continue;
     out.push({ month: g('month'), mk: mk, squad: g('squad'), player: g('player'), key: g('key') || slugKey(g('label')),
                label: g('label'), count: num(row[map.count]), points: num(row[map.points]), recorded: g('recorded') });
@@ -3053,7 +3057,7 @@ function compute(mk, carry) {
   var W = [], i, j, k;
   function warn(m) { W.push(m); }
   mk = mk || liveMonthKey();
-  var mLabel = mkLabel(mk);
+  var mLabel = isWholeMonth(mk) ? mkLabel(mk) : periodDates(mk);
 
   var weeks = [], weekNames = [];
   for (i = 0; i < (DATA.weeks || []).length; i++)
@@ -3063,15 +3067,16 @@ function compute(mk, carry) {
   var teamOf = {}, trainOf = {}, members = {};
   for (i = 0; i < ROSTER.length; i++) teamOf[norm(ROSTER[i].name)] = ROSTER[i].team;
 
-  /* Training is one column per month. A Training tab with no month
-     columns at all is a plain "this month" count, so it belongs only to
-     the month the weekly tabs hold. */
+  /* Training is one column per month, and a month counts in the period
+     holding its middle (the 15th). A Training tab with no month columns at
+     all is a plain "this month" count, so it belongs only to the current
+     period. */
   var tAny = 0, tHasMonths = 0, tCol = 0, tOld = trainingLeftover();
   for (i = 0; i < (DATA.training || []).length; i++) {
     var tr = DATA.training[i], got = 0, tk;
     if (tr.months) for (tk in tr.months) if (tr.months.hasOwnProperty(tk)) {
       tHasMonths = 1;
-      if (monthKeyOf(tk, mk) === mk) { got = tr.months[tk]; tCol = 1; }
+      if (periodOf(dateOf(tk)) === mk) { got += num(tr.months[tk]); tCol = 1; }
     }
     if (!tHasMonths && mk === liveMonthKey() && !tOld) got = tr.sessions;
     trainOf[norm(tr.name)] = num(got);
@@ -3364,10 +3369,11 @@ function compute(mk, carry) {
 /* ═══════════════════════════════════════════════════════════════════════
    PERIODS
 
-   The game runs one period per calendar month: Period 1, Period 2 … (or a
-   name the room picks). The weekly PALMS tabs hold the current period and
-   are scored live. At the end of the month one button saves the period
-   into the Monthly Scores tab for good and starts the next one on zero:
+   The game runs in periods: Period 1, Period 2 … (or a name the room
+   picks), a calendar month each unless the room sets other dates. The
+   weekly PALMS tabs hold the current period and are scored live. At its
+   end one button saves the period into the Monthly Scores tab for good and
+   starts the next one on zero:
 
      live   scored right now from the weekly tabs — the current period
      saved  read back from Monthly Scores, exactly as it was saved
@@ -3416,33 +3422,82 @@ function monthKeyOf(v, ref, last) {
 }
 function mkLabel(mk) { return mk ? MONTH_FULL[+mk.slice(5, 7) - 1] + ' ' + mk.slice(0, 4) : ''; }
 function mkShort(mk) { return mk ? MONTH_FULL[+mk.slice(5, 7) - 1].slice(0, 3) + ' ' + mk.slice(0, 4) : ''; }
-/* "Sep – Oct 2026" for a run of months, "Aug, Oct 2026" for a scatter. */
-function periodLabel(ms) {
-  if (!ms.length) return '';
-  if (ms.length === 1) return mkLabel(ms[0]);
-  var i, run = true, a = ms[0], b = ms[ms.length - 1];
-  for (i = 1; i < ms.length; i++) if (addMonths(ms[i - 1], 1) !== ms[i]) run = false;
+/* ── Days ──────────────────────────────────────────────────────────────
+   A period is keyed by the day it starts: "2026-10-05". Plain strings, so
+   they sort; the arithmetic is done in UTC, so no clock change moves a day. */
+var MON3 = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+function dOf(iso) { return new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))); }
+function isoOf(d) { return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()); }
+function isISO(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s) && isoOf(dOf(s)) === s; }
+function addDays(iso, n) { var d = dOf(iso); d.setUTCDate(d.getUTCDate() + n); return isoOf(d); }
+function lastOfMonth(iso) { return isoOf(new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7), 0))); }
+function daysApart(a, b) { return Math.round((dOf(b) - dOf(a)) / 864e5); }
+function todayISO() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function dayLabel(iso, withYear) {
+  return +iso.slice(8, 10) + ' ' + MONTH_FULL[+iso.slice(5, 7) - 1].slice(0, 3) + (withYear ? ' ' + iso.slice(0, 4) : '');
+}
+/* "1–31 Oct 2026", "5 Oct – 1 Nov 2026", "29 Dec 2026 – 25 Jan 2027" */
+function dayRange(a, b) {
+  if (a.slice(0, 7) === b.slice(0, 7)) return (a === b ? '' : +a.slice(8, 10) + '–') + dayLabel(b, true);
+  if (a.slice(0, 4) === b.slice(0, 4)) return dayLabel(a) + ' – ' + dayLabel(b, true);
+  return dayLabel(a, true) + ' – ' + dayLabel(b, true);
+}
+/* The short way: "Oct 2026" or "Sep – Oct 2026" for whole months, else the days. */
+function spanLabel(a, b) {
+  if (a.slice(8, 10) !== '01' || b !== lastOfMonth(b)) return dayRange(a, b);
+  if (a.slice(0, 7) === b.slice(0, 7)) return mkShort(a);
   var mon = function (k) { return MONTH_FULL[+k.slice(5, 7) - 1].slice(0, 3); };
-  if (run) return a.slice(0, 4) === b.slice(0, 4) ? mon(a) + ' – ' + mon(b) + ' ' + b.slice(0, 4)
-                                                   : mkShort(a) + ' – ' + mkShort(b);
-  var same = a.slice(0, 4) === b.slice(0, 4), out = [];
-  for (i = 0; i < ms.length; i++) out.push(same ? mon(ms[i]) : mkShort(ms[i]));
-  return out.join(', ') + (same ? ' ' + b.slice(0, 4) : '');
+  return a.slice(0, 4) === b.slice(0, 4) ? mon(a) + ' – ' + mon(b) + ' ' + b.slice(0, 4) : mkShort(a) + ' – ' + mkShort(b);
+}
+function periodLabel(ms) { return ms.length ? spanLabel(ms[0], periodEnd(ms[ms.length - 1])) : ''; }
+
+/* A day out of anything a sheet or a person might write: "2026-10-05",
+   "5 Oct 2026", "1–31 Oct 2026". A month on its own ("October 2026")
+   stands for its 15th — the middle of the month decides which period a
+   month belongs to. last: the last day named, so "29 Sep – 12 Oct" is
+   the 12th of October. */
+var DAY_WORDS = '\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+' + MONTH_WORDS;
+function dateOf(v, last) {
+  var s = String(v == null ? '' : v).trim(), m, x, hit = null;
+  if (!s) return '';
+  m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if (m) { var iso = m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]); return isISO(iso) ? iso : ''; }
+  var re = new RegExp(DAY_WORDS, 'ig');
+  while ((x = re.exec(s))) { hit = x; if (!last) break; }
+  if (hit) {
+    var mon = MON3.indexOf(hit[2].slice(0, 3).toLowerCase()) + 1;
+    var yr = hit[3] ? (hit[3].charAt(0) === "'" ? 2000 + +hit[3].slice(1) : +hit[3]) : 0;
+    if (!yr) { var y4 = /\b(20\d{2})\b/.exec(s); yr = y4 ? +y4[1] : guessYear(mon, todayKey()); }
+    var d = yr + '-' + pad2(mon) + '-' + pad2(hit[1]);
+    if (isISO(d)) return d;
+  }
+  var mk = monthKeyOf(s, todayKey(), last);
+  return mk ? mk + '-15' : '';
+}
+/* A period's key out of a Month cell or a setting. A month on its own is
+   the period that starts on its 1st — how every period began. */
+function periodKeyOf(v) {
+  var s = String(v == null ? '' : v).trim(), m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if (m) { var iso = m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]); return isISO(iso) ? iso : ''; }
+  var mk = monthKeyOf(s);
+  return mk ? mk + '-01' : '';
 }
 
-/* The month the weekly tabs hold: the current period. The setting, else the newest
-   month in the Training tab, else this calendar month. */
+/* The current period: the setting, else the newest month in the Training
+   tab, else this calendar month. */
 function liveMonthKey() {
-  return monthKeyOf(SET.liveMonth) || monthKeyOf(DATA && DATA.month) || todayKey();
+  return periodKeyOf(SET.liveMonth) || periodKeyOf(DATA && DATA.month) || todayKey() + '-01';
 }
-/* Which month a weekly tab counts in. A tab named for a month ("Oct W1")
-   belongs to it. The usual "Master list 1st week" belongs to the current
-   period, unless it still holds exactly the numbers it held when the last
-   period was saved: those were counted there already, so the tab waits,
-   counted nowhere, until new numbers are pasted into it. */
+/* Which period a weekly tab counts in. A tab named for a month ("Oct W1")
+   counts in the period holding that month. The usual "Master list 1st
+   week" counts in the current period, unless it still holds exactly the
+   numbers it held when the last period was saved: those were counted there
+   already, so the tab waits, counted nowhere, until new numbers go in. */
 function weekMonth(w) {
-  var named = monthKeyOf(w.tab, liveMonthKey());
-  if (named) return named;
+  if (monthKeyOf(w.tab)) {
+    var p = periodOf(dateOf(w.tab, true));
+    return p && p !== 'after' ? p : liveMonthKey();
+  }
   return isLeftover(w) ? '' : liveMonthKey();
 }
 /* A fingerprint of a tab's numbers. */
@@ -3469,13 +3524,13 @@ function trainingLeftover() {
 }
 function tabTag(tab) { return String(tab).replace(/[|=;:\n]/g, ' ').replace(/\s+/g, ' ').trim(); }
 /* Settings → closedWeeks, written when a period is saved: one
-   "tab=YYYY-MM:fingerprint" per weekly tab, joined with "|". */
+   "tab=<period>:fingerprint" per weekly tab, joined with "|". */
 function leftovers() {
   var out = {}, parts = String(SET.closedWeeks || '').split('|'), i;
   for (i = 0; i < parts.length; i++) {
     var at = parts[i].lastIndexOf('=');
     if (at < 1) continue;
-    var v = parts[i].slice(at + 1).split(':'), mk = monthKeyOf(v[0]);
+    var v = parts[i].slice(at + 1).split(':'), mk = periodKeyOf(v[0]);
     if (v.length === 2 && mk) out[parts[i].slice(0, at).trim()] = { mk: mk, h: v[1].trim() };
   }
   return out;
@@ -3484,14 +3539,77 @@ function isLeftover(w) {
   var L = leftovers()[tabTag(w.tab)];
   return !!L && L.mk < liveMonthKey() && L.h === weekHash(w);
 }
-/* Rounds, manual scores and adjustments carry a Month. One without — an
-   older row — counts in the live month, exactly as it always has. */
-function groupMonth(g) { return monthKeyOf(g.month, liveMonthKey()) || liveMonthKey(); }
-function scoreMonth(s) { return monthKeyOf(s.month, liveMonthKey()) || liveMonthKey(); }
-function adjMonth(a) { return monthKeyOf(a.month, liveMonthKey()) || liveMonthKey(); }
-/* A round counts in the month it names: "1–31 Oct 2026" is October's. A
-   name that spans two months counts in the later one. */
-function roundMonthGuess(name) { return monthKeyOf(name, liveMonthKey(), true) || liveMonthKey(); }
+
+/* ── The periods ───────────────────────────────────────────────────────
+   Every period the board knows, by start day: the saved ones and the
+   current one. A period runs to the day before the next one starts; the
+   current one runs to the end the room set, else a calendar month on.  */
+var PS = { h: null, n: -1, v: null };
+function recordedMonths() {
+  var H = (DATA && DATA.history) || [], i;
+  if (!PS.v || PS.h !== H || PS.n !== H.length) {
+    var seen = {}, out = [];
+    for (i = 0; i < H.length; i++) { var k = H[i].mk; if (k && !seen[k]) { seen[k] = 1; out.push(k); } }
+    PS.h = H; PS.n = H.length; PS.v = out.sort();
+  }
+  return PS.v.slice();
+}
+function periodStarts() {
+  var s = recordedMonths(), live = liveMonthKey();
+  if (s.indexOf(live) === -1) s.push(live);
+  return s.sort();
+}
+function defaultEnd(start) {
+  if (start.slice(8, 10) === '01') return lastOfMonth(start);
+  var y = +start.slice(0, 4), m = +start.slice(5, 7), d = +start.slice(8, 10);
+  var room = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return addDays(isoOf(new Date(Date.UTC(y, m, Math.min(d, room)))), -1);
+}
+function periodEnd(key) {
+  if (!isISO(key || '')) return '';
+  var s = periodStarts(), i = s.indexOf(key);
+  if (i !== -1 && i < s.length - 1) return addDays(s[i + 1], -1);
+  if (key === liveMonthKey() && isISO(SET.liveEnd || '') && SET.liveEnd >= key) return SET.liveEnd;
+  return defaultEnd(key);
+}
+/* The period a day falls in; "after" for a day past the end of the
+   current period (its period has not started yet); "" before them all. */
+function periodOf(iso) {
+  if (!iso) return '';
+  var s = periodStarts(), k = '', i;
+  for (i = 0; i < s.length; i++) if (s[i] <= iso) k = s[i];
+  if (k && k === s[s.length - 1] && iso > periodEnd(k)) return 'after';
+  return k;
+}
+/* Where the next period starts and ends. It keeps the shape of the current
+   one: whole months stay whole months, four weeks stays four weeks. */
+function nextPeriodSpan() {
+  var live = liveMonthKey(), end = periodEnd(live), start = addDays(end, 1), stop;
+  if (live.slice(8, 10) === '01' && end === lastOfMonth(end)) {
+    var span = (+end.slice(0, 4) - +live.slice(0, 4)) * 12 + (+end.slice(5, 7) - +live.slice(5, 7));
+    stop = lastOfMonth(addMonths(start.slice(0, 7), span) + '-01');
+  } else stop = addDays(start, daysApart(live, end));
+  return { start: start, end: stop };
+}
+/* What goes in a Month cell for a period: "October 2026" when the period
+   holds the middle of that month (it reads well in the sheet), else the
+   day it starts. Either one reads back as the same period. */
+function periodCell(key) {
+  if (key === 'after') key = nextPeriodSpan().start;
+  if (key.slice(8, 10) === '01' && periodEnd(key) >= key.slice(0, 8) + '15') return mkLabel(key.slice(0, 7));
+  return key;
+}
+
+/* Rounds, manual scores and adjustments carry a Month: a month, a day or
+   a period's start. One without — an older row — counts in the current
+   period, exactly as it always has. */
+function itemPeriod(v) { var d = dateOf(v); return d ? periodOf(d) : liveMonthKey(); }
+function groupMonth(g) { return itemPeriod(g.month); }
+function scoreMonth(s) { return itemPeriod(s.month); }
+function adjMonth(a) { return itemPeriod(a.month); }
+/* A round counts in the period of the last day it names: "1–31 Oct 2026"
+   is the period holding 31 October. */
+function roundMonthGuess(name) { return periodOf(dateOf(name, true)) || liveMonthKey(); }
 
 function liveMonths() {
   var seen = {}, out = [], i, k = liveMonthKey();
@@ -3499,14 +3617,6 @@ function liveMonths() {
   for (i = 0; i < (DATA && DATA.weeks ? DATA.weeks.length : 0); i++) {
     var w = weekMonth(DATA.weeks[i]);
     if (w && !seen[w]) { seen[w] = 1; out.push(w); }
-  }
-  return out.sort();
-}
-function recordedMonths() {
-  var seen = {}, out = [], i;
-  for (i = 0; i < (DATA && DATA.history ? DATA.history.length : 0); i++) {
-    var k = DATA.history[i].mk;
-    if (k && !seen[k]) { seen[k] = 1; out.push(k); }
   }
   return out.sort();
 }
@@ -3523,8 +3633,8 @@ function recordedOn(mk) {
 }
 function hasCarry() { for (var k in CARRY) if (CARRY.hasOwnProperty(k) && CARRY[k]) return true; return false; }
 
-/* Period 1, Period 2 … in month order, unless the room named it. A month
-   the board has nothing for is no period yet, so it gets no name. */
+/* Period 1, Period 2 … in order, unless the room named it. A day the board
+   has no period for gets no name. */
 function periodName(mk) {
   if (SET.periodNames && SET.periodNames[mk]) return SET.periodNames[mk];
   var i = allMonths().indexOf(mk);
@@ -3532,21 +3642,23 @@ function periodName(mk) {
 }
 /* The name the period after the current one will get. */
 function nextPeriodName() {
-  var nx = addMonths(liveMonthKey(), 1), all = allMonths(), c = 0, i;
+  var nx = nextPeriodSpan().start, all = allMonths(), c = 0, i;
   if (SET.periodNames && SET.periodNames[nx]) return SET.periodNames[nx];
   for (i = 0; i < all.length; i++) if (all[i] < nx) c++;
   return 'Period ' + (c + 1);
 }
-/* "1–31 Oct 2026" */
-function periodDates(mk) {
-  var last = new Date(+mk.slice(0, 4), +mk.slice(5, 7), 0).getDate();
-  return '1–' + last + ' ' + mkShort(mk);
-}
+function isWholeMonth(mk) { return isISO(mk || '') && mk.slice(8, 10) === '01' && periodEnd(mk) === lastOfMonth(mk); }
+/* "1–31 Oct 2026" / "5 Oct – 1 Nov 2026" */
+function periodDates(mk) { return isISO(mk || '') ? dayRange(mk, periodEnd(mk)) : ''; }
+/* "Oct 2026" / "5 Oct – 1 Nov 2026" */
+function periodShort(mk) { return isISO(mk || '') ? spanLabel(mk, periodEnd(mk)) : (mk === 'after' ? 'the next period' : 'no period'); }
 /* "Period 2 · Oct 2026" */
-function periodTitle(mk) { var p = periodName(mk); return p ? p + ' · ' + mkShort(mk) : mkLabel(mk); }
+function periodTitle(mk) { var p = periodName(mk); return p ? p + ' · ' + periodShort(mk) : periodShort(mk); }
+/* Whatever is shortest and still says which period: its name. */
+function periodTag(mk) { return mk === 'after' ? 'Next period' : (mk ? periodName(mk) || periodShort(mk) : '—'); }
 /* "Periods 1–3" for a run of periods, or "Kickoff – Period 3". */
 function periodsName(ms) {
-  var a = periodName(ms[0]) || mkShort(ms[0]), b = periodName(ms[ms.length - 1]) || mkShort(ms[ms.length - 1]);
+  var a = periodTag(ms[0]), b = periodTag(ms[ms.length - 1]);
   if (ms.length === 1) return a;
   return /^Period \d+$/.test(a) && /^Period \d+$/.test(b) ? 'Periods ' + a.slice(7) + '–' + b.slice(7) : a + ' – ' + b;
 }
@@ -3562,12 +3674,105 @@ function periodWeeks(mk) {
     if (DATA.history[i].mk === mk && DATA.history[i].key === '_weeks') return DATA.history[i].count;
   return null;
 }
-/* Days left in a month: null before it starts, -1 once it is over. */
+/* Days left in a period: null before it starts, -1 once it is over. */
 function daysLeft(mk) {
-  var d = new Date(), tk = todayKey();
-  if (tk < mk) return null;
-  if (tk > mk) return -1;
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() - d.getDate();
+  var t = todayISO(), e = periodEnd(mk);
+  if (t < mk) return null;
+  if (t > e) return -1;
+  return daysApart(t, e);
+}
+
+/* ── Changing a period's dates ─────────────────────────────────────────
+   Periods sit end to end, so moving one end moves its neighbour: a later
+   start shortens the period before, an earlier end starts the next one
+   sooner. Every saved row, name and fingerprint follows its period to its
+   new start day, and anything logged against a period stays in it.     */
+function itemKeys() {
+  var o = { scores: [], adjustments: [], groups: [] }, i;
+  for (i = 0; i < (DATA.scores || []).length; i++) o.scores.push(scoreMonth(DATA.scores[i]));
+  for (i = 0; i < (DATA.adjustments || []).length; i++) o.adjustments.push(adjMonth(DATA.adjustments[i]));
+  for (i = 0; i < (DATA.groups || []).length; i++) o.groups.push(groupMonth(DATA.groups[i]));
+  return o;
+}
+function setPeriodDates(key, start, end) {
+  if (!DATA) return 'Load the sheet first.';
+  if (!isISO(start) || !isISO(end)) return 'Pick both dates.';
+  if (end < start) return 'A period has to end on or after the day it starts.';
+  var st = periodStarts(), i = st.indexOf(key), live = liveMonthKey();
+  if (i === -1) return 'That period is not on the board any more.';
+  var prev = i > 0 ? st[i - 1] : '', next = i < st.length - 1 ? st[i + 1] : '';
+  if (prev && start <= prev)
+    return (periodName(prev) || 'The period before') + ' starts on ' + dayLabel(prev, true) + ', so this one has to start after that.';
+  if (next && end >= periodEnd(next))
+    return (periodName(next) || 'The period after') + ' ends on ' + dayLabel(periodEnd(next), true) + ', so this one has to end before that.';
+  var before = itemKeys(), liveEnd = periodEnd(live), ren = {}, k, j, any = 0;
+  if (start !== key) ren[key] = start;
+  if (next && addDays(end, 1) !== next) ren[next] = addDays(end, 1);
+  for (k in ren) if (ren.hasOwnProperty(k)) any = 1;
+  if (!any && key !== live) return '';
+
+  /* Move every key first, then set the current period's end. */
+  for (j = 0; j < (DATA.history || []).length; j++) if (ren[DATA.history[j].mk]) DATA.history[j].mk = ren[DATA.history[j].mk];
+  PS.v = null;
+  var names = {};
+  for (k in SET.periodNames) if (SET.periodNames.hasOwnProperty(k)) names[ren[k] || k] = SET.periodNames[k];
+  SET.periodNames = names;
+  var L = leftovers(), tags = [];
+  for (k in L) if (L.hasOwnProperty(k)) tags.push(k + '=' + (ren[L[k].mk] || L[k].mk) + ':' + L[k].h);
+  SET.closedWeeks = tags.join('|');
+  var nl = ren[live] || live;
+  SET.liveMonth = nl;
+  if (key === live) SET.liveEnd = end;
+  else if (ren[live]) SET.liveEnd = liveEnd;
+  if (SET.liveEnd && SET.liveEnd === defaultEnd(nl)) SET.liveEnd = '';
+
+  /* The saved rows of a moved period say its new start in their Month cell. */
+  if (any) {
+    var landed = {}, hm = 0;
+    for (k in ren) if (ren.hasOwnProperty(k)) landed[ren[k]] = 1;
+    for (j = 0; j < (DATA.history || []).length; j++)
+      if (landed[DATA.history[j].mk]) { DATA.history[j].month = periodCell(DATA.history[j].mk); hm = 1; }
+    if (hm) markDirty('months');
+  }
+  /* Anything logged against a period stays with it, wherever it moved. */
+  var lists = [['scores', DATA.scores, scoreMonth], ['adjustments', DATA.adjustments, adjMonth], ['groups', DATA.groups, groupMonth]];
+  for (k = 0; k < lists.length; k++) {
+    var list = lists[k][1] || [], was = before[lists[k][0]], moved = 0;
+    for (j = 0; j < list.length; j++) {
+      var want = ren[was[j]] || was[j];
+      if (want && lists[k][2](list[j]) !== want) { list[j].month = periodCell(want); moved = 1; }
+    }
+    if (moved) markDirty(lists[k][0]);
+  }
+  markDirty('settings');
+  CMP = null;
+  return '';
+}
+var DATE_EDIT = '';
+function editDates(key) { DATE_EDIT = key; render(); var s = $('pdStart'); if (s) s.focus(); }
+function saveDates(key) {
+  var start = ($('pdStart') || {}).value || '', err = setPeriodDates(key, start, ($('pdEnd') || {}).value || '');
+  if (err) { toast(esc(err), 'err', 8000); return; }
+  DATE_EDIT = '';
+  render();
+  toast('<b>' + esc(periodTag(start)) + '</b> now runs ' + esc(periodDates(start)) + '.', 'ok');
+  if (SYNC.url && SYNC.can) saveAll();
+}
+/* The two date boxes, under whichever period is being changed. */
+function datesEditor(key) {
+  var st = periodStarts(), i = st.indexOf(key), prev = i > 0 ? st[i - 1] : '', next = i < st.length - 1 ? st[i + 1] : '';
+  var smin = prev ? addDays(prev, 1) : '', emax = next ? addDays(periodEnd(next), -1) : '';
+  return '<div class="pdedit"><div class="pdrow">' +
+    '<div><label for="pdStart">Starts</label><input type="date" id="pdStart" value="' + key + '"' +
+    (smin ? ' min="' + smin + '"' : '') + '></div>' +
+    '<div><label for="pdEnd">Ends</label><input type="date" id="pdEnd" value="' + periodEnd(key) + '"' +
+    (emax ? ' max="' + emax + '"' : '') + '></div></div>' +
+    '<div class="pdbtns"><button class="b sm" onclick="saveDates(\'' + key + '\')">SAVE DATES</button>' +
+    '<button class="b g sm" onclick="editDates(\'\')">CANCEL</button></div>' +
+    '<div class="hint">' + (prev ? esc(periodName(prev)) + ' then ends the day before it starts. ' : '') +
+    (next ? esc(periodName(next)) + ' then starts the day after it ends. ' : '') +
+    (key === liveMonthKey() ? 'The next period copies its length: whole months stay whole months, ' +
+      'four weeks stays four weeks.' : 'Its saved points stay exactly as they are.') + '</div></div>';
 }
 
 /* compute() is cheap, but a render can ask for the same month several
@@ -3583,7 +3788,7 @@ function computeFor(mk, carry) {
 /* One month as flat rows — the same shape whether it was scored just now
    or read back from the Monthly Scores tab. This is also what Save Period writes. */
 function hrow(mk, squad, player, key, label, count, points, stamp) {
-  return { month: mkLabel(mk), mk: mk, squad: squad, player: player, key: key, label: label,
+  return { month: periodCell(mk), mk: mk, squad: squad, player: player, key: key, label: label,
            count: count, points: points, recorded: stamp || '' };
 }
 function snapshotRows(R, mk, stamp) {
@@ -3718,7 +3923,7 @@ function aggregate(months, carry) {
     T.byWeek[r.mk] = (T.byWeek[r.mk] || 0) + r.points;
     if (r.key === 'adjust') {
       T.manual += r.points; T.adjN += r.count;
-      T.adjBits.push((periodName(r.mk) || mkShort(r.mk)) + ' ' + (r.points >= 0 ? '+' : '') + n(r.points));
+      T.adjBits.push(periodTag(r.mk) + ' ' + (r.points >= 0 ? '+' : '') + n(r.points));
       continue;
     }
     var pk = norm(r.player);
@@ -3783,7 +3988,7 @@ function aggregate(months, carry) {
   for (i = 0; i < teamList.length; i++) teamList[i].rank = i + 1;
 
   var weekLabels = [];
-  for (i = 0; i < months.length; i++) weekLabels.push(periodName(months[i]) || mkShort(months[i]));
+  for (i = 0; i < months.length; i++) weekLabels.push(periodTag(months[i]));
   return { teams: teamList, members: members, weekNames: months.slice(), weekLabels: weekLabels, warnings: W,
            rules: rules, groups: [], roundOrder: [], fines: [], fineTotal: 0,
            month: latest, months: months, latest: latest, label: periodsLabel(months), span: 'period' };
@@ -3797,12 +4002,12 @@ function monthWarnings() {
   function check(list, fn) {
     for (var j = 0; j < (list || []).length; j++) {
       var k = fn(list[j]);
-      if (!known[k]) { lost[k] = 1; nLost++; }
+      if (k !== 'after' && !known[k]) { lost[String(list[j].month)] = 1; nLost++; }
     }
   }
   check(DATA.scores, scoreMonth); check(DATA.adjustments, adjMonth); check(DATA.groups, groupMonth);
   if (nLost) {
-    var names = []; for (var lk in lost) if (lost.hasOwnProperty(lk)) names.push(mkLabel(lk));
+    var names = []; for (var lk in lost) if (lost.hasOwnProperty(lk)) names.push(lk);
     W.push('Some manual scores, adjustments or group 1-2-1 rounds are logged against <b>' + esc(names.join(', ')) +
       '</b>, which is not a period on the board — so they count nowhere. Change their month to the period ' +
       'they belong to, such as ' + esc(periodTitle(live)) + '.');
@@ -3820,9 +4025,9 @@ function monthWarnings() {
       '</b>. Their points would land nowhere — move them to ' + esc(periodTitle(live)) + ' in the <b>Saved Rounds</b> ' +
       'table on the Group 1-2-1 tab.');
   }
-  if (todayKey() > live)
-    W.push('It is now <b>' + esc(mkLabel(todayKey())) + '</b>, but the board is still on <b>' + esc(periodTitle(live)) +
-      '</b>. Once its last week is in, press <b>Save ' + esc(periodName(live)) + ' &amp; start ' + esc(nextPeriodName()) +
+  if (todayISO() > periodEnd(live))
+    W.push('It is now <b>' + esc(dayLabel(todayISO(), true)) + '</b>, past the end of <b>' + esc(periodTitle(live)) +
+      '</b> (' + esc(periodDates(live)) + '). Once its last week is in, press <b>Save ' + esc(periodName(live)) + ' &amp; start ' + esc(nextPeriodName()) +
       '</b> on the <b>Periods</b> tab.');
   return W;
 }
@@ -3833,34 +4038,25 @@ function monthWarnings() {
    are stamped with it too, so they stay in this period after the weekly
    tabs move on instead of turning up again in the next one.             */
 function recordPeriod(mk) {
-  var stamp = todayStr(), R = compute(mk), rows = snapshotRows(R, mk, stamp), label = mkLabel(mk), i, keep = [], moved = 0;
+  var stamp = todayStr(), R = compute(mk), rows = snapshotRows(R, mk, stamp), label = periodCell(mk), i, keep = [], moved = 0;
   rows.push(hrow(mk, '', '', '_weeks', 'Weekly tabs counted', R.weekNames.length, 0, stamp));
   for (i = 0; i < (DATA.history || []).length; i++) if (DATA.history[i].mk !== mk) keep.push(DATA.history[i]);
   DATA.history = keep.concat(rows);
   markDirty('months');
   if (mk !== liveMonthKey()) return 0;
-  var touched = { groups: 0, scores: 0, adjustments: 0 }, running = {}, gk, sk;
-  /* A group still inside its round has paid nothing into this period. If
-     its round ends in a later month, it goes there, so its points land
-     when it is marked; a finished group stays with this period. */
-  for (i = 0; i < (DATA.groups || []).length; i++)
-    if (doneState(DATA.groups[i].done) === null) running[DATA.groups[i].round + '|' + DATA.groups[i].group] = 1;
+  var touched = { groups: 0, scores: 0, adjustments: 0 }, nextCell = periodCell('after'), sk;
+  /* A group of this period still marked running has paid nothing into it,
+     and the period is about to be shut, so it moves on to the next one:
+     its points land there when it is marked. A finished group with no
+     month of its own is stamped with this period. */
   for (i = 0; i < (DATA.groups || []).length; i++) {
     var gr = DATA.groups[i];
-    if (monthKeyOf(gr.month)) continue;
-    gk = roundMonthGuess(gr.round);
-    gr.month = (running[gr.round + '|' + gr.group] && gk > mk) ? mkLabel(gk) : label;
-    touched.groups = 1;
+    if (groupMonth(gr) !== mk) continue;
+    if (doneState(gr.done) === null) { gr.month = nextCell; moved++; touched.groups = 1; }
+    else if (!dateOf(gr.month)) { gr.month = label; touched.groups = 1; }
   }
-  /* A group of this period still marked running would pay into a period
-     that is saved and shut, so it moves on to the next one: its points land
-     there when it is marked. */
-  for (i = 0; i < (DATA.groups || []).length; i++) {
-    var g2 = DATA.groups[i];
-    if (doneState(g2.done) === null && monthKeyOf(g2.month) === mk) { g2.month = mkLabel(addMonths(mk, 1)); moved++; touched.groups = 1; }
-  }
-  for (i = 0; i < (DATA.scores || []).length; i++) if (!monthKeyOf(DATA.scores[i].month)) { DATA.scores[i].month = label; touched.scores = 1; }
-  for (i = 0; i < (DATA.adjustments || []).length; i++) if (!monthKeyOf(DATA.adjustments[i].month)) { DATA.adjustments[i].month = label; touched.adjustments = 1; }
+  for (i = 0; i < (DATA.scores || []).length; i++) if (!dateOf(DATA.scores[i].month)) { DATA.scores[i].month = label; touched.scores = 1; }
+  for (i = 0; i < (DATA.adjustments || []).length; i++) if (!dateOf(DATA.adjustments[i].month)) { DATA.adjustments[i].month = label; touched.adjustments = 1; }
   for (sk in touched) if (touched[sk]) markDirty(sk);
   return moved;
 }
@@ -3880,16 +4076,16 @@ function closePeriod() {
   if (LIVE_PENDING) { toast('Still connecting to the live sheet — one moment, then try again.', 'err'); return; }
   var blocked = saveBlocked();
   if (blocked) { toast(esc(blocked), 'err', 9000); return; }
-  var live = liveMonthKey(), next = addMonths(live, 1), name = periodName(live), nextName = nextPeriodName();
+  var live = liveMonthKey(), nx = nextPeriodSpan(), name = periodName(live), nextName = nextPeriodName();
   var left = daysLeft(live), running = {}, nRun = 0, i;
   for (i = 0; i < (DATA.groups || []).length; i++) {
     var g = DATA.groups[i], gk = g.round + '|' + g.group;
-    if (doneState(g.done) === null && groupMonth(g) === live && roundMonthGuess(g.round) <= live && !running[gk]) { running[gk] = 1; nRun++; }
+    if (doneState(g.done) === null && groupMonth(g) === live && !running[gk]) { running[gk] = 1; nRun++; }
   }
   if (!confirm('Save ' + name + ' (' + periodDates(live) + ') and start ' + nextName + '?' +
-      (left > 0 ? '\n\n' + mkLabel(live) + ' still has ' + left + ' day' + (left === 1 ? '' : 's') + ' to go.' : '') +
+      (left > 0 ? '\n\n' + name + ' still has ' + left + ' day' + (left === 1 ? '' : 's') + ' to go.' : '') +
       '\n\nEvery score in ' + name + ' is saved for good in the Monthly Scores tab, and the board starts ' +
-      nextName + ' (' + periodDates(next) + ') on zero.' +
+      nextName + ' (' + dayRange(nx.start, nx.end) + ') on zero.' +
       '\n\nNo need to clear the weekly tabs: each one is left out until new numbers are pasted into it.' +
       (nRun ? '\n\n' + nRun + ' group 1-2-1 group' + (nRun === 1 ? ' is' : 's are') + ' still marked running. ' +
         (nRun === 1 ? 'It moves' : 'They move') + ' to ' + nextName + ', so the points land there once ' +
@@ -3898,7 +4094,7 @@ function closePeriod() {
   var old = leftovers(), tags = [], seen = {};
   for (i = 0; i < (DATA.weeks || []).length; i++) {
     var w = DATA.weeks[i], tg = tabTag(w.tab);
-    if (monthKeyOf(w.tab, live) || seen[tg]) continue;
+    if (monthKeyOf(w.tab) || seen[tg]) continue;
     seen[tg] = 1;
     /* A tab still holding an older period's numbers keeps that period, so
        reopening this one leaves it out just as before. */
@@ -3910,7 +4106,8 @@ function closePeriod() {
     tags.push(TRAIN_TAG + '=' + ((ot && ot.mk < live && ot.h === th) ? ot.mk : live) + ':' + th);
   }
   SET.closedWeeks = tags.join('|');
-  SET.liveMonth = mkLabel(next);
+  SET.liveMonth = nx.start;
+  SET.liveEnd = nx.end === defaultEnd(nx.start) ? '' : nx.end;
   markDirty('settings');
   PERIOD.mode = 'live'; keepPeriod();
   render();
@@ -3928,8 +4125,10 @@ function reopenPeriod(mk) {
         ' new numbers in, and they would count in ' + periodName(mk) + ' instead.' : ''))) return;
   var L = leftovers(), tags = [], k;
   for (k in L) if (L.hasOwnProperty(k) && L[k].mk < mk) tags.push(k + '=' + L[k].mk + ':' + L[k].h);
+  var end = addDays(live, -1);
   SET.closedWeeks = tags.join('|');
-  SET.liveMonth = mkLabel(mk);
+  SET.liveMonth = mk;
+  SET.liveEnd = end >= mk && end !== defaultEnd(mk) ? end : '';
   markDirty('settings');
   PERIOD.mode = 'live'; keepPeriod();
   render();
@@ -3941,7 +4140,7 @@ function renamePeriod(mk) {
   delete SET.periodNames[mk];
   var plain = periodName(mk) || nextPeriodName();
   if (had) SET.periodNames[mk] = had;
-  var v = prompt('Name for ' + mkLabel(mk) + ' — leave it blank for "' + plain + '".', had || plain);
+  var v = prompt('Name for ' + periodDates(mk) + ' — leave it blank for "' + plain + '".', had || plain);
   if (v === null) return;
   v = String(v).replace(/\s+/g, ' ').trim().slice(0, 40);
   if (!v || v === plain) delete SET.periodNames[mk]; else SET.periodNames[mk] = v;
@@ -3959,25 +4158,14 @@ function dropMonthRecord(mk) {
   markDirty('months');
   render();
 }
-function setLiveMonth(v) {
-  SET.liveMonth = v ? mkLabel(v) : '';
-  markDirty('settings');
-  render();
-}
-/* Months to offer in a picker: a year back from the live month, one ahead,
-   plus anything already on the board. Newest first. */
-function monthOptions() {
-  var live = liveMonthKey(), seen = {}, out = [], i, a = allMonths();
-  for (i = -11; i <= 1; i++) { var k = addMonths(live, i); if (!seen[k]) { seen[k] = 1; out.push(k); } }
-  for (i = 0; i < a.length; i++) if (!seen[a[i]]) { seen[a[i]] = 1; out.push(a[i]); }
-  return out.sort().reverse();
-}
+/* Periods to offer in a picker, newest first. */
+function monthOptions() { return allMonths().reverse(); }
 /* A period picker for something that scores. A saved period that is no
    longer live is frozen, so it is offered but greyed out. */
 function fillMonthSelect(id, chosen) {
   var el = $(id); if (!el) return;
   var opts = monthOptions(), h = '', i, cur = el.value || chosen || liveMonthKey();
-  if (isRecorded(cur) && !isLive(cur)) cur = liveMonthKey();
+  if ((isRecorded(cur) && !isLive(cur)) || opts.indexOf(cur) === -1) cur = liveMonthKey();
   for (i = 0; i < opts.length; i++) {
     var frozen = isRecorded(opts[i]) && !isLive(opts[i]);
     h += '<option value="' + opts[i] + '"' + (opts[i] === cur ? ' selected' : '') + (frozen ? ' disabled' : '') + '>' +
@@ -4015,7 +4203,7 @@ function render() {
   if (VIEW === 'scoring') buildRules();
   buildOOO(); buildSchema(); buildGroupSchema(); buildScoreSchema();
   CMP = null;
-  fillSelects(); fillLiveMonth('liveMonthData');
+  fillSelects();
   if (VIEW === 'data') saveStatusPanel();
   if (!DATA) { $('globalWarn').innerHTML = ''; $('periodBar').innerHTML = ''; return; }
   /* The working tabs — draw, roster, manual scores — work on the month the
@@ -4054,19 +4242,6 @@ function showWarnings(R, P) {
   $('globalWarn').innerHTML = open
     ? '<div class="warn">' + head + '<div style="margin-top:12px">' + all.join('<br><br>') + '</div></div>'
     : '<div class="warnbar">' + head + '</div>';
-}
-
-/* The month the weekly tabs hold. "Automatic" follows the newest month in
-   the Training tab; picking one pins it for everybody (Settings tab). */
-function fillLiveMonth(id) {
-  var sel = $(id); if (!sel) return;
-  if (!DATA) { sel.innerHTML = '<option>Load the sheet first</option>'; return; }
-  var auto = monthKeyOf(DATA.month), pinned = monthKeyOf(SET.liveMonth), opts = monthOptions(), i;
-  var h = '<option value=""' + (pinned ? '' : ' selected') + '>Automatic' + (auto ? ' \u2014 ' + esc(mkLabel(auto)) +
-    ', the newest month in the Training tab' : '') + '</option>';
-  for (i = 0; i < opts.length; i++)
-    h += '<option value="' + opts[i] + '"' + (opts[i] === pinned ? ' selected' : '') + '>' + esc(mkLabel(opts[i])) + '</option>';
-  if (sel.innerHTML !== h) sel.innerHTML = h;
 }
 
 function fillSelects() {
@@ -4149,7 +4324,7 @@ function versus(R) {
 
 /* "this period" for the current period; "in Period 2" when periods are added up. */
 function whenLabel(R) {
-  return R.span === 'month' && R.month === liveMonthKey() ? 'this period' : 'in ' + (periodName(R.latest) || mkShort(R.latest));
+  return R.span === 'month' && R.month === liveMonthKey() ? 'this period' : 'in ' + periodTag(R.latest);
 }
 
 /* One bar, split by share of the season. Zero-zero sits it in the middle
@@ -4446,7 +4621,7 @@ function dossier(R) {
   if (R.months.length > 1) {
     h += '<h3>Period by period</h3><div class="cards">';
     for (i = 0; i < R.months.length; i++)
-      h += card(esc(periodName(R.months[i]) || mkLabel(R.months[i])), n(t.byWeek[R.months[i]] || 0),
+      h += card(esc(periodTag(R.months[i])), n(t.byWeek[R.months[i]] || 0),
                 esc(periodDates(R.months[i])) + (isLive(R.months[i]) ? ' · live' : ' · saved'));
     h += '</div>';
   }
@@ -4662,20 +4837,17 @@ function rollDraw() {
   spinUp(R, made);
 }
 
-/* One round per calendar month, named for it: "1–31 Oct 2026". The first
-   month, from the later of today and the month the weekly tabs hold, that
-   has no round yet — so drawing on the 29th of a month that already has
-   its round names next month's. */
+/* One round per period, named for its dates: "1–31 Oct 2026". The current
+   period's, unless it already has a round or is over — then the next one's. */
 function nextRoundName() {
-  var live = DATA ? liveMonthKey() : todayKey(), mk = todayKey() > live ? todayKey() : live, have = {}, i;
-  for (i = 0; i < (DATA && DATA.groups ? DATA.groups.length : 0); i++) have[groupMonth(DATA.groups[i])] = 1;
-  for (i = 0; i < 12 && have[mk]; i++) mk = addMonths(mk, 1);
-  return roundNameFor(mk);
+  if (!DATA) return roundNameFor(todayKey() + '-01');
+  var live = liveMonthKey(), have = {}, i;
+  for (i = 0; i < (DATA.groups || []).length; i++) have[groupMonth(DATA.groups[i])] = 1;
+  if (!have[live] && todayISO() <= periodEnd(live)) return roundNameFor(live);
+  var nx = nextPeriodSpan();
+  return dayRange(nx.start, nx.end);
 }
-function roundNameFor(mk) {
-  var y = +mk.slice(0, 4), m = +mk.slice(5, 7);
-  return '1\u2013' + new Date(y, m, 0).getDate() + ' ' + MONTH_FULL[m - 1].slice(0, 3) + ' ' + y;
-}
+function roundNameFor(key) { return dayRange(key, periodEnd(key)); }
 
 /* The wow: every slot cycles real names at speed, then the groups lock in
    one after another from the top. It is showmanship, but it is honest
@@ -4904,7 +5076,7 @@ function commitDraw() {
      group that has already delivered. */
   var was = {};
   for (i = 0; i < old.length; i++) if (!was[old[i].group]) was[old[i].group] = old[i];
-  var month = old.length ? (old[0].month || '') : mkLabel(roundMonthGuess(rn));
+  var month = old.length ? (old[0].month || '') : periodCell(roundMonthGuess(rn));
   for (i = 0; i < DRAW.length; i++)
     for (j = 0; j < DRAW[i].members.length; j++) {
       var m = DRAW[i].members[j], prev = was[String(DRAW[i].n)] || {};
@@ -4969,9 +5141,9 @@ function renderSaved(R) {
     }
     var pick = '<select onchange="setRoundMonth(ROUNDS[' + r + '],this.value)">';
     for (i = 0; i < opts.length; i++)
-      pick += '<option value="' + opts[i] + '"' + (opts[i] === gm ? ' selected' : '') + '>' + esc(mkShort(opts[i])) +
+      pick += '<option value="' + opts[i] + '"' + (opts[i] === gm ? ' selected' : '') + '>' + esc(periodTitle(opts[i])) +
         (isRecorded(opts[i]) && !isLive(opts[i]) ? ' (saved)' : '') + '</option>';
-    pick += '</select>';
+    pick += '<option value="after"' + (gm === 'after' ? ' selected' : '') + '>' + esc(nextPeriodName()) + ' (next)</option></select>';
     h += '<tr><td class="nm">' + esc(rn) + '</td><td>' + pick + '</td><td>' + gn + '</td><td>' + heads + '</td><td>' + dn +
       '</td><td>' + ms + '</td><td style="white-space:nowrap">' +
       '<button class="b g sm" onclick="openRound(ROUNDS[' + r + '])">OPEN</button> ' +
@@ -4983,7 +5155,7 @@ function renderSaved(R) {
 }
 var ROUNDS = [];
 function setRoundMonth(rn, mk) {
-  for (var i = 0; i < DATA.groups.length; i++) if (DATA.groups[i].round === rn) DATA.groups[i].month = mkLabel(mk);
+  for (var i = 0; i < DATA.groups.length; i++) if (DATA.groups[i].round === rn) DATA.groups[i].month = periodCell(mk);
   markDirty('groups');
   render();
 }
@@ -5070,7 +5242,8 @@ function roundStatus(R) {
     for (i = 0; i < R.groups.length; i++) if (R.groups[i].round === rn) { rm = R.groups[i].month; break; }
     h += '<h3 style="margin-top:' + (r === R.roundOrder.length - 1 ? '0' : '26px') + '">' + esc(rn) +
       ' &mdash; ' + done + ' done, ' + failed + ' missed' + (open ? ', ' + open + ' still running' : '') +
-      ' <span class="note" style="margin:0;text-transform:none;letter-spacing:0">\u00b7 counts in ' + esc(mkLabel(rm)) +
+      ' <span class="note" style="margin:0;text-transform:none;letter-spacing:0">· counts in ' +
+      esc(rm === 'after' ? 'the next period' : rm ? periodTitle(rm) : 'no period on the board') +
       '</span></h3><div class="draw">';
     for (i = 0; i < R.groups.length; i++) {
       var G = R.groups[i];
@@ -5116,7 +5289,7 @@ function periodBar() {
   if (!DATA || !PERIOD_VIEWS[VIEW]) { if (el._h !== '') { el._h = ''; el.innerHTML = ''; } return; }
   var all = allMonths(), on = periodMonths(), one = on.length === 1, h;
   var what = one
-    ? '<b>' + esc(periodName(on[0]) || mkLabel(on[0])) + '</b> · ' + esc(periodDates(on[0])) +
+    ? '<b>' + esc(periodTag(on[0])) + '</b> · ' + esc(periodDates(on[0])) +
       (isLive(on[0]) ? ' <i class="ptag live">LIVE</i>' : ' <i class="ptag">SAVED</i>')
     : '<b>' + esc(PERIOD.mode === 'all' ? 'All periods' : periodsName(on)) + '</b> · ' + esc(periodLabel(on)) +
       (periodCarry() ? ' + carried in' : '');
@@ -5170,35 +5343,37 @@ function periodNow(live, S, squads) {
   var blocked = saveBlocked(), waiting = [], L = leftovers(), from = '', i;
   for (i = 0; i < (DATA.weeks || []).length; i++) {
     var w = DATA.weeks[i];
-    if (!monthKeyOf(w.tab, live) && isLeftover(w)) { waiting.push(w.tab); from = from || L[tabTag(w.tab)].mk; }
+    if (!monthKeyOf(w.tab) && isLeftover(w)) { waiting.push(w.tab); from = from || L[tabTag(w.tab)].mk; }
   }
   if (trainingLeftover()) { waiting.push('Training'); from = from || L[TRAIN_TAG].mk; }
   var h = '<div class="ptop"><div><div class="pname">' + esc(name) +
     ' <button class="pedit" title="Rename this period" onclick="renamePeriod(\'' + live + '\')">✎</button></div>' +
-    '<div class="pdates">' + esc(periodDates(live)) + '</div></div><i class="ptag live">● LIVE</i></div>' +
+    '<div class="pdates">' + esc(periodDates(live)) + ' <button class="pedit pcal" title="Change the dates" ' +
+    'onclick="editDates(\'' + live + '\')">📅 CHANGE DATES</button></div></div><i class="ptag live">● LIVE</i></div>' +
+    (DATE_EDIT === live ? datesEditor(live) : '') +
     '<div class="pfacts">' + pfact(n(S.total), 'points so far') +
     pfact(wk, 'weekly tab' + (wk === 1 ? '' : 's') + ' counted') +
-    (left === null ? pfact('—', 'not started yet') : left < 0 ? pfact('DONE', esc(mkShort(live)) + ' is over')
+    (left === null ? pfact('—', 'not started yet') : left < 0 ? pfact('DONE', 'ended ' + esc(dayLabel(periodEnd(live))))
       : pfact(left, 'day' + (left === 1 ? '' : 's') + ' to go')) + '</div>' +
     squadBars(S, squads);
   if (waiting.length)
     h += '<div class="pwait">⏳ <b>Waiting for new numbers:</b> ' + esc(waiting.join(', ')) + '. ' +
-      (waiting.length === 1 ? 'It still holds ' : 'They still hold ') + esc(periodName(from) || mkLabel(from)) +
-      '’s numbers, so ' + (waiting.length === 1 ? 'it is' : 'they are') + ' left out until this month’s ' +
+      (waiting.length === 1 ? 'It still holds ' : 'They still hold ') + esc(periodTag(from)) +
+      '’s numbers, so ' + (waiting.length === 1 ? 'it is' : 'they are') + ' left out until new ' +
       'numbers are pasted in.</div>';
   h += '<button class="b pgo" onclick="closePeriod()"' + (blocked ? ' disabled' : '') + '>🏁 SAVE ' +
     esc(name.toUpperCase()) + ' &amp; START ' + esc(nextName.toUpperCase()) + '</button>' +
-    '<div class="hint" style="text-align:center">Press this when the month is over. ' + esc(name) +
+    '<div class="hint" style="text-align:center">Press this when the period is over. ' + esc(name) +
     ' is saved for good in the <b>Monthly Scores</b> tab and the board starts ' + esc(nextName) + ' (' +
-    esc(periodDates(addMonths(live, 1))) + ') on zero. No need to clear the weekly tabs first.</div>' +
+    esc(dayRange(nextPeriodSpan().start, nextPeriodSpan().end)) + ') on zero. No need to clear the weekly tabs first.</div>' +
     (blocked ? '<div class="warn soft" style="margin-top:12px">' + esc(blocked) + '</div>' : '');
-  el.innerHTML = h;
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }
 }
 
 /* Every other period, newest first, as a card each. */
 function periodCards(all, live, summ, squads) {
   var el = $('periodCards'); if (!el) return;
-  var h = '', count = 0, prev = addMonths(live, -1), i, pk;
+  var h = '', count = 0, st = periodStarts(), prev = st[st.indexOf(live) - 1] || '', i, pk;
   for (i = all.length - 1; i >= 0; i--) {
     var mk = all[i];
     if (mk === live) continue;
@@ -5208,8 +5383,9 @@ function periodCards(all, live, summ, squads) {
     for (pk in S.players) if (S.players.hasOwnProperty(pk) && (!top || S.players[pk].pts > top.pts)) top = S.players[pk];
     h += '<div class="pcard"><div class="ptop"><div><div class="pname sm">' + esc(periodName(mk)) +
       ' <button class="pedit" title="Rename this period" onclick="renamePeriod(\'' + mk + '\')">✎</button></div>' +
-      '<div class="pdates">' + esc(periodDates(mk)) + '</div></div><i class="ptag' + (saved ? '' : ' live') + '">' +
-      (saved ? 'SAVED' : 'LIVE') + '</i></div>' + squadBars(S, squads) +
+      '<div class="pdates">' + esc(periodDates(mk)) + ' <button class="pedit" title="Change the dates" ' +
+      'onclick="editDates(\'' + mk + '\')">📅</button></div></div><i class="ptag' + (saved ? '' : ' live') + '">' +
+      (saved ? 'SAVED' : 'LIVE') + '</i></div>' + (DATE_EDIT === mk ? datesEditor(mk) : '') + squadBars(S, squads) +
       '<div class="pwin">' + (!S.total ? 'No points' : (order.length > 1 && !gap ? 'Dead level'
         : '🏆 <b>' + esc(order[0]) + '</b>' + (order.length > 1 ? ' won by ' + n(gap) : ''))) + '</div>' +
       (top && top.pts > 0 ? '<div class="pmvp">⭐ ' + esc(top.name) + ' · ' + n(top.pts) + ' points</div>' : '') +
@@ -5219,9 +5395,10 @@ function periodCards(all, live, summ, squads) {
       (mk === prev && saved ? '<button class="b g sm" onclick="reopenPeriod(\'' + mk + '\')">REOPEN</button>' : '') +
       '</div></div>';
   }
-  el.innerHTML = count ? '<div class="pgrid">' + h + '</div>'
-    : '<div class="note" style="margin:0">Nothing saved yet. When the month is over, press <b>Save ' + esc(periodName(live)) +
+  h = count ? '<div class="pgrid">' + h + '</div>'
+    : '<div class="note" style="margin:0">Nothing saved yet. When the period is over, press <b>Save ' + esc(periodName(live)) +
       '</b> above: it lands here for good, and the board starts ' + esc(nextPeriodName()) + ' on zero.</div>';
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }
 }
 
 /* Periods side by side; the ones showing are shaded and added up. */
@@ -5263,7 +5440,7 @@ function periodCompare(all, summ, squads) {
     $('periodLegend').innerHTML = '';
   } else {
     var C = { teams: [], weekNames: all.slice(), weekLabels: [], span: 'period' };
-    for (i = 0; i < all.length; i++) C.weekLabels.push(periodName(all[i]) || mkShort(all[i]));
+    for (i = 0; i < all.length; i++) C.weekLabels.push(periodTag(all[i]));
     for (j = 0; j < squads.length; j++) {
       var bw = {};
       for (i = 0; i < all.length; i++) bw[all[i]] = summ[all[i]].teams[squads[j]] || 0;
@@ -5287,7 +5464,7 @@ function periodCompare(all, summ, squads) {
   }
   list.sort(function (a, b) { return b.tot - a.tot || a.name.localeCompare(b.name); });
   var many = on.length > 1, ph = '<thead><tr><th>Player</th><th>Squad</th>';
-  if (many) for (i = 0; i < on.length; i++) ph += '<th>' + esc(periodName(on[i]) || mkShort(on[i])) + '</th>';
+  if (many) for (i = 0; i < on.length; i++) ph += '<th>' + esc(periodTag(on[i])) + '</th>';
   ph += '<th>' + (many ? 'Total' : 'Points') + '</th></tr></thead><tbody>';
   for (j = 0; j < list.length; j++) {
     var P = list[j];
@@ -5306,12 +5483,8 @@ function periodCompare(all, summ, squads) {
 function periodFix() {
   var el = $('periodFix'); if (!el) return;
   var rec = recordedMonths(), i, j, h = '';
-  h += '<div class="note" style="margin:4px 0 14px">Only for when something went wrong — the big button above ' +
-    'does all of this by itself.</div>' +
-    '<div class="row" style="margin:0 0 6px"><div style="flex:1;min-width:240px;max-width:520px">' +
-    '<label>The weekly tabs hold</label><select id="liveMonthPeriods" onchange="setLiveMonth(this.value)"></select></div></div>' +
-    '<div class="hint">Which month counts as the current period. Changing it here saves nothing and starts nothing — ' +
-    'it only puts the board back on the right month. Training is read from the same month’s column.</div>';
+  h += '<div class="note" style="margin:4px 0 14px">Only for when something went wrong. To move a period’s ' +
+    'start or end, press 📅 next to its dates above.</div>';
   if (rec.length) {
     h += '<h3>Saved periods</h3><div class="scroll"><table><thead><tr><th>Period</th><th>Points</th><th>Saved</th>' +
       '<th></th></tr></thead><tbody>';
@@ -5326,7 +5499,6 @@ function periodFix() {
     h += '</tbody></table></div>';
   }
   el.innerHTML = h;
-  fillLiveMonth('liveMonthPeriods');
 }
 
 /* ── The Saving panel on the DATA tab ───────────────────────────────── */
@@ -5394,7 +5566,7 @@ function renderAdj() {
   for (i = 0; i < list.length; i++)
     h += '<tr><td class="nm"><span class="dot" style="background:' + color(list[i].team) + '"></span>' +
       esc(list[i].team) + '</td><td class="sub2">' + esc(list[i].reason || '—') + '</td>' +
-      '<td class="sub2">' + esc(mkShort(adjMonth(list[i]))) + '</td><td class="' +
+      '<td class="sub2">' + esc(periodTag(adjMonth(list[i]))) + '</td><td class="' +
       (list[i].points < 0 ? 'neg' : 'tot') + '">' + (list[i].points > 0 ? '+' : '') + n(list[i].points) +
       '</td><td><button class="b g sm" onclick="dropAdj(' + i + ')">REMOVE</button></td></tr>';
   el.innerHTML = h + '</tbody></table></div>';
@@ -5404,7 +5576,7 @@ function addAdj() {
   if (!t || p === '' || isNaN(+p)) { toast('Pick a squad and put a number in <b>Points</b>.', 'err'); return; }
   if (!r) { toast('Give it a reason — the next person to see it will ask.', 'err'); return; }
   DATA.adjustments = DATA.adjustments || [];
-  DATA.adjustments.push({ month: mkLabel($('adjMonth').value || liveMonthKey()), team: t, reason: r, points: +p,
+  DATA.adjustments.push({ month: periodCell($('adjMonth').value || liveMonthKey()), team: t, reason: r, points: +p,
                           id: newId() });
   $('adjReason').value = ''; $('adjPts').value = '';
   markDirty('adjustments');
@@ -5457,7 +5629,7 @@ function renderScores(R) {
       '<td class="sub2">' + esc(s.item || '\u2014') + '</td>' +
       '<td class="' + (s.score < 0 ? 'neg' : 'tot') + '">' + (s.score === null ? '\u2014' :
         (s.score > 0 ? '+' : '') + n(s.score)) + '</td>' +
-      '<td class="sub2">' + esc(mkShort(scoreMonth(s))) + '</td>' +
+      '<td class="sub2">' + esc(periodTag(scoreMonth(s))) + '</td>' +
       '<td class="sub2">' + esc(s.added || '') + '</td>' +
       '<td><button class="b g sm" onclick="dropScore(' + i + ')">REMOVE</button></td></tr>';
   }
@@ -5495,7 +5667,7 @@ function makeScore(nameTxt, itemTxt, scoreTxt) {
   var raw = String(scoreTxt == null ? '' : scoreTxt).replace(/[,\s]/g, '').replace(/pts?$/i, '');
   if (raw === '' || isNaN(+raw)) return { err: 'Put a number in <b>Score</b> for ' + esc(who.name) + '.' };
   return { row: { name: who.name, item: item.slice(0, 200), score: +raw, added: todayStr(), id: newId(),
-                  month: mkLabel($('msMonth').value || liveMonthKey()) } };
+                  month: periodCell($('msMonth').value || liveMonthKey()) } };
 }
 function addScore() {
   if (!DATA) return;
@@ -6209,7 +6381,7 @@ function demo() {
 
 /* A made-up August, as if it had been recorded at the end of the month. */
 function demoHistory(teams, rnd) {
-  var out = [], i, mk = '2026-08', lines = [['visitor', 'Visitors', 100], ['referral', 'Referrals', 50],
+  var out = [], i, mk = '2026-08-01', lines = [['visitor', 'Visitors', 100], ['referral', 'Referrals', 50],
     ['one21', '1-2-1s', 25], ['attendance', 'Attendance', 50]];
   for (i = 0; i < teams.length; i++)
     for (var j = 0; j < lines.length; j++) {
