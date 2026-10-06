@@ -137,63 +137,71 @@ leave both blank.
 
 ---
 
-## Month by month
+## Periods
 
-The weekly PALMS tabs only ever hold **one month** — the one running now. The
-**MONTHS** tab keeps every month after that:
+The game runs in **periods** — one per calendar month, 1st to the last day:
+**Period 1**, **Period 2**, and so on (rename any of them with the ✎). The
+current period is scored live from the weekly PALMS tabs. Every earlier one is
+**saved** in a **Monthly Scores** tab in the sheet, so it stays on the board for
+good.
 
-- **A table of every month** — each squad's points, who won the month, and
-  whether it is **live** (scored right now from the weekly tabs) or
-  **recorded** (frozen at the end of its month). A line chart of the same.
-- **Players month by month** — every player's points in every month, side by
-  side.
-- **Tick boxes to add months together.** Tick September and October and the
-  Scoreboard, Squads, Players and Broadcast tabs all show September + October:
-  the head-to-head, Player of the Month (it becomes *Top Player — Sep – Oct
-  2026*), the category bars, the audit trail. **THIS MONTH** and **WHOLE
-  SEASON** are one-tap shortcuts. Once there is more than one month, the same
-  tick boxes sit at the top of every one of those tabs.
+### What you see
 
-What you tick is remembered on that device only — it changes what *you* see,
-not the board for everyone.
+- **The scoreboard shows this period** — every new month starts on zero.
+- **SHOWING bar** at the top of the Scoreboard, Squads, Players and Broadcast
+  tabs: pick **From** and **To** to add up any run of periods (say Period 1 →
+  Period 3), or tap **THIS PERIOD** / **ALL PERIODS**. ALL PERIODS also adds
+  any points carried in from before. What you pick is remembered on that device
+  only — it changes what *you* see, not the board for everyone.
+- **PERIODS tab:**
+  - **This Period** — its name and dates, points so far, weekly tabs counted,
+    days to go, each squad's bar, and the big button.
+  - **Saved Periods** — a card for each: squad scores, who won, top player.
+    **VIEW** opens the scoreboard on that period. **REOPEN** (most recent only)
+    undoes a save.
+  - **Compare Periods** — every period side by side, a chart, and the players
+    over whatever is showing.
+  - **Fix the current period** — tucked away, only for putting the board back
+    on the right month by hand, or deleting a saved period.
 
-### Recording a month — do this at the end of every month
+### End of the month — one button
 
-1. On the **MONTHS** tab, press **📌 RECORD SEPTEMBER 2026** (whatever month is
-   live), then **Save Changes**.
-   Every player's points for the month, category by category, are frozen into
-   a **Monthly Scores** tab in the sheet. Recording again simply replaces the
-   earlier record.
-2. Put the new month's numbers into the weekly PALMS tabs as usual.
-3. On the MONTHS tab, change **Month the weekly tabs hold** to the new month,
-   then **Save Changes**. That setting is shared, so every copy of the board
-   switches together. Training is read from that month's column.
+On the **PERIODS** tab press **🏁 SAVE PERIOD 1 & START PERIOD 2**. That's it:
 
-If you forget step 1 and clear the weekly tabs, that month's numbers are gone
-from the board — so the board nags: it says so at the top of the page when the
-calendar has moved on but the weekly tabs are still being scored as last month,
-and when a live month's numbers no longer match its record.
+1. Period 1's points are saved for good in the **Monthly Scores** tab.
+2. The board starts Period 2 (e.g. 1–31 Oct 2026) on **zero**.
+3. **No need to clear the weekly tabs.** The board remembers what each weekly
+   tab held, and leaves a tab out until new numbers are pasted into it. The
+   PERIODS tab lists the tabs still waiting.
 
-A recorded month keeps the points it was given when it was recorded, even if a
-point value is changed later. A month that is both live and recorded is shown
-live, because the tabs are fresher than the record.
+It saves straight to the sheet, so every copy of the board moves on together.
+Pressed it by mistake? **REOPEN** on Period 1's card puts it back — as long as
+no new weekly numbers have gone in yet. The same goes for a late fix to last
+month's weekly numbers: changing a tab makes it count in the new period, so
+reopen first, fix, then save again.
 
-### Which month things count in
+Anything left hanging is tidied for you: manual scores, adjustments and rounds
+with no month of their own are stamped with the period they counted in, and a
+group 1-2-1 group still marked running moves on to the new period, so its points
+land when it is marked. If the calendar moves on and nobody has pressed the
+button, the board says so at the top of the page.
 
-- **Weekly tabs** count in the month the weekly tabs hold. A tab with a month in
-  its name (`Oct W1`, `Master list 1st week Oct 2026`) counts in that month
-  instead, so several months of tabs can sit in the sheet at once.
-- **Group 1-2-1 rounds** run a calendar month (1st to the last day) and count in
-  that month: "1–31 Oct 2026" is October's. The **Saved Rounds** table has a
-  *Counts in* picker to change it.
+A saved period keeps the points it was given when it was saved, even if a point
+value is changed later.
+
+### Which period things count in
+
+- **Weekly tabs** count in the current period. A tab with a month in its name
+  (`Oct W1`, `Master list 1st week Oct 2026`) counts in that month instead.
+- **Training** is read from the current month's column of the Training tab.
+- **Group 1-2-1 rounds** run a calendar month and count in that month's period:
+  "1–31 Oct 2026" is October's. The **Saved Rounds** table has a *Counts in*
+  picker to change it.
 - **Manual scores and adjustments** have a *Counts in* picker when you add them,
-  set to the live month.
-- Anything older with no month of its own counts in the live month, as it always
-  did — and is stamped with that month when the month is recorded, so it does
-  not count again next month.
+  set to the current period.
 
-A recorded month is frozen: it is greyed out in the *Counts in* pickers. Late
-points for a finished month go into the live month instead.
+A saved period is frozen: it is greyed out in the *Counts in* pickers. Late
+points for a finished period go into the current one instead.
 
 ---
 
@@ -251,7 +259,7 @@ for everyone, and it is what scores. **Saved Rounds** lists every round; **Open*
 brings one back into the editor to change and save again, which replaces it.
 Replacing a round keeps each group's Done/Missed where the group number still
 exists. Each round counts in its month — see
-[Which month things count in](#which-month-things-count-in).
+[Which period things count in](#which-period-things-count-in).
 
 ### Marking each group
 
@@ -311,9 +319,9 @@ after each step — so a disputed score traces line by line back to raw activity
 5. Add any adjustment the room agreed and logged for that squad.
 6. Add the points carried in from before the board kept monthly records.
 
-When months are ticked together, each month is scored like this on its own and
-the months are then added up. Both squads start this game on **zero**, and with
-months now recorded there is no need to roll totals into the carry-in boxes on
+When several periods are showing, each one is scored like this on its own and
+they are then added up. Both squads start this game on **zero**, and with
+periods now saved there is no need to roll totals into the carry-in boxes on
 the SCORING tab — they are only for points from before the records began.
 
 ---
@@ -380,7 +388,7 @@ still be talking to the old one.
 
 Until the script is updated the board still works and still saves, but it says
 so at the top of the page and holds back whatever the old script cannot store:
-recorded months need the current script (it reports itself as version 3), manual
+saving a period needs the current script (it reports itself as version 3), manual
 scores need version 2 or later.
 
 ### How saving works
@@ -417,7 +425,7 @@ scores need version 2 or later.
 - **What gets saved:** roster (Teams), rounds and Done/Missed (Groups),
   mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in, the
   attendance and TYFCB options and the month the weekly tabs hold (Settings),
-  adjustments (Adjustments), manual scores (Manual Scores), recorded months
+  adjustments (Adjustments), manual scores (Manual Scores), saved periods
   (Monthly Scores). PALMS and Training are never written to.
 - **Leaving or refreshing with unsaved changes** asks first.
 - A name typed as a formula (`=…`) is stored as text, never run.
