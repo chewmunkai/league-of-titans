@@ -5,8 +5,15 @@
  *
  * This script does NO scoring. It hands the raw rows over, and writes back
  * only the tabs the dashboard owns: Teams, Groups, Mentors, Scoring,
- * Settings, Adjustments, Manual Scores and Monthly Scores. It never touches
- * a PALMS tab or Training.
+ * Settings, Adjustments, Manual Scores, Monthly Scores and Period Log. It
+ * never changes a PALMS tab or Training.
+ *
+ * When a period is saved it also keeps a RECORD: a new hidden tab named
+ * "Record <period start> #n" holding the board's totals and breakdown for
+ * the period plus an exact copy of every weekly PALMS tab and the Training
+ * tab as they stood at that moment. Records are only ever added, never
+ * changed, so whatever happens to the weekly tabs later, what was counted
+ * can always be checked. (View → Hidden sheets shows them.)
  *
  * The sheet is the shared record. Anyone with the dashboard link can READ
  * it; SAVING needs the edit PIN below, so the board can be put up in front
@@ -74,6 +81,11 @@ var CONFIG = {
   // Each finished month, frozen: every player's points by category, so a
   // month is kept after its weekly PALMS tabs are cleared for the next one.
   MONTHS_TAB: 'Monthly Scores',
+  // One line for everything done to a period: saved, reopened, renamed,
+  // dates changed, deleted.
+  LOG_TAB: 'Period Log',
+  // The start of every record tab's name. Never a weekly tab.
+  RECORD_PREFIX: 'Record ',
 
   // Saving is refused until this is set. Anyone who has it can change the
   // roster, the draw and the scoring for everybody, so treat it like a
@@ -146,6 +158,13 @@ function handleAction(p) {
     return String(p.pin || '') === String(CONFIG.EDIT_PIN)
       ? { ok: true } : { ok: false, code: 'badpin', error: 'That edit PIN is not right.' };
   }
+  // One period record, exactly as it was kept. Reading needs no PIN: it is
+  // the same numbers the board already shows to anyone with the link.
+  if (p.action === 'record') {
+    var rs = isRecordTab(p.tab || '') ? book().getSheetByName(p.tab) : null;
+    if (!rs) return { ok: false, code: 'bad', error: 'There is no record called ' + p.tab + '.' };
+    return { ok: true, tab: p.tab, rows: rs.getDataRange().getDisplayValues() };
+  }
   if (p.action === 'save') {
     var req;
     try { req = JSON.parse(p.payload); }
@@ -168,7 +187,7 @@ function handleAction(p) {
 // done a minute earlier: both rows survive. Only when two people change the
 // very same row does the later save win — for that one row.
 
-var API_VERSION = 3;
+var API_VERSION = 4;
 
 // headers: how the tab is written. heads: words that find each column when
 // the tab is read, so a tab somebody built by hand in another order still
@@ -212,7 +231,12 @@ var SECTIONS = {
                  heads: [['month'], ['squad', 'team'], ['player', 'member', 'name'], ['key'],
                          ['category', 'activity', 'item'], ['count', 'qty'], ['points', 'pts', 'score'],
                          ['recorded', 'saved']],
-                 must: [0, 6], key: [0, 1, 2, 3], text: [0, 7] }
+                 must: [0, 6], key: [0, 1, 2, 3], text: [0, 7] },
+  // Everything done to a period, one line each. Lines are only added.
+  log:         { headers: ['When', 'Action', 'Period', 'Dates', 'Details', 'ID'],
+                 heads: [['when', 'time'], ['action', 'what'], ['period'], ['dates'],
+                         ['details', 'detail', 'notes'], ['id']],
+                 must: [0, 1], key: [0, 1, 2], id: 5, text: [0, 2, 3, 4] }
 };
 
 // The tab a section is read from right now…
@@ -224,6 +248,7 @@ function readTabName(section) {
   if (section === 'settings') return CONFIG.SETTINGS_TAB;
   if (section === 'scores') return CONFIG.SCORES_TAB;
   if (section === 'months') return CONFIG.MONTHS_TAB;
+  if (section === 'log') return CONFIG.LOG_TAB;
   if (section === 'adjustments') {
     var ss = book();
     for (var i = 0; i < CONFIG.ADJUSTMENT_TABS.length; i++)
@@ -248,6 +273,12 @@ function handleSave(req) {
   if (!CONFIG.EDIT_PIN) return { ok: false, code: 'nopin', error: pinOffMessage() };
   if (String(req.pin || '') !== String(CONFIG.EDIT_PIN))
     return { ok: false, code: 'badpin', error: 'That edit PIN is not right.' };
+  if (req.record) {
+    var rlock = LockService.getScriptLock();
+    if (!rlock.tryLock(20000))
+      return { ok: false, code: 'busy', error: 'Someone else is saving right now. Try again in a moment.' };
+    try { return makeRecord(req.record); } finally { rlock.releaseLock(); }
+  }
   var sec = SECTIONS[req.section];
   if (!sec) return { ok: false, code: 'bad', error: 'There is no section called ' + req.section + '.' };
   var isArr = function (x) { return Object.prototype.toString.call(x) === '[object Array]'; };
@@ -501,6 +532,76 @@ function allHashes() {
   return out;
 }
 
+// ── Period records ───────────────────────────────────────────────
+// A record is a new tab, written once and hidden: the board's own tables
+// for the period (sent by the page) followed by an exact copy of each
+// weekly tab it counted and of the Training tab, read straight from the
+// sheet here. Nothing is ever written over an existing tab.
+function isRecordTab(name) {
+  return String(name).toLowerCase().indexOf(CONFIG.RECORD_PREFIX.toLowerCase()) === 0;
+}
+function makeRecord(rec) {
+  var isArr = function (x) { return Object.prototype.toString.call(x) === '[object Array]'; };
+  var key = String(rec.key || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return { ok: false, code: 'bad', error: 'That record has no period.' };
+  var meta = isArr(rec.meta) ? rec.meta : [], blocks = isArr(rec.blocks) ? rec.blocks : [];
+  var tabs = isArr(rec.tabs) ? rec.tabs : [], ss = book(), rows = [['TITANS CGC — PERIOD RECORD']], i, j;
+  rows.push(['Key', key]);
+  for (i = 0; i < meta.length && i < 40; i++) if (isArr(meta[i])) rows.push([cell(meta[i][0]), cell(meta[i][1])]);
+  rows.push(['Kept by', 'TitansCGC script version ' + API_VERSION]);
+  for (i = 0; i < blocks.length && i < 40; i++) {
+    var b = blocks[i] || {};
+    rows.push(['▶ ' + cell(b.title || 'Block ' + (i + 1))]);
+    var br = isArr(b.rows) ? b.rows : [];
+    for (j = 0; j < br.length && j < 3000; j++) rows.push((isArr(br[j]) ? br[j] : [br[j]]).slice(0, 60).map(cell));
+  }
+  if (rec.training) { var ts = trainingSheet(); if (ts && tabs.indexOf(ts.getName()) === -1) tabs = tabs.concat([ts.getName()]); }
+  for (i = 0; i < tabs.length && i < 21; i++) {
+    var name = String(tabs[i] || ''), sh = name && !isRecordTab(name) ? ss.getSheetByName(name) : null;
+    rows.push(['▶ Sheet: ' + cell(name) + (sh ? '' : ' (not found)')]);
+    if (!sh) continue;
+    var g = sh.getDataRange().getDisplayValues(), last = g.length;
+    while (last > 0 && g[last - 1].join('') === '') last--;
+    for (j = 0; j < last && j < 3000; j++) {
+      var row = g[j].slice(0, 60), w = row.length;
+      while (w > 1 && row[w - 1] === '') w--;
+      rows.push(row.slice(0, w).map(cell));
+    }
+  }
+  if (rows.length > 30000) return { ok: false, code: 'bad', error: 'That record is too big to be right.' };
+  var width = 1;
+  for (i = 0; i < rows.length; i++) width = Math.max(width, rows[i].length);
+  for (i = 0; i < rows.length; i++) while (rows[i].length < width) rows[i].push('');
+  var n = 1;
+  while (ss.getSheetByName(CONFIG.RECORD_PREFIX + key + ' #' + n)) n++;
+  var tabName = CONFIG.RECORD_PREFIX + key + ' #' + n;
+  var sheet = ss.insertSheet(tabName, ss.getSheets().length);
+  var range = sheet.getRange(1, 1, rows.length, width);
+  range.setNumberFormat('@');
+  range.setValues(rows);
+  sheet.getRange(1, 1).setFontWeight('bold');
+  try { sheet.hideSheet(); } catch (e) {}
+  SpreadsheetApp.flush();
+  return { ok: true, api: API_VERSION, tab: tabName, rows: rows.length, records: listRecords() };
+}
+// Every record, by its first few lines: which period, its dates, when saved.
+function listRecords() {
+  var out = [];
+  book().getSheets().forEach(function (sh) {
+    var name = sh.getName();
+    if (!isRecordTab(name)) return;
+    var n = Math.min(sh.getLastRow(), 12);
+    if (n < 2) return;
+    var g = sh.getRange(1, 1, n, 2).getDisplayValues(), m = { tab: name };
+    for (var i = 0; i < g.length; i++) {
+      var k = String(g[i][0]).trim().toLowerCase();
+      if (k === 'key' || k === 'period' || k === 'dates' || k === 'saved') m[k] = g[i][1];
+    }
+    out.push(m);
+  });
+  return out;
+}
+
 // ── Payload ──────────────────────────────────────────────────────
 
 function buildPayload() {
@@ -528,6 +629,8 @@ function buildPayload() {
     settingsRaw: readTabRaw(CONFIG.SETTINGS_TAB, ['setting']),
     scoresRaw: readTabRaw(CONFIG.SCORES_TAB, ['score', 'points']),
     monthsRaw: readTabRaw(CONFIG.MONTHS_TAB, ['category', 'points']),
+    logRaw: readTabRaw(CONFIG.LOG_TAB, ['action']),
+    records: listRecords(),
     // A fingerprint of each saveable tab as it stands. The dashboard checks
     // these every so often and refreshes itself when somebody else has saved.
     hashes: hashes,
@@ -560,6 +663,7 @@ function checkSetup() {
       : (sec.exists ? sec.rows.length + ' row(s) in the "' + sec.tab + '" tab.'
                     : 'no "' + sec.tab + '" tab yet; it is made the first time this is saved.')));
   }
+  out.push(listRecords().length + ' period record(s) kept (hidden tabs starting "' + CONFIG.RECORD_PREFIX + '").');
   var size = JSON.stringify(buildPayload()).length;
   out.push('Full read worked: ' + size + ' characters go to the board. Nothing was changed.');
   Logger.log(out.join('\n'));
@@ -620,6 +724,8 @@ function isExcluded(name) {
   if (n === CONFIG.SCORING_TAB.toLowerCase()) return true;
   if (n === CONFIG.SCORES_TAB.toLowerCase()) return true;
   if (n === CONFIG.MONTHS_TAB.toLowerCase()) return true;
+  if (n === CONFIG.LOG_TAB.toLowerCase()) return true;
+  if (isRecordTab(name)) return true;
   if (n === CONFIG.TRAINING_TAB.toLowerCase()) return true;
   for (var i = 0; i < CONFIG.EXCLUDE_TABS.length; i++) {
     if (n.indexOf(CONFIG.EXCLUDE_TABS[i].toLowerCase()) !== -1) return true;
@@ -826,18 +932,23 @@ function readAdjustmentsRaw() {
 // Header row has month names as columns. We take CONFIG.CURRENT_MONTH,
 // or the rightmost month column that actually has numbers in it.
 
-function readTraining() {
+// The Training tab: by name, else any tab with a "Name" column and a month column.
+function trainingSheet() {
   var ss = book();
   var sheet = ss.getSheetByName(CONFIG.TRAINING_TAB);
-
   if (!sheet) {
-    // fall back: find any tab with a "Name" column and a month column
     var sheets = ss.getSheets();
     for (var i = 0; i < sheets.length; i++) {
+      if (isRecordTab(sheets[i].getName())) continue;
       var g = sheets[i].getDataRange().getValues();
       if (findTrainingHeader(g) !== -1) { sheet = sheets[i]; break; }
     }
   }
+  return sheet;
+}
+
+function readTraining() {
+  var sheet = trainingSheet();
   if (!sheet) return { rows: [], month: '' };
 
   var grid = sheet.getDataRange().getValues();

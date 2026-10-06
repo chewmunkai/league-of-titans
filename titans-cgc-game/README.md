@@ -208,6 +208,36 @@ button, the board says so at the top of the page.
 A saved period keeps the points it was given when it was saved, even if a point
 value is changed later.
 
+### Period records — the proof, for any discrepancy
+
+Every time a period is saved, the board first keeps a **record** of it in the
+sheet. **The period is not saved until the record is.** A record is a new hidden
+tab called `Record <start day> #1` (for example `Record 2026-09-01 #1`), written
+once and never changed. It holds:
+
+- the period's name, dates, when it was saved and which weekly tabs it counted
+- squad totals, player totals and every score line exactly as saved to Monthly
+  Scores, plus each squad's audit trail
+- the manual scores, adjustments, group 1-2-1 groups, roster, scoring lines and
+  settings it was scored with
+- **an exact copy of every weekly PALMS tab it counted, and of the Training
+  tab**, as they stood at that moment, so the numbers survive the weekly tabs
+  being overwritten next month.
+
+**To look back:** press **📋 RECORD** on a saved period's card. The board
+opens the record and **checks it against the scores saved now**, squad by squad
+and player by player: `✓ Matches` or `⚠ Differs`, naming who and by how much.
+**⬇ DOWNLOAD CSV** saves the whole record as a file. In the sheet the records
+are under **View → Hidden sheets**.
+
+Saving a period again (after **REOPEN**) adds a new record (`#2`, `#3`, …).
+Older ones are kept, and the record viewer links them.
+
+**Period log.** Everything done to a period gets a line in the **Period Log**
+tab: saved (with squad totals and the record's name), reopened, renamed, dates
+changed, saved scores deleted. It's under **Records & period log** at the bottom
+of the PERIODS tab.
+
 ### Which period things count in
 
 - **Weekly tabs** count in the current period. A tab with a month in its name
@@ -408,8 +438,8 @@ still be talking to the old one.
 
 Until the script is updated the board still works and still saves, but it says
 so at the top of the page and holds back whatever the old script cannot store:
-saving a period needs the current script (it reports itself as version 3), manual
-scores need version 2 or later.
+**Save Period** needs the current script (it reports itself as version 4)
+because it keeps a period record, and manual scores need version 2 or later.
 
 ### How saving works
 
@@ -446,7 +476,9 @@ scores need version 2 or later.
   mentors (Mentors), scoring lines (Scoring), group size / fine / carry-in, the
   attendance and TYFCB options and the month the weekly tabs hold (Settings),
   adjustments (Adjustments), manual scores (Manual Scores), saved periods
-  (Monthly Scores). PALMS and Training are never written to.
+  (Monthly Scores), the Period Log, and a new hidden `Record …` tab each time a
+  period is saved. PALMS and Training are only ever read (and copied into records),
+  never written to.
 - **Leaving or refreshing with unsaved changes** asks first.
 - A name typed as a formula (`=…`) is stored as text, never run.
 

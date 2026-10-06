@@ -155,6 +155,20 @@ button.b.pgo{display:block;width:100%;margin-top:18px;font-size:12px;padding:20p
 details.pfix summary{cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:2px;
   font-weight:700;text-transform:uppercase;color:var(--muted)}
 details.pfix[open] summary{margin-bottom:12px}
+.rtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.rmeta{font-size:13px;color:var(--muted);text-align:right;line-height:1.6}
+.rfacts{display:grid;gap:6px;margin:14px 0;font-size:13.5px}
+.rfacts b{display:inline-block;min-width:160px;color:var(--muted);font-weight:600;margin-right:8px}
+.rcheck{border-radius:9px;padding:11px 14px;margin:10px 0;font-size:13.5px;line-height:1.6}
+.rcheck.ok{background:#e7f8ee;border:2px solid var(--green);color:#00662f}
+.rcheck.bad{background:#fdf0f1;border:2px solid var(--red);color:var(--red-dk)}
+details.rblock{border:2px solid var(--line);border-radius:10px;margin-top:10px;background:var(--paper2)}
+details.rblock summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:14px}
+details.rblock summary span{font-weight:500;color:var(--muted);font-size:12.5px;margin-left:6px}
+details.rblock .scroll{padding:0 10px 10px}
+table.rtable{font-size:12.5px}
+table.rtable td,table.rtable th{padding:5px 8px;white-space:nowrap}
+table.rtable tr.rhead td{font-weight:700;background:var(--line2)}
 @media (max-width:560px){
   .pname{font-size:15px}
   .pfacts{gap:6px}
@@ -617,6 +631,8 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
   <div class="panel"><h2>Saved Periods</h2>
     <div id="periodCards"></div></div>
 
+  <div class="panel" id="recordPanel" style="display:none"></div>
+
   <div class="panel"><h2>Compare Periods</h2>
     <div class="note" style="margin:0 0 16px">Pick any run of periods with <b>From</b> and <b>To</b> at the top
       &mdash; the Scoreboard, Squads, Players and Broadcast tabs all add up exactly that run. The shaded rows are
@@ -626,6 +642,9 @@ svg text{font-family:'Barlow Condensed',sans-serif;fill:#646d85;font-size:11px;l
     <div class="legend" id="periodLegend"></div>
     <h3 id="periodPlayersHead">Players</h3>
     <div class="scroll"><table id="periodPlayers"></table></div></div>
+
+  <div class="panel"><details class="pfix"><summary>Records &amp; period log</summary>
+    <div id="periodLog"></div></details></div>
 
   <div class="panel recpanel"><details class="pfix"><summary>Fix the current period</summary>
     <div id="periodFix"></div></details></div>
@@ -1017,9 +1036,9 @@ var SYNC = { url: null, can: false, api: 0, hashes: {}, base: {}, seed: {}, dirt
              last: null, error: '', stale: [] };
 var SECTION_NAMES = { teams: 'roster', groups: 'group 1-2-1 rounds', mentors: 'mentors',
                       scoring: 'scoring', settings: 'settings', adjustments: 'adjustments',
-                      scores: 'manual scores', months: 'monthly records' };
+                      scores: 'manual scores', months: 'monthly records', log: 'period log' };
 /* The script version each section needs before it can be saved. */
-var SECTION_API = { scores: 2, months: 3 };
+var SECTION_API = { scores: 2, months: 3, log: 4 };
 /* How each tab is laid out and how a row in it is named. The Apps Script
    holds the same table; the two have to agree for a changed row to land on
    the right row in the sheet. */
@@ -1032,7 +1051,8 @@ var SECTION_DEF = {
   adjustments: { headers: ['Month', 'Team', 'Reason', 'Points', 'ID'], key: [0, 1, 2, 3], id: 4 },
   scores:      { headers: ['Name', 'Item', 'Score', 'Added', 'ID', 'Month'], key: [0, 1, 2, 3], id: 4 },
   months:      { headers: ['Month', 'Squad', 'Player', 'Key', 'Category', 'Count', 'Points', 'Recorded'],
-                 key: [0, 1, 2, 3] }
+                 key: [0, 1, 2, 3] },
+  log:         { headers: ['When', 'Action', 'Period', 'Dates', 'Details', 'ID'], key: [0, 1, 2], id: 5 }
 };
 var MENTORS = [];              // mentor names, in group order — they anchor a group each
 
@@ -1242,7 +1262,8 @@ function pinOffText() {
   return 'Saving is switched off in the Apps Script: set EDIT_PIN in it and deploy a new version.';
 }
 function oldScriptText(sec) {
-  return (sec === 'months' ? 'Monthly records need' : 'Manual scores need') + ' the updated Apps Script. ' +
+  return (sec === 'record' || sec === 'log' ? 'Saving a period keeps a full record of it, which needs' :
+    sec === 'months' ? 'Monthly records need' : 'Manual scores need') + ' the updated Apps Script. ' +
     'Paste the new TitansCGC.gs into the sheet’s Apps Script and deploy a new version of the same ' +
     'deployment — everything else saves fine meanwhile.';
 }
@@ -1465,6 +1486,11 @@ function sectionRows(sec) {
       var hr = DATA.history[i];
       out.push([hr.month, hr.squad, hr.player || '', hr.key, hr.label || '', hr.count, hr.points, hr.recorded || '']);
     }
+  if (sec === 'log')
+    for (i = 0; i < (DATA.log || []).length; i++) {
+      var lg = DATA.log[i];
+      out.push([lg.when, lg.action, lg.period || '', lg.dates || '', lg.details || '', lg.id || '']);
+    }
   return out;
 }
 
@@ -1541,6 +1567,7 @@ function takeSection(sec, headers, rows) {
   else if (sec === 'adjustments') { DATA.adjustments = readAdjGrid(grid); syncTeams(); }
   else if (sec === 'scores') DATA.scores = readScoresGrid(grid);
   else if (sec === 'months') DATA.history = readMonthsGrid(grid);
+  else if (sec === 'log') DATA.log = readLogGrid(grid);
 }
 function newId() {
   return new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1596,7 +1623,7 @@ function othersSaved(hashes) {
 function quietOK() {
   if (!LAST || LAST.kind !== 'exec') return false;
   if (pendingList().length || SYNC.saving || SYNC.phase === 'saving' || SYNC.phase === 'error') return false;
-  if (ROLLING || PICKED || DRAGGING !== -1 || DATE_EDIT) return false;
+  if (ROLLING || PICKED || DRAGGING !== -1 || DATE_EDIT || CLOSING) return false;
   if ($('pinModal').className.indexOf('hide') === -1) return false;
   var a = document.activeElement, tag = a && a.tagName;
   return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
@@ -2286,7 +2313,8 @@ function build(grids) {
     else if (kind === 'settings') pay.settings = pay.settings.concat(readSettingsGrid(grid));
     else if (kind === 'scores')   pay.scores = pay.scores.concat(readScoresGrid(grid));
     else if (kind === 'months')   pay.history = pay.history.concat(readMonthsGrid(grid));
-    else unread.push(k);
+    else if (kind === 'log')      pay.log = (pay.log || []).concat(readLogGrid(grid));
+    else if (norm(k).indexOf('record ') !== 0) unread.push(k);
   }
   if (unread.length) PARSE_WARN.push('Could not tell what these tabs were, so they were skipped: <b>' +
     esc(unread.join(', ')) + '</b>.');
@@ -2307,6 +2335,8 @@ function classify(name, grid) {
   if (nm === 'adjustments' || nm === 'adjustment' || nm === 'gamelog' ||
       nm === 'game log' || nm === 'log') return 'adj';
   if (nm === 'training') return 'training';
+  if (nm === 'period log') return 'log';
+  if (nm.indexOf('record ') === 0) return 'skip';
   if (isAggregate(name, grid)) return 'skip';
 
   /* Shape beats name. A tab with First Name and RGI is a meeting week even
@@ -2878,6 +2908,30 @@ function readMonthsGrid(grid) {
   }
   return out;
 }
+var LOG_FIELDS = [
+  { key: 'when',    heads: ['when', 'time'] },
+  { key: 'action',  heads: ['action', 'what'] },
+  { key: 'period',  heads: ['period'] },
+  { key: 'dates',   heads: ['dates'] },
+  { key: 'details', heads: ['details', 'detail', 'notes'] },
+  { key: 'id',      heads: ['id'], exact: 1 }
+];
+function readLogGrid(grid) {
+  var hr = -1, r;
+  for (r = 0; r < Math.min(grid.length, 10) && hr === -1; r++) {
+    var c = headerCells(grid, r);
+    if (has(c, 'action') && has(c, 'when')) hr = r;
+  }
+  if (hr === -1) return [];
+  var map = mapFields(headerCells(grid, hr), LOG_FIELDS), out = [];
+  for (r = hr + 1; r < grid.length; r++) {
+    var row = grid[r] || [];
+    var g = function (k) { return map[k] == null ? '' : String(row[map[k]] == null ? '' : row[map[k]]).trim(); };
+    if (!g('when') && !g('action')) continue;
+    out.push({ when: g('when'), action: g('action'), period: g('period'), dates: g('dates'), details: g('details'), id: g('id') });
+  }
+  return out;
+}
 /* Which column is which, by heading. First match wins and no column is used twice. */
 function mapFields(cells, fields) {
   var map = {}, taken = {}, i, j, hh, f;
@@ -2905,6 +2959,8 @@ function normalise(res) {
   if (raw(res.settingsRaw)) pay.settings = readSettingsGrid(raw(res.settingsRaw));
   if (raw(res.scoresRaw)) pay.scores = readScoresGrid(raw(res.scoresRaw));
   if (raw(res.monthsRaw)) pay.history = readMonthsGrid(raw(res.monthsRaw));
+  if (raw(res.logRaw)) pay.log = readLogGrid(raw(res.logRaw));
+  pay.records = res.records || [];
   if (res.scoringRaw && res.scoringRaw.headers)
     pay.scoring = readScoringGrid([res.scoringRaw.headers].concat(res.scoringRaw.rows || []));
   else pay.scoring = res.scoring || [];
@@ -2939,6 +2995,8 @@ function adopt(pay, sourceName, url, bg) {
   DATA.adjustments = DATA.adjustments || [];
   DATA.scores = DATA.scores || [];
   DATA.history = DATA.history || [];
+  DATA.log = DATA.log || [];
+  DATA.records = DATA.records || [];
   /* A Scoring tab replaces the list outright rather than merging with it:
      a half-applied scoring change is worse than either version of it. */
   RULES = [];
@@ -2984,9 +3042,11 @@ function adopt(pay, sourceName, url, bg) {
     PARSE_WARN.push('The Apps Script is connected but <b>saving is switched off</b> in it: set ' +
       '<code>EDIT_PIN</code> in its CONFIG block and deploy it again. Until then changes made here are ' +
       'not kept.');
-  if (SYNC.url && pay.canSave && SYNC.api < 3)
-    PARSE_WARN.push('The Apps Script behind this board is an <b>older version</b>. It still saves, but it cannot ' +
-      'save <b>monthly records</b>' + (SYNC.api < 2 ? ' or <b>manual scores</b>, and if two people save the same tab ' +
+  if (SYNC.url && pay.canSave && SYNC.api < 4)
+    PARSE_WARN.push('The Apps Script behind this board is an <b>older version</b>. It still saves, but it cannot keep ' +
+      '<b>period records</b>, so <b>Save Period</b> is switched off until it is updated' +
+      (SYNC.api < 3 ? ', and it cannot save <b>monthly records</b>' : '') +
+      (SYNC.api < 2 ? ' or <b>manual scores</b>, and if two people save the same tab ' +
       'close together the second one is turned away' : '') + '. Paste the new <code>TitansCGC.gs</code> into the ' +
       'sheet\u2019s Apps Script and deploy a new version of the same deployment (Manage deployments \u2192 edit ' +
       '\u2192 New version).');
@@ -3751,8 +3811,10 @@ function setPeriodDates(key, start, end) {
 var DATE_EDIT = '';
 function editDates(key) { DATE_EDIT = key; render(); var s = $('pdStart'); if (s) s.focus(); }
 function saveDates(key) {
+  var was = periodDates(key), name = periodName(key);
   var start = ($('pdStart') || {}).value || '', err = setPeriodDates(key, start, ($('pdEnd') || {}).value || '');
   if (err) { toast(esc(err), 'err', 8000); return; }
+  if (periodDates(start) !== was) logEvent('Dates changed', start, (name || 'This period') + ' was ' + was + ', now ' + periodDates(start) + '.');
   DATE_EDIT = '';
   render();
   toast('<b>' + esc(periodTag(start)) + '</b> now runs ' + esc(periodDates(start)) + '.', 'ok');
@@ -4063,7 +4125,7 @@ function recordPeriod(mk) {
 function saveBlocked() {
   if (!SYNC.url) return '';
   if (!SYNC.can) return pinOffText();
-  if (SYNC.api < 3) return oldScriptText('months');
+  if (SYNC.api < 4) return oldScriptText('record');
   return '';
 }
 
@@ -4072,10 +4134,11 @@ function saveBlocked() {
    each tab's numbers are fingerprinted here, and the new period leaves a
    tab out until its numbers change. */
 function closePeriod() {
-  if (!DATA) return;
+  if (!DATA || CLOSING) return;
   if (LIVE_PENDING) { toast('Still connecting to the live sheet — one moment, then try again.', 'err'); return; }
   var blocked = saveBlocked();
   if (blocked) { toast(esc(blocked), 'err', 9000); return; }
+  if (SYNC.url && !getPin()) { openPin(closePeriod); return; }
   var live = liveMonthKey(), nx = nextPeriodSpan(), name = periodName(live), nextName = nextPeriodName();
   var left = daysLeft(live), running = {}, nRun = 0, i;
   for (i = 0; i < (DATA.groups || []).length; i++) {
@@ -4084,12 +4147,49 @@ function closePeriod() {
   }
   if (!confirm('Save ' + name + ' (' + periodDates(live) + ') and start ' + nextName + '?' +
       (left > 0 ? '\n\n' + name + ' still has ' + left + ' day' + (left === 1 ? '' : 's') + ' to go.' : '') +
-      '\n\nEvery score in ' + name + ' is saved for good in the Monthly Scores tab, and the board starts ' +
+      '\n\nEvery score in ' + name + ' is saved for good in the Monthly Scores tab, with a full record of what was ' +
+      'counted — a copy of every weekly tab included — and the board starts ' +
       nextName + ' (' + dayRange(nx.start, nx.end) + ') on zero.' +
       '\n\nNo need to clear the weekly tabs: each one is left out until new numbers are pasted into it.' +
       (nRun ? '\n\n' + nRun + ' group 1-2-1 group' + (nRun === 1 ? ' is' : 's are') + ' still marked running. ' +
         (nRun === 1 ? 'It moves' : 'They move') + ' to ' + nextName + ', so the points land there once ' +
         (nRun === 1 ? 'it is' : 'they are') + ' marked.' : ''))) return;
+  var rec = buildRecord(live);
+  if (!SYNC.url) {
+    var n0 = 1;
+    while (LOCAL_RECORDS['Record ' + live + ' #' + n0]) n0++;
+    var tab0 = 'Record ' + live + ' #' + n0;
+    LOCAL_RECORDS[tab0] = localRecordRows(rec);
+    DATA.records.push({ tab: tab0, key: live, period: name, dates: periodDates(live), saved: rec.meta[2][1] });
+    finishClose(live, rec, tab0);
+    return;
+  }
+  /* The record goes first. Only once the sheet has it is anything else
+     changed — a period is never closed without its record. */
+  CLOSING = true;
+  render();
+  toast('Keeping a record of <b>' + esc(name) + '</b> in the sheet…', 'ok', 30000);
+  sendSave({ pin: getPin(), record: { key: rec.key, meta: rec.meta, blocks: rec.blocks, tabs: rec.tabs, training: true } }, function (res) {
+    CLOSING = false;
+    if (!res || !res.ok) {
+      if (res && res.code === 'badpin') setPin('');
+      toast('Could not keep the record of <b>' + esc(name) + '</b>: ' + esc((res && res.error) || 'the sheet did not answer.') +
+        ' Nothing was changed — try again.', 'err', 12000);
+      render();
+      return;
+    }
+    if (res.records) DATA.records = res.records;
+    finishClose(live, rec, res.tab);
+  });
+}
+/* With the record kept: save the scores, fingerprint the weekly tabs, log
+   it and move the board on to the next period. */
+function finishClose(live, rec, tab) {
+  var nx = nextPeriodSpan(), name = periodName(live), nextName = nextPeriodName(), i, R = rec.R;
+  var totals = [];
+  for (i = 0; i < R.teams.length; i++) totals.push(R.teams[i].name + ' ' + n(R.teams[i].monthTotal));
+  logEvent('Saved', live, totals.join(' · ') + ' · ' + R.weekNames.length + ' weekly tab' + (R.weekNames.length === 1 ? '' : 's') +
+    ' counted · record: ' + tab);
   recordPeriod(live);
   var old = leftovers(), tags = [], seen = {};
   for (i = 0; i < (DATA.weeks || []).length; i++) {
@@ -4111,7 +4211,7 @@ function closePeriod() {
   markDirty('settings');
   PERIOD.mode = 'live'; keepPeriod();
   render();
-  toast('<b>' + esc(name) + '</b> is saved. <b>' + esc(nextName) + '</b> starts on zero' +
+  toast('<b>' + esc(name) + '</b> is saved, with its record. <b>' + esc(nextName) + '</b> starts on zero' +
     (SYNC.url ? '.' : ' — on this screen only, because this copy of the board cannot save.'), 'ok', 7000);
   if (SYNC.url) saveAll();
 }
@@ -4123,6 +4223,8 @@ function reopenPeriod(mk) {
       'Press Save ' + periodName(mk) + ' again once it really is done.' +
       (fresh ? '\n\nCareful: ' + fresh + ' weekly tab' + (fresh === 1 ? ' already has' : 's already have') +
         ' new numbers in, and they would count in ' + periodName(mk) + ' instead.' : ''))) return;
+  logEvent('Reopened', mk, 'Scored live from the weekly tabs again' + (fresh ? ' (' + fresh + ' weekly tab' +
+    (fresh === 1 ? ' already had' : 's already had') + ' new numbers)' : '') + '.');
   var L = leftovers(), tags = [], k;
   for (k in L) if (L.hasOwnProperty(k) && L[k].mk < mk) tags.push(k + '=' + L[k].mk + ':' + L[k].h);
   var end = addDays(live, -1);
@@ -4145,6 +4247,7 @@ function renamePeriod(mk) {
   v = String(v).replace(/\s+/g, ' ').trim().slice(0, 40);
   if (!v || v === plain) delete SET.periodNames[mk]; else SET.periodNames[mk] = v;
   if ((SET.periodNames[mk] || '') === had) return;
+  logEvent('Renamed', mk, 'Was "' + (had || plain) + '", now "' + (SET.periodNames[mk] || plain) + '".');
   markDirty('settings');
   render();
   if (SYNC.url && SYNC.can) saveAll();
@@ -4152,8 +4255,9 @@ function renamePeriod(mk) {
 function dropMonthRecord(mk) {
   if (!confirm('Delete the saved copy of ' + periodTitle(mk) + ' for everyone?' +
       (isLive(mk) ? '' : '\n\nIts weekly numbers are gone, so the period disappears from the board.'))) return;
-  var keep = [], i;
-  for (i = 0; i < DATA.history.length; i++) if (DATA.history[i].mk !== mk) keep.push(DATA.history[i]);
+  var keep = [], i, gone = 0;
+  for (i = 0; i < DATA.history.length; i++) if (DATA.history[i].mk !== mk) keep.push(DATA.history[i]); else gone++;
+  logEvent('Saved scores deleted', mk, gone + ' line' + (gone === 1 ? '' : 's') + ' taken out of Monthly Scores. Its records are kept.');
   DATA.history = keep;
   markDirty('months');
   render();
@@ -5319,6 +5423,7 @@ function renderPeriods() {
   periodCards(all, live, summ, squads);
   periodCompare(all, summ, squads);
   periodFix();
+  periodLogPanel();
 }
 function ranked(S, squads) {
   return squads.slice().sort(function (a, b) { return (S.teams[b] || 0) - (S.teams[a] || 0); });
@@ -5346,6 +5451,7 @@ function periodNow(live, S, squads) {
     if (!monthKeyOf(w.tab) && isLeftover(w)) { waiting.push(w.tab); from = from || L[tabTag(w.tab)].mk; }
   }
   if (trainingLeftover()) { waiting.push('Training'); from = from || L[TRAIN_TAG].mk; }
+  if (CLOSING) blocked = 'Keeping the record in the sheet…';
   var h = '<div class="ptop"><div><div class="pname">' + esc(name) +
     ' <button class="pedit" title="Rename this period" onclick="renamePeriod(\'' + live + '\')">✎</button></div>' +
     '<div class="pdates">' + esc(periodDates(live)) + ' <button class="pedit pcal" title="Change the dates" ' +
@@ -5392,6 +5498,7 @@ function periodCards(all, live, summ, squads) {
       '<div class="pmeta">' + (wk != null ? wk + ' weekly tab' + (wk === 1 ? '' : 's') : '') +
       (when ? (wk != null ? ' · ' : '') + 'saved ' + esc(when) : '') + '</div>' +
       '<div class="pcbtns"><button class="b g sm" onclick="viewPeriod(\'' + mk + '\')">VIEW</button>' +
+      (recordsFor(mk).length ? '<button class="b g sm" onclick="openRecord(\'' + q(recordsFor(mk)[0].tab) + '\')">📋 RECORD</button>' : '') +
       (mk === prev && saved ? '<button class="b g sm" onclick="reopenPeriod(\'' + mk + '\')">REOPEN</button>' : '') +
       '</div></div>';
   }
@@ -5496,6 +5603,286 @@ function periodFix() {
         '<td style="white-space:nowrap"><button class="b g sm" onclick="renamePeriod(\'' + rec[i] + '\')">RENAME</button> ' +
         '<button class="b g sm" onclick="dropMonthRecord(\'' + rec[i] + '\')">DELETE</button></td></tr>';
     }
+    h += '</tbody></table></div>';
+  }
+  el.innerHTML = h;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PERIOD RECORDS
+
+   Saving a period keeps a record of it in the sheet: a hidden tab, written
+   once and never changed, holding the board's totals and breakdown for the
+   period and an exact copy of every weekly tab it counted and of the
+   Training tab, as they stood at that moment. If a score is ever disputed,
+   the record shows what was counted, and the board checks it against the
+   saved scores line by line. Everything done to a period also goes into
+   the Period Log.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var LOCAL_RECORDS = {};   // records made on a copy of the board that cannot save (demo)
+var RECORD_OPEN = null;   // { tab, rows, error, loading } on screen
+var CLOSING = false;      // a record is on its way to the sheet
+
+function nowStamp() { var d = new Date(); return todayStr() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function plainText(h) { return String(h == null ? '' : h).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&mdash;/g, '—'); }
+
+/* One line in the Period Log. Only where it can be kept: a script that has
+   no Period Log yet would refuse it. */
+function logEvent(action, key, details) {
+  if (!DATA || (SYNC.url && SYNC.api < 4)) return;
+  DATA.log = DATA.log || [];
+  DATA.log.push({ when: nowStamp(), action: action, period: periodName(key) || '', dates: periodDates(key) || '',
+                  details: details || '', id: newId() });
+  markDirty('log');
+}
+
+/* Everything the board knows about a period, as tables. */
+function buildRecord(key) {
+  var R = compute(key, false), blocks = [], rows, i, j, left = [];
+  for (i = 0; i < (DATA.weeks || []).length; i++)
+    if (!monthKeyOf(DATA.weeks[i].tab) && isLeftover(DATA.weeks[i])) left.push(DATA.weeks[i].tab);
+  var meta = [['Period', periodName(key)], ['Dates', periodDates(key)], ['Saved', nowStamp()],
+              ['Weekly tabs counted', R.weekNames.join(', ') || 'none']];
+  if (left.length) meta.push(['Left out (still last period’s numbers)', left.join(', ')]);
+
+  rows = [['Squad', 'Points', 'From activity', 'Manual scores', 'Adjustments', 'Players']];
+  for (i = 0; i < R.teams.length; i++) {
+    var T = R.teams[i];
+    rows.push([T.name, T.monthTotal, T.activity, T.handPts || 0, T.manual || 0, T.members.length]);
+  }
+  blocks.push({ title: 'Squad totals', rows: rows });
+
+  rows = [['Player', 'Squad', 'Points']];
+  for (i = 0; i < R.teams.length; i++)
+    for (j = 0; j < R.teams[i].members.length; j++) rows.push([R.teams[i].members[j].name, R.teams[i].name, R.teams[i].members[j].total]);
+  blocks.push({ title: 'Player totals', rows: rows });
+
+  var lines = snapshotRows(R, key, '');
+  rows = [['Squad', 'Player', 'Key', 'Category', 'Count', 'Points']];
+  for (i = 0; i < lines.length; i++) rows.push([lines[i].squad, lines[i].player, lines[i].key, lines[i].label, lines[i].count, lines[i].points]);
+  blocks.push({ title: 'Score lines (as saved to Monthly Scores)', rows: rows });
+
+  for (i = 0; i < R.teams.length; i++) {
+    rows = [['Step', 'Why', 'Points', 'Running total']];
+    for (j = 0; j < R.teams[i].audit.length; j++) {
+      var a = R.teams[i].audit[j];
+      rows.push([a.name, a.why, a.delta === null ? '' : a.delta, a.running]);
+    }
+    blocks.push({ title: 'Audit trail — ' + R.teams[i].name, rows: rows });
+  }
+
+  rows = [['Name', 'Item', 'Score', 'Added', 'Month']];
+  for (i = 0; i < (DATA.scores || []).length; i++) {
+    var s = DATA.scores[i];
+    if (scoreMonth(s) === key) rows.push([s.name, s.item || '', s.score === null ? '' : s.score, s.added || '', s.month || '']);
+  }
+  blocks.push({ title: 'Manual scores', rows: rows });
+  rows = [['Month', 'Team', 'Reason', 'Points']];
+  for (i = 0; i < (DATA.adjustments || []).length; i++) {
+    var ad = DATA.adjustments[i];
+    if (adjMonth(ad) === key) rows.push([ad.month || '', ad.team, ad.reason || '', ad.points === null ? '' : ad.points]);
+  }
+  blocks.push({ title: 'Adjustments', rows: rows });
+  rows = [['Round', 'Group', 'Member', 'Role', 'Done', 'Notes']];
+  for (i = 0; i < (DATA.groups || []).length; i++) {
+    var g = DATA.groups[i];
+    if (groupMonth(g) === key) rows.push([g.round, g.group, g.member, g.role || '', g.done || '', g.notes || '']);
+  }
+  blocks.push({ title: 'Group 1-2-1', rows: rows });
+  rows = [['Player', 'Training sessions counted']];
+  for (var mk in R.members) if (R.members.hasOwnProperty(mk) && R.members[mk].training) rows.push([R.members[mk].name, R.members[mk].training]);
+  blocks.push({ title: 'Training', rows: rows });
+  rows = [['Player', 'Squad']];
+  for (i = 0; i < ROSTER.length; i++) rows.push([ROSTER[i].name, ROSTER[i].team || 'No squad']);
+  blocks.push({ title: 'Roster', rows: rows });
+  blocks.push({ title: 'Scoring used', rows: [SECTION_DEF.scoring.headers].concat(sectionRows('scoring')) });
+  blocks.push({ title: 'Settings', rows: [['Setting', 'Value']].concat(sectionRows('settings')) });
+  rows = [['Notice']];
+  for (i = 0; i < R.warnings.length; i++) rows.push([plainText(R.warnings[i])]);
+  if (rows.length > 1) blocks.push({ title: 'Notices on screen', rows: rows });
+  return { key: key, meta: meta, blocks: blocks, tabs: R.weekNames.slice(), training: true, R: R };
+}
+
+/* The same record laid out the way the script lays it out — for a copy of
+   the board that cannot save, so its record can still be opened. */
+function localRecordRows(rec) {
+  var rows = [['TITANS CGC — PERIOD RECORD'], ['Key', rec.key]], i, j;
+  for (i = 0; i < rec.meta.length; i++) rows.push(rec.meta[i].slice());
+  rows.push(['Kept by', 'this screen only — not saved to a sheet']);
+  for (i = 0; i < rec.blocks.length; i++) {
+    rows.push(['▶ ' + rec.blocks[i].title]);
+    for (j = 0; j < rec.blocks[i].rows.length; j++) rows.push(rec.blocks[i].rows[j].map(String));
+  }
+  var cols = ['P', 'A', 'L', 'M', 'S', 'RGI', 'RGO', 'RRI', 'RRO', 'V', 'ONE21', 'TYFCB'];
+  for (i = 0; i < (DATA.weeks || []).length; i++) {
+    var w = DATA.weeks[i];
+    if (rec.tabs.indexOf(w.tab) === -1) continue;
+    rows.push(['▶ Sheet: ' + w.tab]);
+    rows.push(['Name'].concat(cols));
+    for (j = 0; j < w.rows.length; j++) rows.push([w.rows[j].name].concat(cols.map(function (c) { return String(w.rows[j][c] || 0); })));
+  }
+  return rows;
+}
+
+/* Records of one period, newest first. A record belongs to the period its
+   start day falls in now, so moving a period's dates does not lose it. */
+function recordsFor(mk) {
+  var out = [], i;
+  for (i = 0; i < ((DATA && DATA.records) || []).length; i++) {
+    var r = DATA.records[i], k = periodKeyOf(r.key);
+    if (k && periodOf(k) === mk) out.push(r);
+  }
+  return out.sort(function (a, b) { return String(b.saved || '').localeCompare(String(a.saved || '')) || String(b.tab).localeCompare(String(a.tab)); });
+}
+
+function openRecord(tab) {
+  if (LOCAL_RECORDS[tab]) { RECORD_OPEN = { tab: tab, rows: LOCAL_RECORDS[tab] }; showRecord(true); return; }
+  if (!SYNC.url) { RECORD_OPEN = { tab: tab, error: 'This copy of the board cannot reach the sheet.' }; showRecord(true); return; }
+  RECORD_OPEN = { tab: tab, loading: true };
+  showRecord(true);
+  jsonp(SYNC.url + (SYNC.url.indexOf('?') === -1 ? '?' : '&') + 'action=record&tab=' + encodeURIComponent(tab) + '&callback=__CB__',
+    function (res) {
+      if (!RECORD_OPEN || RECORD_OPEN.tab !== tab) return;
+      RECORD_OPEN = res && res.ok ? { tab: tab, rows: res.rows } : { tab: tab, error: (res && res.error) || 'The sheet did not answer.' };
+      showRecord(false);
+    },
+    function (e) { if (RECORD_OPEN && RECORD_OPEN.tab === tab) { RECORD_OPEN = { tab: tab, error: 'Could not reach the sheet: ' + e }; showRecord(false); } },
+    30000);
+}
+function closeRecord() { RECORD_OPEN = null; showRecord(false); }
+
+function parseRecord(rows) {
+  var out = { meta: {}, blocks: [] }, cur = null, i;
+  for (i = 0; i < (rows || []).length; i++) {
+    var r = rows[i].slice(), w = r.length;
+    while (w > 0 && String(r[w - 1]) === '') w--;
+    r = r.slice(0, w);
+    var first = String(r[0] == null ? '' : r[0]);
+    if (first.indexOf('▶ ') === 0) { cur = { title: first.slice(2), rows: [] }; out.blocks.push(cur); continue; }
+    if (cur) { cur.rows.push(r); continue; }
+    if (r.length >= 2) out.meta[first.toLowerCase()] = String(r[1]);
+  }
+  return out;
+}
+function recordBlock(rec, title) {
+  for (var i = 0; i < rec.blocks.length; i++) if (rec.blocks[i].title.toLowerCase().indexOf(title.toLowerCase()) === 0) return rec.blocks[i];
+  return null;
+}
+
+/* The record against the scores saved for the period: squad by squad,
+   player by player. Anything that differs is listed. */
+function checkRecord(rec, mk) {
+  var lines = recordBlock(rec, 'Score lines'), got = { sq: {}, pl: {}, n: 0 }, want = { sq: {}, pl: {}, n: 0 }, i;
+  if (!lines) return { ok: false, none: true };
+  for (i = 1; i < lines.rows.length; i++) {
+    var r = lines.rows[i], p = num(r[5]);
+    got.sq[r[0]] = (got.sq[r[0]] || 0) + p; got.n++;
+    if (r[1]) got.pl[norm(r[1])] = { name: r[1], pts: ((got.pl[norm(r[1])] || {}).pts || 0) + p };
+  }
+  for (i = 0; i < (DATA.history || []).length; i++) {
+    var h = DATA.history[i];
+    if (h.mk !== mk || String(h.key).charAt(0) === '_') continue;
+    want.sq[h.squad] = (want.sq[h.squad] || 0) + h.points; want.n++;
+    if (h.player) want.pl[norm(h.player)] = { name: h.player, pts: ((want.pl[norm(h.player)] || {}).pts || 0) + h.points };
+  }
+  var diffs = [], k, seen = {};
+  for (k in got.sq) if (got.sq.hasOwnProperty(k)) { seen[k] = 1; if ((want.sq[k] || 0) !== got.sq[k]) diffs.push(k + ': record ' + n(got.sq[k]) + ', saved ' + n(want.sq[k] || 0)); }
+  for (k in want.sq) if (want.sq.hasOwnProperty(k) && !seen[k] && want.sq[k]) diffs.push(k + ': record 0, saved ' + n(want.sq[k]));
+  seen = {};
+  for (k in got.pl) if (got.pl.hasOwnProperty(k)) { seen[k] = 1; if (((want.pl[k] || {}).pts || 0) !== got.pl[k].pts) diffs.push(got.pl[k].name + ': record ' + n(got.pl[k].pts) + ', saved ' + n((want.pl[k] || {}).pts || 0)); }
+  for (k in want.pl) if (want.pl.hasOwnProperty(k) && !seen[k] && want.pl[k].pts) diffs.push(want.pl[k].name + ': record 0, saved ' + n(want.pl[k].pts));
+  return { ok: !diffs.length, diffs: diffs, lines: got.n, saved: want.n };
+}
+
+function showRecord(scroll) {
+  var el = $('recordPanel'); if (!el) return;
+  if (!RECORD_OPEN) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  var O = RECORD_OPEN, h = '<h2>Period Record</h2>';
+  if (O.loading) h += '<div class="note" style="margin:0">Opening <b>' + esc(O.tab) + '</b> from the sheet…</div>';
+  else if (O.error) h += '<div class="warn soft">' + esc(O.error) + '</div>';
+  else {
+    var rec = parseRecord(O.rows), key = periodKeyOf(rec.meta.key), mk = key ? periodOf(key) : '';
+    var all = mk ? recordsFor(mk) : [], newest = all.length && all[0].tab === O.tab;
+    h += '<div class="rtop"><div><div class="pname sm">' + esc(rec.meta.period || periodTag(mk)) + '</div>' +
+      '<div class="pdates">' + esc(rec.meta.dates || '') + '</div></div>' +
+      '<div class="rmeta">Saved <b>' + esc(rec.meta.saved || '?') + '</b><br>' + esc(O.tab) + '</div></div>';
+    h += '<div class="rfacts">' +
+      '<div><b>Weekly tabs counted</b>' + esc(rec.meta['weekly tabs counted'] || '—') + '</div>' +
+      (rec.meta['left out (still last period’s numbers)'] ? '<div><b>Left out</b>' + esc(rec.meta['left out (still last period’s numbers)']) + '</div>' : '') +
+      '</div>';
+    if (mk && isRecorded(mk) && !isLive(mk)) {
+      var C = checkRecord(rec, mk);
+      if (C.none) h += '<div class="warn soft">This record has no score lines to check.</div>';
+      else if (C.ok) h += '<div class="rcheck ok">✓ Matches the scores saved for ' + esc(periodTag(mk)) + ' in Monthly Scores — every squad and every player.</div>';
+      else h += '<div class="rcheck bad">⚠ ' + (newest ? 'Differs from' : 'This older record differs from') + ' the scores saved now for ' +
+        esc(periodTag(mk)) + ':<br>' + esc(C.diffs.slice(0, 12).join(' · ')) + (C.diffs.length > 12 ? ' … and ' + (C.diffs.length - 12) + ' more' : '') +
+        (newest ? '<br>Someone may have changed the Monthly Scores tab by hand since. The record shows what was counted.' :
+          '<br>A newer record of this period exists — the period was saved again after this one.') + '</div>';
+    } else if (mk && isLive(mk)) h += '<div class="warn soft">' + esc(periodTag(mk)) + ' is open again, so there is nothing saved to check this record against until it is saved again.</div>';
+    if (all.length > 1) {
+      h += '<div class="note" style="margin:10px 0 0">Records of this period: ';
+      for (var a = 0; a < all.length; a++)
+        h += (a ? ' · ' : '') + (all[a].tab === O.tab ? '<b>' + esc(all[a].saved || all[a].tab) + '</b>'
+          : '<a href="javascript:void 0" onclick="openRecord(\'' + q(all[a].tab) + '\')">' + esc(all[a].saved || all[a].tab) + '</a>');
+      h += '</div>';
+    }
+    for (var b = 0; b < rec.blocks.length; b++) {
+      var B = rec.blocks[b], sheet = B.title.indexOf('Sheet:') === 0, open = b < 2 ? ' open' : '';
+      h += '<details class="rblock"' + open + '><summary>' + (sheet ? '📄 ' : '') + esc(B.title) +
+        ' <span>' + Math.max(0, B.rows.length - (sheet ? 0 : 1)) + ' row' + (B.rows.length - (sheet ? 0 : 1) === 1 ? '' : 's') + '</span></summary>' +
+        '<div class="scroll"><table class="rtable">';
+      for (var r = 0; r < B.rows.length; r++) {
+        var row = B.rows[r], head = !sheet && r === 0, tag = head ? 'th' : 'td';
+        h += '<tr' + (sheet && /first name|^name$/i.test(String(row[0] || '')) ? ' class="rhead"' : '') + '>';
+        for (var c = 0; c < row.length; c++) h += '<' + tag + '>' + esc(row[c]) + '</' + tag + '>';
+        h += '</tr>';
+      }
+      h += '</table></div></details>';
+    }
+    h += '<div class="note">' + (LOCAL_RECORDS[O.tab] ? 'This record was made on a copy of the board that cannot save, so it lives on this screen only.'
+      : 'Kept in the sheet as the hidden tab <b>' + esc(O.tab) + '</b> (View → Hidden sheets). It is never changed — saving the period again adds a new one.') + '</div>';
+  }
+  h += '<div class="row" style="margin-top:14px">' + (O.rows ? '<button class="b" onclick="downloadRecord()">⬇ DOWNLOAD CSV</button>' : '') +
+    '<button class="b g" onclick="closeRecord()">CLOSE</button></div>';
+  el.innerHTML = h;
+  if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function downloadRecord() {
+  if (!RECORD_OPEN || !RECORD_OPEN.rows) return;
+  var csv = RECORD_OPEN.rows.map(function (r) {
+    return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([String.fromCharCode(65279) + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = RECORD_OPEN.tab.replace(/[^\w\- #]+/g, '_') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* The Period Log and every record, newest first. */
+function periodLogPanel() {
+  var el = $('periodLog'); if (!el) return;
+  var h = '', i, recs = ((DATA && DATA.records) || []).slice(), L = ((DATA && DATA.log) || []).slice();
+  if (SYNC.url && SYNC.api < 4) h += '<div class="warn soft" style="margin-top:0">' + esc(oldScriptText('record')) + '</div>';
+  recs.sort(function (a, b) { return String(b.saved || '').localeCompare(String(a.saved || '')); });
+  h += '<h3 style="margin-top:6px">Records</h3>';
+  if (!recs.length) h += '<div class="note" style="margin:0">No records yet. One is kept every time a period is saved.</div>';
+  else {
+    h += '<div class="scroll"><table><thead><tr><th>Period</th><th>Dates</th><th>Saved</th><th></th></tr></thead><tbody>';
+    for (i = 0; i < recs.length; i++)
+      h += '<tr><td class="nm">' + esc(recs[i].period || '') + '</td><td class="sub2">' + esc(recs[i].dates || '') + '</td><td class="sub2">' +
+        esc(recs[i].saved || '') + '</td><td><button class="b g sm" onclick="openRecord(\'' + q(recs[i].tab) + '\')">OPEN</button></td></tr>';
+    h += '</tbody></table></div>';
+  }
+  h += '<h3>Period log</h3>';
+  if (!L.length) h += '<div class="note" style="margin:0">Nothing logged yet.</div>';
+  else {
+    L.sort(function (a, b) { return String(b.when).localeCompare(String(a.when)); });
+    h += '<div class="scroll"><table><thead><tr><th>When</th><th>What</th><th>Period</th><th>Details</th></tr></thead><tbody>';
+    for (i = 0; i < Math.min(L.length, 100); i++)
+      h += '<tr><td class="sub2" style="white-space:nowrap">' + esc(L[i].when) + '</td><td class="nm">' + esc(L[i].action) + '</td><td>' +
+        esc(L[i].period) + (L[i].dates ? '<br><span class="sub2">' + esc(L[i].dates) + '</span>' : '') + '</td><td class="sub2">' + esc(L[i].details) + '</td></tr>';
     h += '</tbody></table></div>';
   }
   el.innerHTML = h;
