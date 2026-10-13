@@ -600,15 +600,43 @@ function readWeeks() {
     var map = mapColumns(grid[headerRow]);
     if (map.RGI == null) return;
 
+    // The weekly PALMS export gives attendance as one letter where the full
+    // report has five columns. Pasted under the five-column headings, every
+    // number sits under the wrong one — so read those rows in PALMS order.
+    var lc = palmsLetterCol(grid, headerRow, map), shifted = '';
+    if (lc !== -1 && map.RGI !== lc + 1) {
+      shifted = String.fromCharCode(65 + lc);
+      map = { FIRST: map.FIRST, LAST: map.LAST };
+      for (var i = 0; i < PALMS_ORDER.length; i++) map[PALMS_ORDER[i]] = lc + 1 + i;
+    }
+
     var rows = [];
     for (var r = headerRow + 1; r < grid.length; r++) {
-      var rec = readMemberRow(grid[r], map);
+      var rec = readMemberRow(grid[r], map, lc);
       if (rec) rows.push(rec);
     }
-    if (rows.length) out.push({ tab: name, rows: rows });
+    if (rows.length) out.push({ tab: name, rows: rows, shifted: shifted });
   });
 
   return out;
+}
+
+var PALMS_ORDER = ['RGI', 'RGO', 'RRI', 'RRO', 'V', 'ONE21', 'TYFCB', 'CEU'];
+
+// The column holding a single P / A / L / M / S for most players, or -1.
+function palmsLetterCol(grid, headerRow, map) {
+  for (var c = 0; c < 8; c++) {
+    if (c === map.FIRST || c === map.LAST) continue;
+    var named = 0, hits = 0;
+    for (var r = headerRow + 1; r < grid.length; r++) {
+      var row = grid[r] || [];
+      if (!String(row[map.FIRST] == null ? '' : row[map.FIRST]).trim()) continue;
+      named++;
+      if (/^[palms]$/i.test(String(row[c] == null ? '' : row[c]).trim())) hits++;
+    }
+    if (hits >= 3 && hits >= named * 0.6) return c;
+  }
+  return -1;
 }
 
 function isExcluded(name) {
@@ -674,21 +702,23 @@ function isOneToOneHeader(raw, h) {
   return false;
 }
 
-function readMemberRow(row, map) {
+function readMemberRow(row, map, lc) {
   var first = String(row[map.FIRST] || '').trim();
   var last = map.LAST != null ? String(row[map.LAST] || '').trim() : '';
   var full = (first + ' ' + last).replace(/\s+/g, ' ').trim();
   if (!full) return null;
   var lower = full.toLowerCase();
   if (lower === 'first name' || lower === 'total' || lower === 'totals') return null;
+  var letter = lc != null && lc !== -1 ? String(row[lc] == null ? '' : row[lc]).trim().toUpperCase() : '';
+  function att(k) { return letter ? (letter === k ? 1 : 0) : num(row[map[k]]); }
 
   return {
     name: full,
-    P: num(row[map.P]),
-    A: num(row[map.A]),
-    L: num(row[map.L]),
-    M: num(row[map.M]),
-    S: num(row[map.S]),
+    P: att('P'),
+    A: att('A'),
+    L: att('L'),
+    M: att('M'),
+    S: att('S'),
     RGI: num(row[map.RGI]),
     RGO: num(row[map.RGO]),
     RRI: num(row[map.RRI]),
