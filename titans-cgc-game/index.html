@@ -2271,7 +2271,10 @@ function build(grids) {
     grid = grids[k];
     if (!grid || !grid.length) continue;
     kind = classify(k, grid);
-    if (kind === 'week') { var rows = readWeekGrid(grid); if (rows.length) pay.weeks.push({ tab: k, rows: rows }); }
+    if (kind === 'week') {
+      var wk = readWeekGrid(grid);
+      if (wk.rows.length) pay.weeks.push({ tab: k, rows: wk.rows, shifted: wk.shifted });
+    }
     else if (kind === 'teams')    pay.teams = pay.teams.concat(readTeamsGrid(grid));
     else if (kind === 'training') {
       var tr = readTrainingGrid(grid);
@@ -2359,15 +2362,41 @@ function findWeekHeader(grid) {
   return -1;
 }
 function readWeekGrid(grid) {
-  var hr = findWeekHeader(grid);
-  if (hr === -1) return [];
-  var map = mapColumns(grid[hr]), out = [], r, rec;
-  if (map.RGI == null || map.FIRST == null) return [];
+  var hr = findWeekHeader(grid), none = { rows: [], shifted: '' };
+  if (hr === -1) return none;
+  var map = mapColumns(grid[hr]), out = [], r, rec, i;
+  if (map.RGI == null || map.FIRST == null) return none;
+  /* The weekly PALMS export gives attendance as one letter where the full
+     report has five columns. Pasted under the five-column headings, every
+     number sits under the wrong one — so read those rows in PALMS order. */
+  var lc = palmsLetterCol(grid, hr, map), shifted = '';
+  if (lc !== -1 && map.RGI !== lc + 1) {
+    shifted = String.fromCharCode(65 + lc);
+    map = { FIRST: map.FIRST, LAST: map.LAST, EXTRA: {} };
+    for (i = 0; i < PALMS_ORDER.length; i++) map[PALMS_ORDER[i]] = lc + 1 + i;
+  }
   for (r = hr + 1; r < grid.length; r++) {
-    rec = readMemberRow(grid[r] || [], map);
+    rec = readMemberRow(grid[r] || [], map, lc);
     if (rec) out.push(rec);
   }
-  return out;
+  return { rows: out, shifted: shifted };
+}
+var PALMS_ORDER = ['RGI', 'RGO', 'RRI', 'RRO', 'V', 'ONE21', 'TYFCB', 'CEU'];
+/* The column holding a single P / A / L / M / S for most players, or -1. */
+function palmsLetterCol(grid, hr, map) {
+  var c, r, named, hits, row;
+  for (c = 0; c < 8; c++) {
+    if (c === map.FIRST || c === map.LAST) continue;
+    named = 0; hits = 0;
+    for (r = hr + 1; r < grid.length; r++) {
+      row = grid[r] || [];
+      if (!String(row[map.FIRST] == null ? '' : row[map.FIRST]).trim()) continue;
+      named++;
+      if (/^[palms]$/i.test(String(row[c] == null ? '' : row[c]).trim())) hits++;
+    }
+    if (hits >= 3 && hits >= named * 0.6) return c;
+  }
+  return -1;
 }
 function mapColumns(header) {
   var map = { EXTRA: {} }, c, raw, h;
@@ -2419,13 +2448,17 @@ function isOneToOne(raw, h) {
   }
   return false;
 }
-function readMemberRow(row, map) {
+function readMemberRow(row, map, lc) {
   var first = String(row[map.FIRST] == null ? '' : row[map.FIRST]).trim();
   var last = map.LAST != null ? String(row[map.LAST] == null ? '' : row[map.LAST]).trim() : '';
   var full = (first + ' ' + last).replace(/\s+/g, ' ').trim();
   if (!full) return null;
   if (norm(full) === 'first name' || norm(full) === 'total' || norm(full) === 'totals') return null;
-  function g(k) { return map[k] == null ? 0 : num(row[map[k]]); }
+  var letter = lc != null && lc !== -1 ? String(row[lc] == null ? '' : row[lc]).trim().toUpperCase() : '';
+  function g(k) {
+    if (letter && 'PALMS'.indexOf(k) !== -1 && k.length === 1) return letter === k ? 1 : 0;
+    return map[k] == null ? 0 : num(row[map[k]]);
+  }
   var extra = {}, hh;
   for (hh in map.EXTRA) if (map.EXTRA.hasOwnProperty(hh)) extra[hh] = num(row[map.EXTRA[hh]]);
   return { name: full, P: g('P'), A: g('A'), L: g('L'), M: g('M'), S: g('S'),
@@ -2957,6 +2990,13 @@ function adopt(pay, sourceName, url, bg) {
     PARSE_WARN.push('No <b>Teams</b> tab in that sheet, so the chapter has been split into two ' +
       'placeholder squads. Add a Teams tab with the real squad names and it takes over — the Roster ' +
       'board has a <b>Copy For Sheet</b> button that gives you exactly what to paste.');
+  }
+  for (i = 0; i < (pay.weeks || []).length; i++) {
+    if (!pay.weeks[i].shifted) continue;
+    PARSE_WARN.push('<b>' + esc(pay.weeks[i].tab) + '</b>: its numbers do not sit under its headings ' +
+      '(attendance is one letter in column ' + esc(pay.weeks[i].shifted) + '), so it was read in PALMS order ' +
+      'from there: RGI, RGO, RRI, RRO, V, 1-2-1, TYFCB, CEU. If that is not the order it was pasted in, ' +
+      're-paste the tab so each number is under its heading.');
   }
   ROSTER_BASE = [];
   for (i = 0; i < ROSTER.length; i++) ROSTER_BASE.push({ name: ROSTER[i].name, team: ROSTER[i].team });
