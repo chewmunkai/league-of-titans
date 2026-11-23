@@ -3,9 +3,13 @@
 > **Conquerer copy.** This is a duplicate of the Titans CGC Game with the same
 > rules, pointed at its own Google Sheet:
 > https://docs.google.com/spreadsheets/d/11E3gyVellVVYClczHOmsm1E1g-WK7WaimHQKefzMmDM/edit
-> The sheet's **How to fill in** tab lists every tab and column. Saving from the
-> board needs `ConquererCGC.gs` pasted into that sheet's Apps Script and its
-> /exec link put in `DEFAULT_EXEC` in `index.html`; until then the board reads only.
+> The sheet is the record and the input for the weekly data: only the **Master
+> list 1st–5th week** and **training of the month** tabs are filled in by hand.
+> Squads, mentors, scoring and manual scores are set on the board itself (Roster,
+> Group 1-2-1, Scoring and Manual Scores tabs), which writes them back to the
+> sheet. That needs `ConquererCGC.gs` pasted into the sheet's Apps Script and its
+> /exec link put in `DEFAULT_EXEC` in `index.html`; until then the board reads only
+> and changes made on it are lost on reload.
 
 Live arcade scoreboard for the BNI Conquerer chapter. **Two squads, seven ways to
 score, one number each.**
